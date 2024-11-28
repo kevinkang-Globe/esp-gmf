@@ -1,9 +1,7 @@
-# ESP-GMF
-ESP-GMF 全称 ESP General Multimedia Framework，是乐鑫开发的应用于 IoT 多媒体领域的轻量级通用软件框架。它灵活性高，可扩展性强，专为 IoT 芯片量身打造，RAM 资源占用只有 7 KB。ESP-GMF 可应用于音频、图像、视频等产品，还可应用于任何流式处理数据的产品中。
+# GMF-Core 框架介绍
+[English](gmf_core/README.md)
 
-## ESP-GMF 框架介绍
-
-下图展示了 GMF 框架的类图关系。
+下图展示了 GMF-Core 框架的类图关系。
 ```mermaid
 classDiagram
     GMF-Obj <|-- GMF-IO
@@ -18,9 +16,10 @@ classDiagram
     GMF-IO --* GMF-Pipeline
     GMF-IO --o GMF-Pool
 ```
+
 GMF-Obj 是基础类，它为其他组件创建和销毁提供统一接口，便于对继承类对象进行管理操作：创建、复制、销毁。GMF-IO、GMF-Task 和 GMF-Element 都继承于它。
 
-ESP-GMF 主要由 GMF-Element、GMF-Pipeline、GMF-Task 组成，它的工作原理是以一个称为 Job 的工作片作为最小的处理单元，并实时加载这些工作片执行。
+GMF-Core 主要由 GMF-Element、GMF-Pipeline、GMF-Task 组成，它的工作原理是以一个称为 Job 的工作片作为最小的处理单元，并实时加载这些工作片执行。
 - GMF-Element 是工作片的提供者，为每个 element 提供三个基础的工作片，即 open，process 和 close。其中 open 一般是最先加载的工作片，process 会在 open 处理完后被加载，当所有 element 的工作片都处理完或者发生错误的时，close 工作片会被加载。
 - GMF-Pipeline 负责管理和加载被连接的 element 的工作片，同时负责对 GMF-Task 的开始和停止进行控制。当 GMF-Pipeline 有 IN 和 OUT 的 IO 接口时，还负责对其进行打开和关闭操作。
 - GMF-Task 处理工作片的流程参见下图。整个过程分为三个阶段，第一个阶段是 opening，把每个 element 的 open 和 process 工作片都调用一次，然后进入 running 阶段，这个过程是按 element 连接顺序循环执行每个 element 的 process 工作片，当工作片处理完或者出错则进入最后一个阶段 cleanup，它会调用每个 element 的 close 工作片来回收 element 资源。
@@ -39,22 +38,25 @@ graph LR
     style Running fill:none,stroke:#333,stroke-width:1
     style Cleanup fill:none,stroke:#333,stroke-width:1
 ```
+
 ## GMF-Pool
 GMF-Pool 是 GMF-Element 和 GMF-IO 的管理单元。GMF-Pool 根据字符串列表创建 pipeline，先创建存储对象的复制品，然后连接成 pipeline。如果新 pipeline 需要调整 element 或 IO 初始配置参数，可以在 pipeline 创建成功后，通过 `esp_gmf_pipeline_get_el_by_name` 和 `OBJ_GET_CFG` 来修改。
 
 ## GMF-Element
-GMF-Element 是 pipeline 的重要组成部分，它提供 open、process 和 close 工作函数，管理 element 端口 (port)，提供访问每个 element 功能函数的接口。GMF-Element 可以派生各种具体的类别，比如 audio element、picture element 等等。
+GMF-Element 是一个基础类，用于实现具体功能的 element。它派生的类别有 audio element、picture element 等。
+
 - audio element 实例化的类包含 encoder、decoder，以及 EQ、mixer、resample 等音频算法。
 - picture element 实例化的类包含 JPEG encoder/decoder、PNG decoder 等。
 
-同时，每个 element 至少有一个数据出入口 (port)，element 自行管理 port 的连接能力。gmf_port 是 element 的连接端口，它可以连接多种类型的端口，比如回调函数、GMF_DataBus。gmf_port 管理 payload，它根据 element 的连接情况和请求的数据大小调整 payload 缓冲区的大小，并让 element 之间的数据进行地址传递。
+GMF-Element 的输入输出端口是 GMF-Port，
+它根据 element 的连接情况和请求的数据大小管理 payload 缓冲区，并让 payload 数据在 element 之间传递。GMF-Element 负责管理 GMF-Port 的连接能力和连接个数。
 
 ## GMF-DataBus
-GMF-DataBus 是 ESP-GMF 存取数据的模块，它使用 Acquire 再 Release 的方式访问数据。 GMF-DataBus 数据传输支持零拷贝和拷贝两种传输方式，也支持阻塞和非阻塞的访问方式。
-目前 ESP-GMF 支持了三种类型，分别是 Ringbuffer、PBuffer 和 BlockBuffer，其中 PBuffer 和 BlockBuffer 数据传输是零拷贝，Ringbuffer 和 BlockBuffer 提供阻塞接口。
+GMF-DataBus 是 GMF-Core 存取数据的模块，它使用 Acquire 再 Release 的方式访问数据。 GMF-DataBus 数据传输支持零拷贝和拷贝两种传输方式，也支持阻塞和非阻塞的访问方式。
+目前 GMF-Core 支持了三种类型，分别是 Ringbuffer、PBuffer 和 BlockBuffer，其中 PBuffer 和 BlockBuffer 数据传输是零拷贝，Ringbuffer 和 BlockBuffer 提供阻塞接口。
 
 ## GMF-Task
-GMF-Task 是执行 job 的线程，它从工作列表中取出 job 运行。当工作列表的 job 执行完即进入空闲状态，直到有新的 job 加入。job 是执行工作的最小单位，job 分为一次性和无限次的两种。
+GMF-Task 是执行 job 的线程，它从工作列表中取出 job 顺序运行。当工作列表的 job 执行完即进入空闲状态，直到有新的 job 加入。job 是执行工作的最小单位，job 分为一次性和无限次的两种。
 
 ## GMF-Pipeline
 GMF-Pipeline 由 element、task、IO 组成，一个 pipeline 必须有一个 task 来处理和调度任务。GMF-Pipeline 支持 pipeline 之间的顺序级联，即一个 pipeline 可以连接另外一个 pipeline，pipeline 的 event 也可以级联到后级的 pipeline 上。
@@ -115,7 +117,7 @@ graph LR
     end
 ```
 
-应用 2：两路 pipeline 实现从单路输入多路输出的场景，一路通过 pipeline 连接输出，一路通过 port 端口输出
+应用 2：两路 pipeline 实现从单路输入多路输出的场景，一路通过 pipeline 连接输出，一路通过 port 输出
 ```mermaid
 graph LR
     subgraph P1
@@ -144,8 +146,6 @@ graph LR
     end
 ```
 
-## 组件介绍
-GMF-Core 是 ESP-GMF 的一个基础软件框架，在开发项目时，需要结合官方 GMF-Elements 仓库的 elements 和 IOs 组件进行开发，还可以自行创建 element 和 IO 组件来扩展其应用场景。官方提供的 elements 有 gmf_audio、gmf_image、gmf_misc 和 gmf_io，其中每个组件所包含的 element 请查看组件 readme。
-
 ## 使用说明
-ESP-GMF API 的简单示例代码请参考 [test_apps](./test_apps/main/cases/gmf_pool_test.c)，更多实际应用示例请参考 ESP_GMF_Elements 下的 examples。
+
+GMF-Core API 的简单示例代码请参考 [test_apps](./test_apps/main/cases/gmf_pool_test.c)，更多实际应用示例请参考 GMF-Elements 的 examples。
