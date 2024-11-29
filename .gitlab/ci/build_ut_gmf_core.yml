@@ -1,0 +1,58 @@
+variables:
+  DOCKER_IMAGE: ${CI_DOCKER_REGISTRY}/esp-env-v5.3:1
+  BASE_FRAMEWORK_PATH: "$CI_PROJECT_DIR/esp-idf"
+  BASE_FRAMEWORK: $IDF_REPOSITORY
+  IDF_VERSION_TAG: v5.3
+  IDF_TAG_FLAG: false
+
+.build_gmf_core:
+  extends:
+    - .build_template
+  artifacts:
+    paths:
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/size.json"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/build_log.txt"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/*.bin"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/*.elf"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/flasher_args.json"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/flash_project_args"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/config/sdkconfig.json"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/sdkconfig"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/bootloader/*.bin"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/build*/partition_table/*.bin"
+      - "${CI_PROJECT_DIR}/gmf_core/test_apps/*.py"
+    expire_in: 4 days
+  script:
+    - run_cmd python ${BASE_FRAMEWORK_PATH}/tools/ci/ci_build_apps.py ${CI_PROJECT_DIR}/gmf_core -vv -t $IDF_TARGET --pytest-apps
+
+ut_esp32_gmf_core:
+  extends:
+    - .rules:build:protected-merge-requests-pipeline
+    - .build_gmf_core
+  variables:
+    IDF_VERSION_TAG: v5.3
+    IDF_TARGET: esp32
+
+.ut_esp32c3_gmf_core:
+  extends:
+    - .rules:build:protected-merge-requests-pipeline
+    - .build_gmf_core
+  variables:
+    IDF_VERSION_TAG: v5.3
+    IDF_TARGET: esp32c3
+
+ut_esp32s3_gmf_core:
+  extends:
+    - .rules:build:protected-merge-requests-pipeline
+    - .build_gmf_core
+  variables:
+    IDF_VERSION_TAG: v5.3
+    IDF_TARGET: esp32s3
+
+ut_esp32p4_gmf_core:
+  extends:
+    - .rules:build:protected-merge-requests-pipeline
+    - .build_gmf_core
+  variables:
+    IDF_VERSION_TAG: v5.3
+    IDF_TARGET: esp32p4
