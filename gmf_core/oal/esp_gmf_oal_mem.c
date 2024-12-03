@@ -182,11 +182,8 @@ bool esp_gmf_oal_mem_spiram_stack_is_enabled(void)
 #if defined(CONFIG_SPIRAM_BOOT_INIT) && (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY)
     bool ret = true;
 #if defined(CONFIG_IDF_TARGET_ESP32)
-#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 4)
-    uint32_t chip_ver = efuse_hal_chip_revision();
-#else
-    uint8_t chip_ver = esp_efuse_get_chip_ver();
-#endif  /* ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(4, 4, 4) */
+    uint32_t chip_ver = 0;
+    chip_ver = efuse_hal_chip_revision();
     if (chip_ver < 3) {
         ESP_LOGW("ESP_GMF_MEM", "Can't support stack on external memory due to ESP32 chip is %d", (int)chip_ver);
         ret = false;

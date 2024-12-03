@@ -1,0 +1,15 @@
+dependencies:
+  espressif/gmf_audio:
+    path: ../../../../gmf_elements/gmf_audio
+  espressif/gmf_io:
+    path: ../../../../gmf_elements/gmf_io
+  espressif/gmf_misc:
+    path: ../../../../gmf_elements/gmf_misc
+  espressif/esp_wifi_remote:
+    version: '*'
+    rules:
+      - if: "target in [esp32p4]"
+  espressif/esp_hosted:
+    version: '*'
+    rules:
+      - if: "target in [esp32p4]"

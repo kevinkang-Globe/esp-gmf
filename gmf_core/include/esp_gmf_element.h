@@ -48,6 +48,14 @@ extern "C" {
 #define ESP_GMF_ELEMENT_GET_OUT_PORT(x)   (((esp_gmf_element_t *)x)->out)
 #define ESP_GMF_ELEMENT_GET_DEPENDENCY(x) (((esp_gmf_element_t *)x)->dependency)
 
+#define ESP_GMF_ELEMENT_CFG(el_cfg, is_depend, in_cap, out_cap, in_type, out_type) do {  \
+    (el_cfg).dependency = (is_depend);                                                   \
+    (el_cfg).in_attr.cap = (in_cap);                                                     \
+    (el_cfg).out_attr.cap = (out_cap);                                                   \
+    (el_cfg).in_attr.type = (in_type);                                                   \
+    (el_cfg).out_attr.type = (out_type);                                                 \
+} while (0)
+
 typedef void *esp_gmf_element_handle_t;
 
 /**

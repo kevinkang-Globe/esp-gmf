@@ -34,6 +34,25 @@ extern "C" {
 #endif  /* __cplusplus */
 
 #define ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT (4096)
+#define ESP_GMF_PORT_CHECK(log_tag, ret, ret_value, action, format, ...) {                              \
+    if (unlikely(ret < ESP_OK)) {                                                                       \
+        if (ret != ESP_GMF_IO_ABORT) {                                                                  \
+            ESP_LOGE(log_tag, "%s(%d): " format, __FUNCTION__, __LINE__ __VA_OPT__(, ) __VA_ARGS__);    \
+            ret_value = ESP_GMF_ERR_FAIL;                                                               \
+        } else {                                                                                        \
+            ret_value = ESP_GMF_ERR_OK;                                                                 \
+        }                                                                                               \
+        action;                                                                                         \
+    }                                                                                                   \
+}
+
+#define ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, ret, ret_value, action) ESP_GMF_PORT_CHECK(TAG, ret, ret_value, action, "Failed to acquire in, ret: %d", ret)
+
+#define ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, ret, ret_value, action) ESP_GMF_PORT_CHECK(TAG, ret, ret_value, action, "Failed to acquire out, ret: %d", ret)
+
+#define ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, ret, ret_value, action) ESP_GMF_PORT_CHECK(TAG, ret, ret_value, action, "Failed to release in, ret: %d", ret)
+
+#define ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, ret, ret_value, action) ESP_GMF_PORT_CHECK(TAG, ret, ret_value, action, "Failed to release out, ret: %d", ret)
 
 /**
  * @brief  Handle to a GMF port
@@ -188,7 +207,7 @@ esp_gmf_err_t esp_gmf_port_clean_payload_done(esp_gmf_port_handle_t handle);
 esp_gmf_err_t esp_gmf_port_enable_payload_share(esp_gmf_port_handle_t handle, bool enable);
 
 /**
- * @brief  Reset the port payload and varaiable of self payload
+ * @brief  Reset the port payload and variable of self payload
  *
  * @param[in]  handle  The handle of the port
  *

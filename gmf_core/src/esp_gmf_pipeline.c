@@ -149,9 +149,9 @@ static esp_gmf_err_t esp_gmf_task_evt(esp_gmf_event_pkt_t *evt, void *ctx)
                             ESP_LOGE(TAG, "Failed to open the out port, ret:%d,[%p-%s]", ret_val, tsk, OBJ_GET_TAG(tsk));
                         }
                     }
+                    evt->sub = ESP_GMF_EVENT_STATE_OPENING;
                 }
                 evt->from = pipeline;
-                evt->sub = ESP_GMF_EVENT_STATE_OPENING;
                 _set_pipe_linked_el_state(pipeline, evt->sub);
                 if (pipeline->user_cb) {
                     pipeline->user_cb(evt, pipeline->user_ctx);
