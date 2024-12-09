@@ -7,6 +7,7 @@ from pytest_embedded import Dut
 @pytest.mark.esp32
 @pytest.mark.esp32c3
 @pytest.mark.esp32s3
+@pytest.mark.esp32p4
 @pytest.mark.timeout(8000)
 @pytest.mark.ESP_GMF_ELEMENT
 @pytest.mark.ESP_GMF_TASK

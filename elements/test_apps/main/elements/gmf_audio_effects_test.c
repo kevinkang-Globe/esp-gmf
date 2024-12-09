@@ -148,7 +148,7 @@ static int ae_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int blo
     return blk->valid_size;
 }
 
-TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
+TEST_CASE("Test methods for all effects", "[ESP_GMF_Effects]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -406,7 +406,7 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Audio Effects Play, [FILE->dec->resample->bvt->cvt->alc->eq->fade->sonic->IIS]", "ESP_GMF_Effects")
+TEST_CASE("Audio Effects Play, [FILE->dec->resample->bvt->cvt->alc->eq->fade->sonic->IIS]", "[ESP_GMF_Effects]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -500,7 +500,7 @@ TEST_CASE("Audio Effects Play, [FILE->dec->resample->bvt->cvt->alc->eq->fade->so
                                           +- RB2 ->+ alc +-> RB4 -+
                                                    +-----+
 ***/
-TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
+TEST_CASE("Audio Effects Data Weaver test", "[ESP_GMF_Effects]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -699,7 +699,7 @@ TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
 +---------------------+-------------- +
 
 ***/
-TEST_CASE("Audio mixer Play", "ESP_GMF_Effects")
+TEST_CASE("Audio mixer Play", "[ESP_GMF_Effects]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);

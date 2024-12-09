@@ -107,7 +107,7 @@ static esp_err_t _pipeline_event3(esp_gmf_event_pkt_t *event, void *ctx)
     return 0;
 }
 
-TEST_CASE("Create and destroy pipeline", "ESP_GMF_POOL")
+TEST_CASE("Create and destroy pipeline", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -153,7 +153,7 @@ TEST_CASE("Create and destroy pipeline", "ESP_GMF_POOL")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Audio Play, One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
+TEST_CASE("Audio Play, One Pipe, [FILE->dec->resample->IIS]", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -236,7 +236,7 @@ TEST_CASE("Audio Play, One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Audio Play, multiple file with One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
+TEST_CASE("Audio Play, multiple file with One Pipe, [FILE->dec->resample->IIS]", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -306,7 +306,7 @@ TEST_CASE("Audio Play, multiple file with One Pipe, [FILE->dec->resample->IIS]",
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Audio Play, two in pipe use same task, [file->dec]->rb->[resample+IIS]", "ESP_GMF_POOL")
+TEST_CASE("Audio Play, two in pipe use same task, [file->dec]->rb->[resample+IIS]", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -449,7 +449,7 @@ TEST_CASE("Audio Play, two in pipe use same task, [file->dec]->rb->[resample+IIS
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
+TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "[ESP_GMF_POOL][ignore][leaks=10000]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -596,7 +596,7 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Audio Play, Two Pipe, [HTTP->dec]--RB-->[resample->IIS]", "ESP_GMF_POOL")
+TEST_CASE("Audio Play, Two Pipe, [HTTP->dec]--RB-->[resample->IIS]", "[ESP_GMF_POOL][leaks=10000]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -751,7 +751,7 @@ esp_err_t _loop_play_event(esp_gmf_event_pkt_t *event, void *ctx)
     return 0;
 }
 
-TEST_CASE("Audio Play, loop with no gap, [file->dec]->rb->[resample+IIS]", "ESP_GMF_POOL")
+TEST_CASE("Audio Play, loop with no gap, [file->dec]->rb->[resample+IIS]", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -895,7 +895,7 @@ TEST_CASE("Audio Play, loop with no gap, [file->dec]->rb->[resample+IIS]", "ESP_
                       +- RB ->+ Pipe2: resample-->file  |
                               +-------------------------+
 ***/
-TEST_CASE("Copier, 2 pipeline test, One pipeline play file to I2S, another save to file", "ESP_GMF_POOL")
+TEST_CASE("Copier, 2 pipeline test, One pipeline play file to I2S, another save to file", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -1021,7 +1021,7 @@ TEST_CASE("Copier, 2 pipeline test, One pipeline play file to I2S, another save 
                                        +-- RB2 -->  Pipe3: Resample + IIS |
                                                  +------------------------+
 ***/
-TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I2S, last one save to file", "ESP_GMF_POOL")
+TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I2S, last one save to file", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);

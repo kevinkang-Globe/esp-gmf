@@ -59,7 +59,7 @@ static esp_gmf_err_t audio_attr_iter_fun(uint32_t attr_index, esp_gmf_cap_attr_t
     return ESP_GMF_ERR_OK;
 }
 
-TEST_CASE("GMF CAPS Create and Destroy", "ESP_GMF_CAPS")
+TEST_CASE("GMF CAPS Create and Destroy", "[ESP_GMF_CAPS]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_CAPS", ESP_LOG_DEBUG);
@@ -102,7 +102,7 @@ TEST_CASE("GMF CAPS Create and Destroy", "ESP_GMF_CAPS")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("GMF CAPS Iterate test", "ESP_GMF_CAPS")
+TEST_CASE("GMF CAPS Iterate test", "[ESP_GMF_CAPS]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_CAPS", ESP_LOG_DEBUG);
@@ -338,7 +338,7 @@ TEST_CASE("GMF CAPS Iterate test", "ESP_GMF_CAPS")
     ESP_LOGI(TAG, "--- CONSTANT PROPERTY TEST END ---\r\n");
 }
 
-TEST_CASE("GMF CAPS Boundary Value test", "ESP_GMF_CAPS")
+TEST_CASE("GMF CAPS Boundary Value test", "[ESP_GMF_CAPS]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_CAPS", ESP_LOG_DEBUG);
@@ -427,7 +427,7 @@ static esp_err_t element_event(esp_gmf_event_pkt_t *event, void *ctx)
     return ESP_OK;
 }
 
-TEST_CASE("GMF Element CAPS test", "ESP_GMF_CAPS")
+TEST_CASE("GMF Element CAPS test", "[ESP_GMF_CAPS]")
 {
     ESP_GMF_MEM_SHOW(TAG);
     fake_dec_cfg_t fake_cfg = DEFAULT_FAKE_DEC_CONFIG();

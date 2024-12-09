@@ -94,7 +94,7 @@ static int imgfx_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int 
     return ESP_OK;
 }
 
-TEST_CASE("Test for all software video effects", "ESP_GMF_Effects")
+TEST_CASE("Test for all software video effects", "[ESP_GMF_Effects]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);

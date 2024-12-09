@@ -37,10 +37,15 @@
 .if-label-example: &if-label-example
   if: '$BOT_LABEL_EXAMPLE_TEST || $CI_MERGE_REQUEST_LABELS =~ /^(?:[^,\n\r]+,)*example(?:,[^,\n\r]+)*$/i'
 
-.if-idf-version-tag-v5-3: &if-idf-version-tag-v5-3
+.idf-version-tag-v5-3: &idf-version-tag-v5-3
   if: '$IDF_VERSION_TAG == "v5.3"'
   variables:
-      IMAGE: "$CI_DOCKER_REGISTRY/esp-env-v5.3:1"
+    IMAGE: "$CI_DOCKER_IMAGE_REGISTRY/env_v5.3:1"
+
+.idf-version-tag-v5-4: &idf-version-tag-v5-4
+  if: '$IDF_VERSION_TAG == "v5.4"'
+  variables:
+    IMAGE: "$CI_DOCKER_IMAGE_REGISTRY/env_default:1"
 
 .rules:build:unit-test:
   rules:
@@ -62,7 +67,6 @@
       when: never
     - <<: *if-schedule
       when: never
-    - <<: *if-idf-version-tag-v5-3
 
 .rules:build:non-regular-board-idf-ver-tag:
   rules:
@@ -70,10 +74,14 @@
       when: never
     - <<: *if-merge_request_event
       when: never
-    - <<: *if-idf-version-tag-v5-3
 
 .rules:build:protected-merge-requests-pipeline:
   rules:
+    - <<: *if-dev-push
+      when: never
+    - <<: *idf-version-tag-v5-3
+    - <<: *idf-version-tag-v5-4
+    - <<: *if-web
     - <<: *if-trigger
     - <<: *if-pipeline
     - <<: *if-protected
@@ -81,5 +89,20 @@
 
 .rules:build:protected-merge-requests:
   rules:
+    - <<: *if-web
     - <<: *if-protected
     - <<: *if-merge_request_event
+
+.rules:build:enable-gmf-example-test:
+  rules:
+    - <<: *if-web
+    - <<: *if-label-example
+    - <<: *if-label-example_test
+
+.rules:build:enable-gmf-unit-test:
+  rules:
+    - <<: *if-web
+    - <<: *if-label-unit_test
+    - <<: *if-protected
+    - <<: *if-trigger
+    - <<: *if-schedule

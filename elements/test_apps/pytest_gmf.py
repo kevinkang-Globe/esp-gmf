@@ -3,74 +3,17 @@
 import pytest
 from pytest_embedded import Dut
 
-
 @pytest.mark.esp32
 @pytest.mark.esp32c3
-@pytest.mark.sdcard_sdmode
+@pytest.mark.esp32s3
+@pytest.mark.esp32p4
+@pytest.mark.timeout(8000)
 @pytest.mark.parametrize(
     'config',
     [
         'default',
-        'release',
-    ]
+    ],
+    indirect=True,
 )
-def test_fatfs_sdcard_generic_sdmmc(dut: Dut) -> None:
-    dut.expect_exact('Press ENTER to see the list of tests')
-    dut.write('')
-    dut.expect_exact('Enter test for running.')
-    dut.write('[sdmmc]')
-    dut.expect_unity_test_output(timeout=180)
-
-
-@pytest.mark.esp32
-@pytest.mark.temp_skip_ci(targets=['esp32'], reason='IDFCI-2058, temporary lack runner')
-@pytest.mark.esp32c3
-@pytest.mark.sdcard_spimode
-@pytest.mark.parametrize(
-    'config',
-    [
-        'default',
-        'release',
-    ]
-)
-def test_fatfs_sdcard_generic_sdspi(dut: Dut) -> None:
-    dut.expect_exact('Press ENTER to see the list of tests')
-    dut.write('')
-    dut.expect_exact('Enter test for running.')
-    dut.write('[sdspi]')
-    dut.expect_unity_test_output(timeout=180)
-
-
-@pytest.mark.esp32
-@pytest.mark.sdcard_sdmode
-@pytest.mark.psram
-@pytest.mark.parametrize(
-    'config',
-    [
-        'psram',
-    ]
-)
-def test_fatfs_sdcard_psram_sdmmc(dut: Dut) -> None:
-    dut.expect_exact('Press ENTER to see the list of tests')
-    dut.write('')
-    dut.expect_exact('Enter test for running.')
-    dut.write('[sdmmc]')
-    dut.expect_unity_test_output(timeout=180)
-
-
-@pytest.mark.esp32
-@pytest.mark.temp_skip_ci(targets=['esp32'], reason='IDFCI-2058, temporary lack runner')
-@pytest.mark.sdcard_spimode
-@pytest.mark.psram
-@pytest.mark.parametrize(
-    'config',
-    [
-        'psram',
-    ]
-)
-def test_fatfs_sdcard_psram_sdspi(dut: Dut) -> None:
-    dut.expect_exact('Press ENTER to see the list of tests')
-    dut.write('')
-    dut.expect_exact('Enter test for running.')
-    dut.write('[sdspi]')
-    dut.expect_unity_test_output(timeout=180)
+def test_gmf_core(dut: Dut) -> None:
+    dut.run_all_single_board_cases(timeout=2000)
