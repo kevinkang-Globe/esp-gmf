@@ -141,6 +141,16 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
     audio_dec->out_data.buffer = out_load->buf;
     audio_dec->out_data.len = out_load->buf_length;
     while (1) {
+        if (audio_dec->in_data.len == 0) {
+            ESP_LOGD(TAG, "Release In port %p, ret: %d", in_port, ret);
+            if (audio_dec->in_load->is_done) {
+                out_load->is_done = audio_dec->in_load->is_done;
+                esp_gmf_audio_el_get_file_info(self, &info);
+                ESP_LOGD(TAG, "Total: %lld bytes(%d)", info.pos, __LINE__);
+                out_len = ESP_GMF_JOB_ERR_DONE;
+            }
+            goto __aud_proc_release;
+        }
         ret = esp_audio_simple_dec_process(audio_dec->dec_hd, &audio_dec->in_data, &audio_dec->out_data);
         if (ret != ESP_AUDIO_ERR_OK && ret != ESP_AUDIO_ERR_BUFF_NOT_ENOUGH) {
             ESP_LOGE(TAG, "Failed to decode data, ret: %d", ret);
@@ -216,15 +226,6 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
         }
         ESP_LOGV(TAG, "Release IN, in_len: %ld, done: %d, decoded_size: %ld",
                  audio_dec->in_data.len, audio_dec->in_load ? audio_dec->in_load->is_done : -1, audio_dec->out_data.decoded_size);
-        if (audio_dec->in_data.len == 0) {
-            ESP_LOGD(TAG, "Release In port %p, ret: %d", in_port, ret);
-            if (audio_dec->in_load->is_done) {
-                esp_gmf_audio_el_get_file_info(self, &info);
-                ESP_LOGD(TAG, "Total: %lld bytes(%d)", info.pos, __LINE__);
-                out_len = ESP_GMF_JOB_ERR_DONE;
-            }
-            goto __aud_proc_release;
-        }
         break;
     }
     return out_len;
@@ -232,6 +233,7 @@ __aud_proc_release:
     if (audio_dec->in_load != NULL) {
         load_ret = esp_gmf_port_release_in(in_port, audio_dec->in_load, ESP_GMF_MAX_DELAY);
         ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, load_ret, out_len, NULL);
+        audio_dec->in_load = NULL;
     }
     if (out_load != NULL) {
         load_ret = esp_gmf_port_release_out(out, out_load, out->wait_ticks);
@@ -252,6 +254,7 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_close(esp_gmf_audio_element_handle_t 
     audio_dec->pts = 0;
     esp_gmf_info_sound_t snd_info = {0};
     audio_dec->in_load = NULL;
+    audio_dec->in_data.len = 0;
     esp_gmf_audio_el_set_snd_info(self, &snd_info);
     return ESP_GMF_ERR_OK;
 }

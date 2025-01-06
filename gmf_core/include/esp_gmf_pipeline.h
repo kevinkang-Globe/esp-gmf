@@ -457,6 +457,10 @@ esp_gmf_err_t esp_gmf_pipeline_reg_el_port(esp_gmf_pipeline_handle_t pipeline, c
 /**
  * @brief  Report information from first element of pipeline
  *
+ * @note   This function is only for the GMF's first element, which does not report music information. However, this information is used by the linked elements.
+ *         For example, if the pipeline is `rate conversion -> channel conversion -> encoder -> file`, the rate conversion and channel conversion elements
+ *         require the music information to trigger their loading jobs. Therefore, this API is called to report the music information to the first element.
+ *
  * @param[in]  pipeline   The handle to the GMF pipeline
  * @param[in]  info_type  The type of information to report, specified by `esp_gmf_info_type_t`
  * @param[in]  value      Pointer to the buffer where the information will be stored

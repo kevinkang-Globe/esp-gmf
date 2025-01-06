@@ -100,9 +100,10 @@ esp_gmf_err_t esp_gmf_pool_register_io(esp_gmf_pool_handle_t handle, esp_gmf_io_
  *
  * @return
  *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_MEMORY_LACK  Memory allocation failed
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument or the number of names is incorrect
  *       - ESP_GMF_ERR_NOT_SUPPORT  Not support port type
- *       - ESP_GMF_ERR_NOT_FOUND    Not found the specific I/O instance
+ *       - ESP_GMF_ERR_NOT_FOUND    Not found the specific instance
  *       - ESP_GMF_ERR_FAIL         Others failed
  */
 esp_gmf_err_t esp_gmf_pool_new_pipeline(esp_gmf_pool_handle_t handle, const char *in_name,

@@ -48,10 +48,10 @@ typedef void *esp_gmf_task_handle_t;
  *         priority, CPU core affinity, and whether the stack is allocated in external memory.
  */
 typedef struct esp_gmf_task_config {
-    int         stack;             /*!< Size of the task stack. */
-    int         prio;              /*!< Priority of the task. */
-    uint32_t    core         : 4;  /*!< CPU core affinity for the task. */
-    uint32_t    stack_in_ext : 4;  /*!< Flag indicating if the stack is in external memory. */
+    int         stack;             /*!< Size of the task stack */
+    int         prio;              /*!< Priority of the task */
+    uint32_t    core         : 4;  /*!< CPU core affinity for the task */
+    uint32_t    stack_in_ext : 4;  /*!< Flag indicating if the stack is in external memory */
 } esp_gmf_task_config_t;
 
 /**
@@ -60,30 +60,30 @@ typedef struct esp_gmf_task_config {
  *         Represents a GMF task, including its properties, configuration, and internal state.
  */
 typedef struct _esp_gmf_task {
-    struct esp_gmf_obj_     base;           /*!< Base object for GMF tasks. */
-    esp_gmf_job_t          *working;        /*!< Currently executing job in the task. */
+    struct esp_gmf_obj_     base;           /*!< Base object for GMF tasks */
+    esp_gmf_job_t          *working;        /*!< Currently executing job in the task */
 
     /* Properties */
-    esp_gmf_event_cb        event_func;     /*!< Callback function for task events. */
-    esp_gmf_event_state_t   state;          /*!< Current state of the task. */
+    esp_gmf_event_cb        event_func;     /*!< Callback function for task events */
+    esp_gmf_event_state_t   state;          /*!< Current state of the task */
 
     /* Protect */
-    esp_gmf_task_config_t   thread;         /*!< Configuration settings for the task. */
-    void                   *ctx;            /*!< Context associated with the task. */
+    esp_gmf_task_config_t   thread;         /*!< Configuration settings for the task */
+    void                   *ctx;            /*!< Context associated with the task */
 
     /* Private */
-    void                   *oal_thread;     /*!< Handle to the thread. */
-    void                   *lock;           /*!< Mutex lock for task synchronization. */
-    void                   *block_sem;      /*!< Semaphore for blocking tasks. */
-    void                   *wait_sem;       /*!< Semaphore for task waiting. */
-    void                   *api_sync_sem;   /*!< Semaphore for API synchronization. */
-    int                     api_sync_time;  /*!< Timeout for synchronization. */
+    void                   *oal_thread;     /*!< Handle to the thread */
+    void                   *lock;           /*!< Mutex lock for task synchronization */
+    void                   *block_sem;      /*!< Semaphore for blocking tasks */
+    void                   *wait_sem;       /*!< Semaphore for task waiting */
+    void                   *api_sync_sem;   /*!< Semaphore for API synchronization */
+    int                     api_sync_time;  /*!< Timeout for synchronization */
 
-    uint8_t                 _task_run : 1;  /*!< Internal flag for task execution. */
-    uint8_t                 _running  : 1;  /*!< Internal flag for task running state. */
-    uint8_t                 _pause    : 1;  /*!< Internal flag for task pause state. */
-    uint8_t                 _stop     : 1;  /*!< Internal flag for task stop state. */
-    uint8_t                 _destroy  : 1;  /*!< Internal flag for task destruction. */
+    uint8_t                 _task_run : 1;  /*!< Internal flag for task execution */
+    uint8_t                 _running  : 1;  /*!< Internal flag for task running state */
+    uint8_t                 _pause    : 1;  /*!< Internal flag for task pause state */
+    uint8_t                 _stop     : 1;  /*!< Internal flag for task stop state */
+    uint8_t                 _destroy  : 1;  /*!< Internal flag for task destruction */
 } esp_gmf_task_t;
 
 /**
@@ -93,10 +93,10 @@ typedef struct _esp_gmf_task {
  *         task name, user context, and callback function.
  */
 typedef struct {
-    esp_gmf_task_config_t  thread;  /*!< Configuration settings for the task thread. */
-    const char            *name;    /*!< Name of the task. */
-    void                  *ctx;     /*!< User context. */
-    esp_gmf_event_cb       cb;      /*!< Callback function for task events. */
+    esp_gmf_task_config_t  thread;  /*!< Configuration settings for the task thread */
+    const char            *name;    /*!< Name of the task */
+    void                  *ctx;     /*!< User context */
+    esp_gmf_event_cb       cb;      /*!< Callback function for task events */
 } esp_gmf_task_cfg_t;
 
 #define DEFAULT_ESP_GMF_STACK_SIZE (4 * 1024)

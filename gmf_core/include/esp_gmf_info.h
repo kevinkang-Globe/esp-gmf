@@ -45,7 +45,7 @@ typedef struct {
  */
 typedef struct {
     int       sample_rates;  /*!< Sample rate */
-    int       bps;           /*!< Bits per second */
+    int       bitrate;       /*!< Bits per second */
     uint16_t  channels : 8;  /*!< Number of channels */
     uint16_t  bits     : 8;  /*!< Bit depth */
 } esp_gmf_info_sound_t;
@@ -54,11 +54,11 @@ typedef struct {
  * @brief  Structure representing sound-related information for a GMF element
  */
 typedef struct {
-    uint32_t  codec;   /*!< Video codec type */
-    uint16_t  height;  /*!< Height of the picture */
-    uint16_t  width;   /*!< Width of the picture */
-    uint16_t  fps;     /*!< Frame per sample */
-    uint32_t  bps;     /*!< Bits per sample */
+    uint32_t  codec;    /*!< Video codec type */
+    uint16_t  height;   /*!< Height of the picture */
+    uint16_t  width;    /*!< Width of the picture */
+    uint16_t  fps;      /*!< Frame per sample */
+    uint32_t  bitrate;  /*!< Bits per second */
 } esp_gmf_info_video_t;
 
 /**
