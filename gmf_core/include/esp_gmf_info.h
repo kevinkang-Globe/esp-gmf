@@ -45,7 +45,7 @@ typedef struct {
  */
 typedef struct {
     int       sample_rates;  /*!< Sample rate */
-    int       bps;           /*!< Bits per sample */
+    int       bps;           /*!< Bits per second */
     uint16_t  channels : 8;  /*!< Number of channels */
     uint16_t  bits     : 8;  /*!< Bit depth */
 } esp_gmf_info_sound_t;

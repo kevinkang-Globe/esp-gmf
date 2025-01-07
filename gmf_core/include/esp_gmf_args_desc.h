@@ -390,7 +390,7 @@ static inline esp_gmf_err_t esp_gmf_args_set_value(esp_gmf_args_desc_t *head, co
 {
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_args_desc_found(head, name, &set_args);
-    ESP_LOGI("GMF_ARG", "Set, %p", set_args);
+    ESP_LOGD("GMF_ARG", "Set, %p", set_args);
     if (set_args) {
         ESP_LOGD("GMF_ARG", "Set value %s, offset:%d, sz:%ld", set_args->name, set_args->offset, set_args->size);
         memcpy(buf + set_args->offset, value, set_args->size);

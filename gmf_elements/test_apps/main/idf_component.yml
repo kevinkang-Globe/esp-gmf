@@ -1,0 +1,7 @@
+dependencies:
+  espressif/gmf_audio:
+    path: ../../gmf_audio
+  espressif/gmf_io:
+    path: ../../gmf_io
+  espressif/gmf_misc:
+    path: ../../gmf_misc

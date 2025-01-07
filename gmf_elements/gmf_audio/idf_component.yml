@@ -1,0 +1,12 @@
+version: "0.5.0"
+description: Espressif GMF Elements Audio Module
+
+dependencies:
+  espressif/esp_audio_codec:
+    version: "~2.0.0"
+  espressif/esp_audio_effects:
+    version: "~1.0.0"
+  espressif/gmf_core:
+    version: "*"
+    git: "https://github.com/espressif/esp-gmf.git"
+    path: "gmf_core"
