@@ -375,8 +375,8 @@ esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t *han
     esp_gmf_eq_t *eq = esp_gmf_oal_calloc(1, sizeof(esp_gmf_eq_t));
     ESP_GMF_MEM_VERIFY(TAG, eq, {return ESP_GMF_ERR_MEMORY_LACK;}, "eq", sizeof(esp_gmf_eq_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)eq;
-    obj->new = esp_gmf_eq_new;
-    obj->delete = esp_gmf_eq_destroy;
+    obj->new_obj = esp_gmf_eq_new;
+    obj->del_obj = esp_gmf_eq_destroy;
     esp_ae_eq_filter_para_t *tmp = NULL;
     if (config->para == NULL) {
         /// Provide default EQ parameters

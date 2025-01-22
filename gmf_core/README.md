@@ -51,7 +51,7 @@ graph LR
 The input and output ports of GMF-Element are represented by GMF-Port. GMF-Port manages the payload buffer based on the connection status of the elements and the requested data size, facilitating the transfer of payload data between elements. GMF-Element is responsible for managing GMF-Port's connection capabilities and the number of connections.
 
 ## GMF-DataBus
-`GMF-DataBus` is GMF-Core's data access module, which employs an Acquire-Release method for data access. `GMF-DataBus` supports both zero-copy and copy-based data transfer, as well as blocking and non-blocking access modes. Currently, GMF-Core supports three buffer types: `Ringbuffer`, `PBuffer`, and `BlockBuffer`. `PBuffer` and `BlockBuffer` use zero-copy transfer, while `Ringbuffer` and `BlockBuffer` provide blocking interfaces.
+`GMF-DataBus` is GMF-Core's data access module, which employs an Acquire-Release method for data access. `GMF-DataBus` supports both zero-copy and copy-based data transfer, as well as blocking and non-blocking access modes. Currently, GMF-Core supports four buffer types: `Ringbuffer`, `PBuffer`, `FIFO`, and `BlockBuffer`. `PBuffer`, `FIFO`,  and `BlockBuffer` use zero-copy transfer, while `Ringbuffer`, `FIFO`, and `BlockBuffer` provide blocking interfaces.
 
 ## GMF-Task
 `GMF-Task` is the thread that executes jobs, taking jobs from a list and running them in serial. Once all jobs in the list have been processed, it enters an idle state until new jobs are added. Jobs are the smallest unit of work and are categorized into single-use jobs or continuous jobs.

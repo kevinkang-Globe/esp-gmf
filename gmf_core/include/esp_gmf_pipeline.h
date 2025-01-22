@@ -373,14 +373,14 @@ esp_gmf_err_t esp_gmf_pipeline_get_out(esp_gmf_pipeline_handle_t pipeline, esp_g
  *        Because of the pineline in will be overwritten and the replaced MUST release by user
  *
  * @param[in]  pipeline  GMF pipeline handle
- * @param[in]  new       New input I/O handle
+ * @param[in]  new_one   New input I/O handle
  *
  * @return
  *       - ESP_GMF_ERR_OK             On success
  *       - ESP_GMF_ERR_INVALID_ARG    If the pipeline handle or new I/O handle is invalid
  *       - ESP_GMF_ERR_INVALID_STATE  The pipeline is running, replace is not safe
  */
-esp_gmf_err_t esp_gmf_pipeline_replace_in(esp_gmf_pipeline_handle_t pipeline, esp_gmf_io_handle_t new);
+esp_gmf_err_t esp_gmf_pipeline_replace_in(esp_gmf_pipeline_handle_t pipeline, esp_gmf_io_handle_t new_one);
 
 /**
  * @brief  Replace the output I/O of a GMF pipeline with a new one
@@ -389,14 +389,14 @@ esp_gmf_err_t esp_gmf_pipeline_replace_in(esp_gmf_pipeline_handle_t pipeline, es
  *        Because of the pineline in will be overwritten and the replaced MUST release by user
  *
  * @param[in]  pipeline  GMF pipeline handle
- * @param[in]  new       New output I/O handle
+ * @param[in]  new_one   New output I/O handle
  *
  * @return
  *       - ESP_GMF_ERR_OK             On success
  *       - ESP_GMF_ERR_INVALID_ARG    If the pipeline handle or new I/O port handle is invalid
  *       - ESP_GMF_ERR_INVALID_STATE  The pipeline is running, replace is not safe
  */
-esp_gmf_err_t esp_gmf_pipeline_replace_out(esp_gmf_pipeline_handle_t pipeline, esp_gmf_io_handle_t new);
+esp_gmf_err_t esp_gmf_pipeline_replace_out(esp_gmf_pipeline_handle_t pipeline, esp_gmf_io_handle_t new_one);
 
 /**
  * @brief  Get the header GMF element in the pipeline

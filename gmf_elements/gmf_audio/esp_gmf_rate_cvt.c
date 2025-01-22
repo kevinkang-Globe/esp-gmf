@@ -230,8 +230,8 @@ esp_gmf_err_t esp_gmf_rate_cvt_init(esp_ae_rate_cvt_cfg_t *config, esp_gmf_obj_h
     esp_gmf_rate_cvt_t *rate_cvt = esp_gmf_oal_calloc(1, sizeof(esp_gmf_rate_cvt_t));
     ESP_GMF_MEM_VERIFY(TAG, rate_cvt, {return ESP_GMF_ERR_MEMORY_LACK;}, "rate conversion", sizeof(esp_gmf_rate_cvt_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)rate_cvt;
-    obj->new = esp_gmf_rate_cvt_new;
-    obj->delete = esp_gmf_rate_cvt_destroy;
+    obj->new_obj = esp_gmf_rate_cvt_new;
+    obj->del_obj = esp_gmf_rate_cvt_destroy;
     esp_ae_rate_cvt_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto RATE_CVT_INIT_FAIL;},
                        "rate conversion configuration", sizeof(*config));

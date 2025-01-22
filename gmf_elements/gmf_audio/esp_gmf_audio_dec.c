@@ -278,8 +278,8 @@ esp_gmf_err_t esp_gmf_audio_dec_init(esp_audio_simple_dec_cfg_t *config, esp_gmf
     esp_gmf_audio_dec_t *dec_hd = esp_gmf_oal_calloc(1, sizeof(esp_gmf_audio_dec_t));
     ESP_GMF_MEM_VERIFY(TAG, dec_hd, {return ESP_GMF_ERR_MEMORY_LACK;}, "audio decoder", sizeof(esp_gmf_audio_dec_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)dec_hd;
-    obj->new = esp_gmf_audio_dec_new;
-    obj->delete = esp_gmf_audio_dec_destroy;
+    obj->new_obj = esp_gmf_audio_dec_new;
+    obj->del_obj = esp_gmf_audio_dec_destroy;
     esp_audio_simple_dec_cfg_t *cfg = NULL;
     dupl_esp_audio_simple_cfg(config, &cfg);
     ESP_GMF_CHECK(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto ES_DEC_FAIL;}, "Failed to allocate audio decoder configuration");

@@ -239,8 +239,8 @@ esp_gmf_err_t esp_gmf_interleave_init(esp_gmf_interleave_cfg *config, esp_gmf_ob
     esp_gmf_interleave_t *interleave = esp_gmf_oal_calloc(1, sizeof(esp_gmf_interleave_t));
     ESP_GMF_MEM_VERIFY(TAG, interleave, {return ESP_GMF_ERR_MEMORY_LACK;}, "interleave", sizeof(esp_gmf_interleave_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)interleave;
-    obj->new = esp_gmf_interleave_new;
-    obj->delete = esp_gmf_interleave_destroy;
+    obj->new_obj = esp_gmf_interleave_new;
+    obj->del_obj = esp_gmf_interleave_destroy;
     esp_gmf_interleave_cfg *new_config = NULL;
     dupl_esp_ae_interleave_cfg(config, &new_config);
     ESP_GMF_CHECK(TAG, new_config, {ret = ESP_GMF_ERR_MEMORY_LACK; goto INTLV_INIT_FAIL;}, "Failed to allocate interleave configuration");

@@ -369,10 +369,12 @@ static inline void *NEW_ESP_GMF_PORT(int dir, int type, void *acq, void *release
 {
     esp_gmf_port_config_t port_config = {
         .dir = (esp_gmf_port_dir_t)dir,
-        .type = type,
-        .ops.acquire = (port_acquire)acq,
-        .ops.release = (port_release)release,
-        .ops.del = (port_free)del,
+        .type = (esp_gmf_port_type_t)type,
+        .ops = {
+            .acquire = (port_acquire)acq,
+            .release = (port_release)release,
+            .del = (port_free)del,
+        },
         .ctx = ctx,
         .buf_length = length,
         .wait_ticks = ticks_ms,

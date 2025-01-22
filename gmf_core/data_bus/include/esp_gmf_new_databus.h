@@ -69,6 +69,19 @@ int esp_gmf_db_new_block(int num, int item_cnt, esp_gmf_db_handle_t *h);
  */
 int esp_gmf_db_new_pbuf(int num, int item_cnt, esp_gmf_db_handle_t *h);
 
+/**
+ * @brief  Create a new FIFO buffer with the specified item count and size
+ *
+ * @param[in]   num       num Maximum number of items
+ * @param[in]   item_cnt  Reserved for future use (currently unused)
+ * @param[out]  h         Pointer to store the handle of the GMF data bus
+ *
+ * @return
+ *       - 0    On success
+ *       - < 0  Negative value if an error occurs
+ */
+int esp_gmf_db_new_fifo(int num, int item_cnt, esp_gmf_db_handle_t *h);
+
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

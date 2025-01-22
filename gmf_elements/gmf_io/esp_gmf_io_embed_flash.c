@@ -163,8 +163,8 @@ esp_gmf_err_t esp_gmf_io_embed_flash_init(embed_flash_io_cfg_t *config, esp_gmf_
     embed_flash->base.type = ESP_GMF_IO_TYPE_BYTE;
     embed_flash->max_files = config->max_files;
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)embed_flash;
-    obj->new = _embed_flash_new;
-    obj->delete = _embed_flash_destroy;
+    obj->new_obj = _embed_flash_new;
+    obj->del_obj = _embed_flash_destroy;
     embed_flash_io_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto _embed_fail;},
                        "embed flash stream configuration", sizeof(*config));

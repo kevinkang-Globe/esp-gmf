@@ -287,8 +287,8 @@ esp_gmf_err_t esp_gmf_alc_init(esp_ae_alc_cfg_t *config, esp_gmf_obj_handle_t *h
     esp_gmf_alc_t *alc = esp_gmf_oal_calloc(1, sizeof(esp_gmf_alc_t));
     ESP_GMF_MEM_VERIFY(TAG, alc, {return ESP_GMF_ERR_MEMORY_LACK;}, "ALC", sizeof(esp_gmf_alc_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)alc;
-    obj->new = esp_gmf_alc_new;
-    obj->delete = esp_gmf_alc_destroy;
+    obj->new_obj = esp_gmf_alc_new;
+    obj->del_obj = esp_gmf_alc_destroy;
     esp_ae_alc_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto ALC_INIT_FAIL;}, "alc configuration", sizeof(*config));
     memcpy(cfg, config, sizeof(*config));

@@ -343,8 +343,8 @@ esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_
     esp_gmf_sonic_t *sonic = esp_gmf_oal_calloc(1, sizeof(esp_gmf_sonic_t));
     ESP_GMF_MEM_VERIFY(TAG, sonic, {return ESP_GMF_ERR_MEMORY_LACK;}, "sonic", sizeof(esp_gmf_sonic_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)sonic;
-    obj->new = esp_gmf_sonic_new;
-    obj->delete = esp_gmf_sonic_destroy;
+    obj->new_obj = esp_gmf_sonic_new;
+    obj->del_obj = esp_gmf_sonic_destroy;
     esp_ae_sonic_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto SONIC_INIT_FAIL;}, "sonic configuration", sizeof(*config));
     memcpy(cfg, config, sizeof(*config));
