@@ -252,8 +252,8 @@ esp_gmf_err_t esp_gmf_ch_cvt_init(esp_ae_ch_cvt_cfg_t *config, esp_gmf_obj_handl
     esp_gmf_ch_cvt_t *ch_cvt = esp_gmf_oal_calloc(1, sizeof(esp_gmf_ch_cvt_t));
     ESP_GMF_MEM_VERIFY(TAG, ch_cvt, {return ESP_GMF_ERR_MEMORY_LACK;}, "channel conversion", sizeof(esp_gmf_ch_cvt_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)ch_cvt;
-    obj->new = esp_gmf_ch_cvt_new;
-    obj->delete = esp_gmf_ch_cvt_destroy;
+    obj->new_obj = esp_gmf_ch_cvt_new;
+    obj->del_obj = esp_gmf_ch_cvt_destroy;
     esp_ae_ch_cvt_cfg_t *new_cfg = NULL;
     dupl_esp_ae_ch_cvt_cfg(config, &new_cfg);
     ESP_GMF_CHECK(TAG, new_cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto CH_CVT_INIT_FAIL;}, "Failed to allocate channel conversion configuration");

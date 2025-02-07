@@ -137,8 +137,8 @@ esp_gmf_err_t fake_io_init(fake_io_cfg_t *config, esp_gmf_io_handle_t *io)
 
     int ret = esp_gmf_obj_set_tag(obj, (config->name == NULL ? "file" : config->name));
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto _file_fail, "Failed set OBJ tag");
-    obj->new = fake_io_new;
-    obj->delete = _file_delete;
+    obj->new_obj = fake_io_new;
+    obj->del_obj = _file_delete;
 
     *io = obj;
     ESP_LOGI(TAG, "Init Fake IO,%s-%p", OBJ_GET_TAG(obj), file_io);

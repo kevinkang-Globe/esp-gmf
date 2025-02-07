@@ -311,8 +311,8 @@ esp_gmf_err_t esp_gmf_task_init(void *config, esp_gmf_task_handle_t *tsk_hd)
     ESP_GMF_RET_ON_ERROR(TAG, ret, goto _el_init_failed, "Failed set OBJ configuration");
     ret = esp_gmf_obj_set_tag(obj, tag);
     ESP_GMF_RET_ON_ERROR(TAG, ret, goto _el_init_failed, "Failed set OBJ tag");
-    obj->new = esp_gmf_task_init;
-    obj->delete = esp_gmf_task_deinit;
+    obj->new_obj = esp_gmf_task_init;
+    obj->del_obj = esp_gmf_task_deinit;
 
     if (cfg->thread.stack > 0) {
         handle->thread.stack = cfg->thread.stack;

@@ -42,12 +42,12 @@ typedef void *esp_gmf_obj_handle_t;
  *         information.
  */
 typedef struct esp_gmf_obj_ {
-    struct esp_gmf_obj_ *prev;                                       /*!< Pointer to the previous GMF object in the list */
-    struct esp_gmf_obj_ *next;                                       /*!< Pointer to the next GMF object in the list */
-    esp_gmf_err_t (*new)(void *cfg, esp_gmf_obj_handle_t *new_obj);  /*!< Function pointer to create a new object */
-    esp_gmf_err_t (*delete)(esp_gmf_obj_handle_t obj);               /*!< Function pointer to delete an object */
-    const char          *tag;                                        /*!< Pointer to a tag or identifier associated with the object */
-    void                *cfg;                                        /*!< Pointer to the configuration data for the object */
+    struct esp_gmf_obj_ *prev;                                           /*!< Pointer to the previous GMF object in the list */
+    struct esp_gmf_obj_ *next;                                           /*!< Pointer to the next GMF object in the list */
+    esp_gmf_err_t (*new_obj)(void *cfg, esp_gmf_obj_handle_t *new_obj);  /*!< Function pointer to create a new object */
+    esp_gmf_err_t (*del_obj)(esp_gmf_obj_handle_t obj);                  /*!< Function pointer to delete an object */
+    const char          *tag;                                            /*!< Pointer to a tag or identifier associated with the object */
+    void                *cfg;                                            /*!< Pointer to the configuration data for the object */
 } esp_gmf_obj_t;
 
 #define OBJ_GET_TAG(x) ((x) ? ((((esp_gmf_obj_t *)x)->tag) ? ((esp_gmf_obj_t *)x)->tag : "NULL") : "NULL")

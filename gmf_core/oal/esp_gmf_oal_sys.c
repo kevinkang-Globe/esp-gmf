@@ -44,7 +44,7 @@ const char *task_state[] = {
     "invalid state"};
 
 /** @brief
- * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internel
+ * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internal
  */
 const char *task_stack[] = {"Extr", "Intr"};
 
@@ -55,9 +55,9 @@ int esp_gmf_oal_sys_get_tick_by_time_ms(int ms)
 
 int64_t esp_gmf_oal_sys_get_time_ms(void)
 {
-    struct timeval te;
-    gettimeofday(&te, NULL);
-    int64_t milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
+    struct timeval tmp;
+    gettimeofday(&tmp, NULL);
+    int64_t milliseconds = tmp.tv_sec * 1000LL + tmp.tv_usec / 1000;
     return milliseconds;
 }
 
@@ -91,7 +91,7 @@ esp_gmf_err_t esp_gmf_oal_sys_get_real_time_stats(int elapsed_time_ms)
     // Allocate array to store tasks states post delay
     end_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
     end_array = esp_gmf_oal_malloc(sizeof(TaskStatus_t) * end_array_size);
-    ESP_GMF_MEM_CHECK(TAG, start_array, {
+    ESP_GMF_MEM_CHECK(TAG, end_array, {
         ret = ESP_GMF_ERR_MEMORY_LACK;
         goto exit;
     });
@@ -159,7 +159,7 @@ exit:  // Common return path
     }
     return ret;
 #else
-    ESP_LOGW(TAG, "Please enbale `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
+    ESP_LOGW(TAG, "Please enable `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
     return ESP_GMF_ERR_FAIL;
 #endif  /* (CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID && CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS) */
 }

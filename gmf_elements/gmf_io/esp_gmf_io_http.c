@@ -495,8 +495,8 @@ esp_gmf_err_t esp_gmf_io_http_init(http_io_cfg_t *config, esp_gmf_io_handle_t *i
     ESP_GMF_MEM_VERIFY(TAG, http, return ESP_GMF_ERR_MEMORY_LACK,
                        "http stream", sizeof(http_stream_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)http;
-    obj->new = _http_new;
-    obj->delete = _http_destroy;
+    obj->new_obj = _http_new;
+    obj->del_obj = _http_destroy;
     http_io_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto HTTP_FAIL;},
                        "http stream configuration", sizeof(*config));

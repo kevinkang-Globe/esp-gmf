@@ -144,8 +144,8 @@ esp_gmf_err_t esp_gmf_copier_init(esp_gmf_copier_cfg_t *config, esp_gmf_obj_hand
                        "copier", sizeof(esp_gmf_copier_t));
     copier->copy_num = config->copy_num;
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)copier;
-    obj->new = esp_gmf_copier_new;
-    obj->delete = esp_gmf_copier_destroy;
+    obj->new_obj = esp_gmf_copier_new;
+    obj->del_obj = esp_gmf_copier_destroy;
     esp_gmf_err_t ret = esp_gmf_obj_set_config(obj, config, sizeof(*config));
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto COPIER_FAIL, "Failed set OBJ configuration");
     ret = esp_gmf_obj_set_tag(obj, "copier");

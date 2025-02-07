@@ -240,8 +240,8 @@ esp_gmf_err_t esp_gmf_deinterleave_init(esp_gmf_deinterleave_cfg *config, esp_gm
     esp_gmf_deinterleave_t *deinterleave = esp_gmf_oal_calloc(1, sizeof(esp_gmf_deinterleave_t));
     ESP_GMF_MEM_VERIFY(TAG, deinterleave, {return ESP_GMF_ERR_MEMORY_LACK;}, "deinterleave", sizeof(esp_gmf_deinterleave_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)deinterleave;
-    obj->new = esp_gmf_deinterleave_new;
-    obj->delete = esp_gmf_deinterleave_destroy;
+    obj->new_obj = esp_gmf_deinterleave_new;
+    obj->del_obj = esp_gmf_deinterleave_destroy;
     esp_gmf_deinterleave_cfg *new_config = NULL;
     dupl_esp_ae_deinterleave_cfg(config, &new_config);
     ESP_GMF_CHECK(TAG, new_config, {ret = ESP_GMF_ERR_MEMORY_LACK; goto DEINTLV_INIT_FAIL;}, "Failed to allocate deinterleave configuration");

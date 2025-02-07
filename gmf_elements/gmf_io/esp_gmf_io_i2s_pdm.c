@@ -203,8 +203,8 @@ esp_gmf_err_t esp_gmf_io_i2s_pdm_init(i2s_pdm_io_cfg_t *config, esp_gmf_io_handl
     i2s_pdm_io->base.dir = config->dir;
     i2s_pdm_io->base.type = ESP_GMF_IO_TYPE_BYTE;
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)i2s_pdm_io;
-    obj->new = _i2s_pdm_new;
-    obj->delete = _i2s_pdm_delete;
+    obj->new_obj = _i2s_pdm_new;
+    obj->del_obj = _i2s_pdm_delete;
     i2s_pdm_io_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto _i2s_pdm_fail;},
                        "I2s pdm stream configuration", sizeof(*config));

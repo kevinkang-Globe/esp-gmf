@@ -340,8 +340,8 @@ esp_gmf_err_t esp_gmf_audio_enc_init(esp_audio_enc_config_t *config, esp_gmf_obj
     ESP_GMF_MEM_VERIFY(TAG, audio_enc, {return ESP_GMF_ERR_MEMORY_LACK;},
                        "audio encoder", sizeof(esp_gmf_audio_enc_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)audio_enc;
-    obj->new = esp_gmf_audio_enc_new;
-    obj->delete = esp_gmf_audio_enc_destroy;
+    obj->new_obj = esp_gmf_audio_enc_new;
+    obj->del_obj = esp_gmf_audio_enc_destroy;
     esp_audio_enc_config_t *new_config = NULL;
     dupl_esp_gmf_audio_enc_cfg(config, &new_config);
     ESP_GMF_CHECK(TAG, new_config, {ret = ESP_GMF_ERR_MEMORY_LACK; goto ES_ENC_FAIL;}, "Failed to duplicate audio encoder configuration");

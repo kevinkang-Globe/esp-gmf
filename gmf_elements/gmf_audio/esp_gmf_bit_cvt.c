@@ -239,8 +239,8 @@ esp_gmf_err_t esp_gmf_bit_cvt_init(esp_ae_bit_cvt_cfg_t *config, esp_gmf_obj_han
     ESP_GMF_MEM_VERIFY(TAG, bit_cvt, {return ESP_GMF_ERR_MEMORY_LACK;},
                        "bit conversion", sizeof(esp_gmf_bit_cvt_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)bit_cvt;
-    obj->new = esp_gmf_bit_cvt_new;
-    obj->delete = esp_gmf_bit_cvt_destroy;
+    obj->new_obj = esp_gmf_bit_cvt_new;
+    obj->del_obj = esp_gmf_bit_cvt_destroy;
     esp_ae_bit_cvt_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto BIT_CVT_INIT_FAIL;},
                        "bit conversion configuration", sizeof(*config));

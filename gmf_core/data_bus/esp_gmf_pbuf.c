@@ -35,7 +35,7 @@
 
 static const char *TAG = "ESP_GMF_PBUF";
 
-// #define THREAD_SAFE
+#define THREAD_SAFE
 
 #ifdef THREAD_SAFE
 #define pbuf_lock(x)   esp_gmf_oal_mutex_lock(x)
@@ -108,7 +108,7 @@ esp_gmf_err_t esp_gmf_pbuf_destroy(esp_gmf_pbuf_handle_t handle)
 {
     ESP_GMF_MEM_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG;);
     esp_gmf_pbuf_t *pbuf = (esp_gmf_pbuf_t *)handle;
-    pbuf_lock(handle->lock);
+    pbuf_lock(pbuf->lock);
     while (pbuf->empty_head) {
         pbuf_list_t *tmp = pbuf->empty_head->next;
         if (pbuf->empty_head->block.buf) {
@@ -139,7 +139,7 @@ esp_gmf_err_io_t esp_gmf_pbuf_acquire_read(esp_gmf_pbuf_handle_t handle, esp_gmf
         return ESP_GMF_IO_OK;
     }
     if (pbuf->fill_head == NULL) {
-        ESP_LOGE(TAG, "ACQ_RD, fill head is empty, p:%p", pbuf);
+        ESP_LOGD(TAG, "ACQ_RD, fill head is empty, p:%p", pbuf);
         return ESP_GMF_IO_FAIL;
     }
     pbuf_lock(pbuf->lock);
@@ -150,8 +150,8 @@ esp_gmf_err_io_t esp_gmf_pbuf_acquire_read(esp_gmf_pbuf_handle_t handle, esp_gmf
     blk->is_last = pbuf->fill_head->block.is_last;
 
     pbuf_unlock(pbuf->lock);
-    ESP_LOGD(TAG, "ACQ_RD, p:%p, h:%p b:%p, l:%d, vld:%d,last:%d", pbuf,
-             pbuf->fill_head, blk->buf, blk->buf_length, blk->valid_size, blk->is_last);
+    ESP_LOGD(TAG, "ACQ_RD, p:%p, h:%p b:%p, l:%d, vld:%d,last:%d, c:%d", pbuf,
+             pbuf->fill_head, blk->buf, blk->buf_length, blk->valid_size, blk->is_last, pbuf->buf_cnt);
     return blk->valid_size;
 }
 
@@ -180,12 +180,13 @@ esp_gmf_err_io_t esp_gmf_pbuf_release_read(esp_gmf_pbuf_handle_t handle, esp_gmf
         blk->buf = NULL;
         blk->is_last = 0;
         blk->valid_size = 0;
+        pbuf->buf_cnt--;
     } else {
         ESP_LOGE(TAG, "RLS_RD, the buffer is not belong to filled buffer, p:%p, buf:%p", pbuf, blk->buf);
         pbuf_unlock(pbuf->lock);
         return ESP_GMF_IO_FAIL;
     }
-    ESP_LOGD(TAG, "RLS_RD, p:%p, head:%p, b:%p, l:%d, vld:%d", pbuf, pbuf->fill_head, blk->buf, blk->buf_length, blk->valid_size);
+    ESP_LOGD(TAG, "RLS_RD, p:%p, head:%p, e:%p, b:%p, l:%d, vld:%d, c:%d", pbuf, pbuf->fill_head, pbuf->empty_head, blk->buf, blk->buf_length, blk->valid_size, pbuf->buf_cnt);
     pbuf_unlock(pbuf->lock);
     return ESP_GMF_IO_OK;
 }
@@ -216,7 +217,6 @@ esp_gmf_err_io_t esp_gmf_pbuf_acquire_write(esp_gmf_pbuf_handle_t handle, esp_gm
         new_pbuf->block.buf_length = wanted_size;
         new_pbuf->block.valid_size = wanted_size;
         new_pbuf->block.is_last = 0;
-        pbuf->buf_cnt++;
         pbuf->empty_head = new_pbuf;
         pbuf->empty_tail = new_pbuf;
         ESP_LOGD(TAG, "ACQ_WR, w:%ld, new buf:%p, l:%d, self:%p, next:%p", wanted_size, new_pbuf->block.buf,
@@ -237,8 +237,9 @@ esp_gmf_err_io_t esp_gmf_pbuf_acquire_write(esp_gmf_pbuf_handle_t handle, esp_gm
     if (wanted_size <= blk->buf_length) {
         blk->valid_size = wanted_size;
     }
-    ESP_LOGD(TAG, "ACQ_WR, w:%ld, b:%p, l:%d, vld:%d self:%p, nxt:%p", wanted_size, blk->buf,
-             blk->buf_length, blk->valid_size, pbuf->empty_head, pbuf->empty_head->next);
+    pbuf->buf_cnt++;
+    ESP_LOGD(TAG, "ACQ_WR, w:%ld, b:%p, l:%d, vld:%d self:%p, nxt:%p, c:%d", wanted_size, blk->buf,
+             blk->buf_length, blk->valid_size, pbuf->empty_head, pbuf->empty_head->next, pbuf->buf_cnt);
     pbuf_unlock(pbuf->lock);
     return wanted_size;
 }
@@ -248,6 +249,7 @@ esp_gmf_err_io_t esp_gmf_pbuf_release_write(esp_gmf_pbuf_handle_t handle, esp_gm
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_IO_FAIL);
     ESP_GMF_NULL_CHECK(TAG, blk, return ESP_GMF_IO_FAIL);
     esp_gmf_pbuf_t *pbuf = (esp_gmf_pbuf_t *)handle;
+
     pbuf_lock(pbuf->lock);
 
     if (pbuf->empty_head->block.buf == blk->buf) {
@@ -274,8 +276,8 @@ esp_gmf_err_io_t esp_gmf_pbuf_release_write(esp_gmf_pbuf_handle_t handle, esp_gm
         pbuf_unlock(pbuf->lock);
         return ESP_GMF_IO_FAIL;
     }
-    ESP_LOGD(TAG, "RLS_WR, p:%p, h:%p, b:%p, l:%d, vld:%d,last:%d", pbuf, pbuf->empty_head, blk->buf,
-             blk->buf_length, blk->valid_size, blk->is_last);
+    ESP_LOGD(TAG, "RLS_WR, p:%p, h:%p, b:%p, l:%d, vld:%d,last:%d, c:%d", pbuf, pbuf->empty_head, blk->buf,
+             blk->buf_length, blk->valid_size, blk->is_last, pbuf->buf_cnt);
     pbuf_unlock(pbuf->lock);
     return ESP_GMF_IO_OK;
 }
@@ -300,7 +302,7 @@ esp_gmf_err_t esp_gmf_pbuf_reset(esp_gmf_pbuf_handle_t handle)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_pbuf_t *pbuf = (esp_gmf_pbuf_t *)handle;
-    pbuf_lock(handle->lock);
+    pbuf_lock(pbuf->lock);
     pbuf->_is_write_done = 0;
     pbuf->_is_abort = 0;
     pbuf_unlock(pbuf->lock);

@@ -242,8 +242,8 @@ esp_gmf_err_t esp_gmf_io_file_init(file_io_cfg_t *config, esp_gmf_io_handle_t *i
     file_io->base.dir = config->dir;
     file_io->base.type = ESP_GMF_IO_TYPE_BYTE;
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)file_io;
-    obj->new = _file_new;
-    obj->delete = _file_delete;
+    obj->new_obj = _file_new;
+    obj->del_obj = _file_delete;
     file_io_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto _file_fail;},
                        "file stream configuration", sizeof(*config));

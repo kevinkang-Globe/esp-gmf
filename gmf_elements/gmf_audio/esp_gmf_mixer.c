@@ -377,8 +377,8 @@ esp_gmf_err_t esp_gmf_mixer_init(esp_ae_mixer_cfg_t *config, esp_gmf_obj_handle_
     esp_gmf_mixer_t *mixer = esp_gmf_oal_calloc(1, sizeof(esp_gmf_mixer_t));
     ESP_GMF_MEM_VERIFY(TAG, mixer, {return ESP_GMF_ERR_MEMORY_LACK;}, "mixer", sizeof(esp_gmf_mixer_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)mixer;
-    obj->new = esp_gmf_mixer_new;
-    obj->delete = esp_gmf_mixer_destroy;
+    obj->new_obj = esp_gmf_mixer_new;
+    obj->del_obj = esp_gmf_mixer_destroy;
     if (config->src_info == NULL) {
         // Provide default parameters
         config->src_info = esp_gmf_default_mixer_src_info;

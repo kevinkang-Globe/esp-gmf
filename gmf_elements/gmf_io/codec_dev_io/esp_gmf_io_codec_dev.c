@@ -160,8 +160,8 @@ esp_gmf_err_t esp_gmf_io_codec_dev_init(codec_dev_io_cfg_t *config, esp_gmf_io_h
     codec_dev_io->base.dir = config->dir;
     codec_dev_io->base.type = ESP_GMF_IO_TYPE_BYTE;
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)codec_dev_io;
-    obj->new = esp_gmf_io_codec_dev_new;
-    obj->delete = _codec_dev_delete;
+    obj->new_obj = esp_gmf_io_codec_dev_new;
+    obj->del_obj = _codec_dev_delete;
     codec_dev_io_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto _codec_dev_fail;},
                        "codec device configuration", sizeof(*config));
