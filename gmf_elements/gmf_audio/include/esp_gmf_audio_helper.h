@@ -63,14 +63,15 @@ esp_gmf_err_t esp_gmf_audio_helper_get_audio_type_by_uri(const char *uri, esp_au
  * @brief  Reconfigurate type of audio decoder by URI
  *
  * @param[in]   uri      URI of audio decoder
- * @param[out]  dec_cfg  Configuration of audio encoder
+ * @param[in]   info     Information of audio decoder
+ * @param[out]  dec_cfg  Configuration of audio decoder
  *
  * @return
  *       - ESP_GMF_ERR_OK           Success
  *       - ESP_GMF_ERR_NOT_SUPPORT  Not supported encoder type
  *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
  */
-esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_audio_simple_dec_cfg_t *dec_cfg);
+esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_gmf_info_sound_t *info, esp_audio_simple_dec_cfg_t *dec_cfg);
 
 #ifdef __cplusplus
 }

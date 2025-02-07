@@ -32,8 +32,8 @@ extern "C" {
  * @brief  Doubly linked list node structure
  */
 typedef struct esp_gmf_node_t {
-    struct esp_gmf_node_t *prev;  /*!< Pointer to the previous node in the linked list. */
-    struct esp_gmf_node_t *next;  /*!< Pointer to the next node in the linked list. */
+    struct esp_gmf_node_t *prev;  /*!< Pointer to the previous node in the linked list */
+    struct esp_gmf_node_t *next;  /*!< Pointer to the next node in the linked list */
 } esp_gmf_node_t;
 
 /**

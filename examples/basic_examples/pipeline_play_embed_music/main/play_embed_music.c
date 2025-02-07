@@ -86,7 +86,8 @@ void app_main(void)
     esp_gmf_io_embed_flash_set_context(in_io, (embed_item_info_t *)&g_esp_embed_tone[0], ESP_EMBED_TONE_URL_MAX);
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el);
-    esp_gmf_audio_helper_reconfig_dec_by_uri(esp_embed_tone_url[ESP_EMBED_TONE_FF_16B_1C_44100HZ_MP3], OBJ_GET_CFG(dec_el));
+    esp_gmf_info_sound_t info = {0};
+    esp_gmf_audio_helper_reconfig_dec_by_uri(esp_embed_tone_url[ESP_EMBED_TONE_FF_16B_1C_44100HZ_MP3], &info, OBJ_GET_CFG(dec_el));
 
     ESP_LOGI(TAG, "[ 3.2 ] Create gmf task, bind task to pipeline and load linked element jobs to the bind task");
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();

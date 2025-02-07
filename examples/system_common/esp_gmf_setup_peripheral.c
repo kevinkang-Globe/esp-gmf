@@ -427,6 +427,8 @@ void esp_gmf_setup_periph_wifi(void)
             .password = CONFIG_EXAMPLE_ESP_GMF_WIFI_PASS,
         },
     };
+    ESP_LOGI(TAG, "Connecting to AP with SSID:%s password:%s ...",
+                 CONFIG_EXAMPLE_ESP_GMF_WIFI_SSID, CONFIG_EXAMPLE_ESP_GMF_WIFI_PASS);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
@@ -434,7 +436,7 @@ void esp_gmf_setup_periph_wifi(void)
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
                                            WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
+        ESP_LOGI(TAG, "Connected to AP: SSID:%s, password:%s",
                  CONFIG_EXAMPLE_ESP_GMF_WIFI_SSID, CONFIG_EXAMPLE_ESP_GMF_WIFI_PASS);
     } else if (bits & WIFI_FAIL_BIT) {
         ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",

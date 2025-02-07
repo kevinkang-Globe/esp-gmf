@@ -93,7 +93,8 @@ void app_main(void)
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, { return; }, "Failed to new pipeline");
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el);
-    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test.mp3", OBJ_GET_CFG(dec_el));
+    esp_gmf_info_sound_t info = {0};
+    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test.mp3", &info, OBJ_GET_CFG(dec_el));
 
     ESP_LOGI(TAG, "[ 3.1 ] Set audio url to play");
     esp_gmf_pipeline_set_in_uri(pipe, "/sdcard/test.mp3");

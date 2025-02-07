@@ -218,7 +218,7 @@ esp_gmf_err_t esp_gmf_audio_helper_get_audio_type_by_uri(const char *uri, esp_au
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_audio_simple_dec_cfg_t *dec_cfg)
+esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_gmf_info_sound_t *info, esp_audio_simple_dec_cfg_t *dec_cfg)
 {
     if (strstr(uri, ".aac")) {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_AAC;
@@ -252,6 +252,24 @@ esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_audi
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_M4A;
     } else if (strstr(uri, ".ts")) {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_TS;
+    } else if (strstr(uri, ".opus")) {
+        dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_RAW_OPUS;
+        esp_opus_dec_cfg_t opus_cfg = ESP_OPUS_DEC_CONFIG_DEFAULT();
+        opus_cfg.channel= info->channels;
+        opus_cfg.sample_rate = info->sample_rates;
+        if ((dec_cfg->dec_cfg == NULL)
+            || (dec_cfg->cfg_size != sizeof(esp_opus_dec_cfg_t))) {
+            if (dec_cfg->dec_cfg) {
+                esp_gmf_oal_free(dec_cfg->dec_cfg);
+                dec_cfg->dec_cfg = NULL;
+                dec_cfg->cfg_size = 0;
+            }
+            dec_cfg->dec_cfg = esp_gmf_oal_calloc(1, sizeof(esp_opus_dec_cfg_t));
+            ESP_GMF_MEM_CHECK(TAG, dec_cfg->dec_cfg, return ESP_GMF_ERR_MEMORY_LACK;);
+            dec_cfg->cfg_size = sizeof(esp_opus_dec_cfg_t);
+            memcpy(dec_cfg->dec_cfg, &opus_cfg, dec_cfg->cfg_size);
+            ESP_LOGE(TAG, "IS HERE, %s", uri);
+        }
     } else {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_NONE;
         ESP_LOGW(TAG, "Not support for simple decoder, %s", uri);
