@@ -1,0 +1,5 @@
+dependencies:
+  espressif/gmf_misc:
+    git: "https://github.com/espressif/esp-gmf.git"
+    path: "gmf_elements/gmf_misc"
+    version: "*"

@@ -1,5 +1,11 @@
 version: "0.5.0"
 description: Espressif GMF Elements Audio Module
+url: https://github.com/espressif/esp-gmf/tree/main/gmf_elements/gmf_audio
+documentation: "https://github.com/espressif/esp-gmf/blob/main/gmf_elements/gmf_audio/README.md"
+issues: "https://github.com/espressif/esp-gmf/issues"
+
+tags:
+   - "gmf"
 
 dependencies:
   espressif/esp_audio_codec:

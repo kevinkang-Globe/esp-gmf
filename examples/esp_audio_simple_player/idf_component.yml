@@ -1,6 +1,7 @@
-version: "0.0.1"
+version: "0.5.0"
 description: Espressif audio simple player based on ESP-GMF
 url: https://github.com/espressif/esp-gmf/tree/main/examples/esp_audio_simple_player
+documentation: "https://github.com/espressif/esp-gmf/blob/main/examples/esp_audio_simple_player/README.md"
 issues: "https://github.com/espressif/esp-gmf/issues"
 
 tags:
@@ -9,8 +10,10 @@ tags:
 
 dependencies:
   espressif/gmf_audio:
-    path: ../../gmf_elements/gmf_audio
+    git: "https://github.com/espressif/esp-gmf.git"
+    path: "gmf_elements/gmf_audio"
     version: "*"
   espressif/gmf_io:
-    path: ../../gmf_elements/gmf_io
+    git: "https://github.com/espressif/esp-gmf.git"
+    path: "gmf_elements/gmf_io"
     version: "*"

@@ -1,3 +1,0 @@
-dependencies:
-  espressif/gmf_misc:
-    path: ../../../../gmf_elements/gmf_misc
