@@ -7,19 +7,19 @@ ESP-GMF 包含 GMF-Core、 GMF-Elements 和 GMF-Examples 三个模块。
 
 - GMF-Core 是 ESP-GMF 软件框架的核心，有 GMF-Element、GMF-Pipeline、GMF-Task 等主要部件。
 - GMF-Elements 是基于 GMF-Core 实现的各种具体功能 element，比如编解码算法、音效处理算法等。
-- GMF-Examples 提供如何使用 GMF-Pipeline 实现简单功能的示例，比如播放 flash 或 SD 卡中的音乐，同时还有基于 GMF-Pipeline 实现的 High Level 功能的组件示例，比如 **Audio Simple Player** 是一个简单音频解码播放器。
+- GMF-Examples 提供如何使用 GMF-Pipeline 实现简单功能的示例，比如播放 flash 或 SD 卡中的音乐，同时还有基于 GMF-Pipeline 实现的 High Level 功能的组件示例，比如 **ESP Audio Simple Player** 是一个简单音频解码播放器。
 
 # ESP-GMF 组件介绍
 
-ESP-GMF 各个功能模块以组件的形式存在，目前包含 [GMF-Core](./gmf_core/README_CN.md)、[GMF-Audio](./gmf_elements/gmf_audio/README_CN.md)、GMF-Image、[GMF-Misc](./gmf_elements/gmf_misc/README_CN.md) 和 [GMF-IO](./gmf_elements/gmf_io/README_CN.md)。
+ESP-GMF 各个功能模块以组件的形式存在，目前包含 [ESP-GMF-Core](./gmf_core/README_CN.md)、[ESP-GMF-Audio](./gmf_elements/gmf_audio/README_CN.md)、ESP-GMF-Image、[ESP-GMF-Misc](./gmf_elements/gmf_misc/README_CN.md) 和 [ESP-GMF-IO](./gmf_elements/gmf_io/README_CN.md)。
 
 |  组件名称 |  功能 | 依赖的组件  |
 | :------------: | :------------:|:------------ |
-|  [GMF-Core](./gmf_core) | GMF 基础框架  |  无 |
-|  [GMF-Element-Audio](./gmf_elements/gmf_audio) | GMF 音频编解码和<br>音效处理 element  | - `gmf-core`<br>- `esp_audio_effects`<br> - `esp_audio_codec` |
-|  [GMF-Element-Misc](./gmf_elements/gmf_misc) | 工具类 element   | 无  |
-|  GMF-Element-Image | GMF 图像编解码和<br>图像效果处理 element  | - `gmf-core`<br>- `esp_new_jpeg` |
-|  [GMF-IO](./gmf_elements/gmf_io) | 文件、flash、HTTP 输入输出  | - `gmf-core`<br>- `esp_codec_dev`  |
+|  [esp_gmf_core](./gmf_core) | GMF 基础框架  |  无 |
+|  [esp_gmf_audio](./gmf_elements/gmf_audio) | GMF 音频编解码和<br>音效处理 element  | - `esp_gmf_core`<br>- `esp_audio_effects`<br> - `esp_audio_codec` |
+|  [esp_gmf_misc](./gmf_elements/gmf_misc) | 工具类 element   | 无  |
+|  esp_gmf_image | GMF 图像编解码和<br>图像效果处理 element  | - `esp_gmf_core`<br>- `esp_new_jpeg` |
+|  [esp_gmf_io](./gmf_elements/gmf_io) | 文件、flash、HTTP 输入输出  | - `esp_gmf_core`<br>- `esp_codec_dev`  |
 
 在开发项目时，推荐使用官方 GMF-Elements 仓库的 elements 和 IOs 组件进行开发，也可以自行创建 element 和 IO 组件来扩展其应用场景。
 
