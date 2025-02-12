@@ -9,11 +9,7 @@ tags:
    - "gmf"
 
 dependencies:
-  espressif/gmf_audio:
-    git: "https://github.com/espressif/esp-gmf.git"
-    path: "gmf_elements/gmf_audio"
-    version: "*"
-  espressif/gmf_io:
-    git: "https://github.com/espressif/esp-gmf.git"
-    path: "gmf_elements/gmf_io"
-    version: "*"
+  espressif/esp_gmf_audio:
+    version: "^0.5"
+  espressif/esp_gmf_io:
+    version: "^0.5"
