@@ -11,7 +11,5 @@ dependencies:
   espressif/esp_codec_dev:
     require: "public"
     version: "*"
-  espressif/gmf_core:
-    version: "*"
-    git: "https://github.com/espressif/esp-gmf.git"
-    path: "gmf_core"
+  espressif/esp_gmf_core:
+    version: "^0.5"
