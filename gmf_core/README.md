@@ -1,5 +1,5 @@
 # Overview of the GMF-Core Framework
-[中文版](gmf_core/README_CN.md)
+[中文版](./README_CN.md)
 
 The following diagram illustrates the class relationships within the GMF-Core framework.
 ```mermaid

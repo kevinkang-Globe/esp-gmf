@@ -1,5 +1,10 @@
 dependencies:
-  espressif/gmf_misc:
-    git: "https://github.com/espressif/esp-gmf.git"
-    path: "gmf_elements/gmf_misc"
+  espressif/esp_gmf_misc:
+    require: public
+    version: "*"
+  espressif/esp_gmf_audio:
+    require: public
+    version: "*"
+  espressif/esp_gmf_io:
+    require: public
     version: "*"
