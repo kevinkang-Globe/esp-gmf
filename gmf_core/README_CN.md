@@ -1,5 +1,5 @@
 # GMF-Core 框架介绍
-[English](gmf_core/README.md)
+[English](./README.md)
 
 下图展示了 GMF-Core 框架的类图关系。
 ```mermaid
