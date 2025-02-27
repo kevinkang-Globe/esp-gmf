@@ -188,7 +188,6 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
                 GMF_AUDIO_UPDATE_SND_INFO(self, dec_info.sample_rate, dec_info.bits_per_sample, dec_info.channel);
             }
             out_load->valid_size = audio_dec->out_data.decoded_size;
-            out_load->is_done = audio_dec->in_load->is_done;
             out_len = out_load->valid_size;
             audio_dec->pts += AUDIO_DEC_CALC_PTS(out_len, dec_info.sample_rate, dec_info.channel, dec_info.bits_per_sample);
             out_load->pts = audio_dec->pts;
@@ -198,6 +197,11 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
             load_ret = esp_gmf_port_release_out(out, out_load, out->wait_ticks);
             ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, load_ret, out_len, {goto __aud_proc_release;});
             out_load = NULL;
+            if (audio_dec->in_load != NULL && audio_dec->in_data.len == 0) {
+                load_ret = esp_gmf_port_release_in(in_port, audio_dec->in_load, ESP_GMF_MAX_DELAY);
+                ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, load_ret, out_len, NULL);
+                audio_dec->in_load = NULL;
+            }
         } else {
             // Need to store all the inbuf data to simple decoder
             if (audio_dec->in_data.len > 0) {
@@ -221,7 +225,7 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
             audio_dec->in_data.len = audio_dec->in_load->valid_size;
             audio_dec->in_data.consumed = 0;
             audio_dec->in_data.eos = audio_dec->in_load->is_done;
-            ESP_LOGD(TAG, "Read More, ret: %d, decoded_size: %ld, in_len: %ld", ret, audio_dec->out_data.decoded_size, audio_dec->in_data.len);
+            ESP_LOGD(TAG, "Read More, ret: %d, decoded_size: %ld, in_len: %ld, done: %d", ret, audio_dec->out_data.decoded_size, audio_dec->in_data.len, audio_dec->in_load->is_done);
             continue;
         }
         ESP_LOGV(TAG, "Release IN, in_len: %ld, done: %d, decoded_size: %ld",

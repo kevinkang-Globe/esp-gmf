@@ -158,8 +158,6 @@ static void acquire_read_task(void *param)
             vTaskDelay(start_time * 1 / portTICK_PERIOD_MS);
         }
 
-        // memcpy(&dest_buf[file_sz], blk_buf.buf, blk_buf.valid_size);
-
         if (ret < ESP_OK) {
             ESP_LOGE(TAG, "Acquire read quit,ret:%d", ret);
             break;
@@ -168,9 +166,6 @@ static void acquire_read_task(void *param)
         buf = blk_buf.buf;
         ret = fwrite(buf, 1, blk_buf.valid_size, f);
 
-        if (file_sz >= (110 * 1024)) {
-            run = false;
-        }
         if (blk_buf.is_last == true) {
             run = false;
         }
