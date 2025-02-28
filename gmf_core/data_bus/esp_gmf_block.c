@@ -180,6 +180,7 @@ esp_gmf_err_io_t esp_gmf_block_acquire_read(esp_gmf_block_handle_t handle, esp_g
     if (hd->fill_size == 0 && hd->_is_write_done) {
         esp_gmf_oal_mutex_unlock(hd->lock);
         blk->is_last = 1;
+        blk->valid_size = 0;
         ESP_LOGW(TAG, "Done set on read, h:%p, rd:%p, wr:%p, wr_e:%p", hd, hd->p_rd, hd->p_wr, hd->p_wr_end);
         return ESP_GMF_IO_OK;
     }
@@ -202,7 +203,7 @@ esp_gmf_err_io_t esp_gmf_block_acquire_read(esp_gmf_block_handle_t handle, esp_g
         if (hd->_is_write_done) {
             wanted_size = get_fill_size(hd);
             blk->is_last = 1;
-            ESP_LOGD(TAG, "Done on read, wanted:%ld, h:%p, r:%p, w:%p, we:%p", wanted_size, hd, hd->p_rd, hd->p_wr, hd->p_wr_end);
+            ESP_LOGI(TAG, "Done on read, wanted:%ld, h:%p, r:%p, w:%p, we:%p", wanted_size, hd, hd->p_rd, hd->p_wr, hd->p_wr_end);
             break;
         }
         esp_gmf_oal_mutex_unlock(hd->lock);
@@ -274,6 +275,9 @@ esp_gmf_err_io_t esp_gmf_block_acquire_write(esp_gmf_block_handle_t handle, esp_
     uint32_t emtpy_size = get_empty_size(hd);
     ESP_LOGD(TAG, "ACQ_W+, f:%ld, emt:%ld, rd:%p, wr:%p, wr_e:%p, done:%d, wanted:%ld", hd->fill_size, emtpy_size, hd->p_rd, hd->p_wr, hd->p_wr_end, hd->_is_write_done, wanted_size);
     if ((emtpy_size == 0) && hd->_is_write_done) {
+        ESP_LOGW(TAG, "Done set on write, h:%p, rd:%p, wr:%p, wr_e:%p", hd, hd->p_rd, hd->p_wr, hd->p_wr_end);
+        blk->is_last = 1;
+        blk->valid_size = 0;
         esp_gmf_oal_mutex_unlock(hd->lock);
         return ESP_GMF_IO_OK;
     }
@@ -292,7 +296,7 @@ esp_gmf_err_io_t esp_gmf_block_acquire_write(esp_gmf_block_handle_t handle, esp_
         if (hd->_is_write_done) {
             wanted_size = hd->fill_size;
             blk->is_last = 1;
-            ESP_LOGW(TAG, "Done on write");
+            ESP_LOGI(TAG, "Done on write");
             break;
         }
         esp_gmf_oal_mutex_unlock(hd->lock);
