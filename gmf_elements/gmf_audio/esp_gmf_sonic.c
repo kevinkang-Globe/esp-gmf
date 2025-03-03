@@ -185,7 +185,7 @@ static esp_gmf_job_err_t esp_gmf_sonic_process(esp_gmf_audio_element_handle_t se
     esp_gmf_payload_t *in_load = NULL;
     esp_gmf_payload_t *out_load = NULL;
     ESP_GMF_RET_ON_NOT_OK(TAG, sonic_update_apply_setting(sonic), {return ESP_GMF_JOB_ERR_FAIL;}, "Failed to apply sonic setting");
-    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, GMF_AUDIO_INPUT_SAMPLE_NUM * sonic->bytes_per_sample, ESP_GMF_MAX_DELAY);
+    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, ESP_GMF_ELEMENT_GET(sonic)->in_attr.data_size, ESP_GMF_MAX_DELAY);
     ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __sonic_release;});
     sonic->in_data_hd.samples = in_load->buf;
     sonic->in_data_hd.num = in_load->valid_size / (sonic->bytes_per_sample);
@@ -352,8 +352,11 @@ esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_
     ret = esp_gmf_obj_set_tag(obj, "sonic");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto SONIC_INIT_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};
-    ESP_GMF_ELEMENT_CFG(el_cfg, true, ESP_GMF_EL_PORT_CAP_SINGLE, ESP_GMF_EL_PORT_CAP_SINGLE,
-                        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_PORT_TYPE_BYTE | ESP_GMF_PORT_TYPE_BLOCK);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    el_cfg.dependency = true;
     ret = esp_gmf_audio_el_init(sonic, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto SONIC_INIT_FAIL, "Failed to initialize sonic element");
     *handle = obj;

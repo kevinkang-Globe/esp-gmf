@@ -125,9 +125,8 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
     esp_audio_simple_dec_info_t dec_info = {0};
     esp_gmf_info_sound_t snd_info = {0};
     esp_gmf_info_file_t info = {0};
-    int in_read_num = GMF_AUDIO_INPUT_SAMPLE_NUM * 4;
     if (audio_dec->in_data.len == 0) {
-        load_ret = esp_gmf_port_acquire_in(in_port, &audio_dec->in_load, in_read_num, in_port->wait_ticks);
+        load_ret = esp_gmf_port_acquire_in(in_port, &audio_dec->in_load, ESP_GMF_ELEMENT_GET(audio_dec)->in_attr.data_size, in_port->wait_ticks);
         ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __aud_proc_release;});
         audio_dec->in_data.buffer = audio_dec->in_load->buf;
         audio_dec->in_data.len = audio_dec->in_load->valid_size;
@@ -219,7 +218,7 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
             load_ret = esp_gmf_port_release_in(in_port, audio_dec->in_load, ESP_GMF_MAX_DELAY);
             ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, load_ret, out_len, {goto __aud_proc_release;});
             audio_dec->in_load = NULL;
-            load_ret = esp_gmf_port_acquire_in(in_port, &audio_dec->in_load, in_read_num, in_port->wait_ticks);
+            load_ret = esp_gmf_port_acquire_in(in_port, &audio_dec->in_load, ESP_GMF_ELEMENT_GET(audio_dec)->in_attr.data_size, in_port->wait_ticks);
             ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __aud_proc_release;});
             audio_dec->in_data.buffer = audio_dec->in_load->buf;
             audio_dec->in_data.len = audio_dec->in_load->valid_size;
@@ -292,8 +291,11 @@ esp_gmf_err_t esp_gmf_audio_dec_init(esp_audio_simple_dec_cfg_t *config, esp_gmf
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto ES_DEC_FAIL, "Failed to set obj tag");
     *handle = obj;
     esp_gmf_element_cfg_t el_cfg = {0};
-    ESP_GMF_ELEMENT_CFG(el_cfg, false, ESP_GMF_EL_PORT_CAP_SINGLE, ESP_GMF_EL_PORT_CAP_SINGLE,
-                        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_PORT_TYPE_BYTE | ESP_GMF_PORT_TYPE_BLOCK);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, 512);
+    ESP_GMF_ELEMENT_OUT_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, 512);
+    el_cfg.dependency = false;
     ret = esp_gmf_audio_el_init(dec_hd, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto ES_DEC_FAIL, "Failed to initialize audio decoder element");
     ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), obj);

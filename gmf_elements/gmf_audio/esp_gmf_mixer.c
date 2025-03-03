@@ -32,7 +32,6 @@
 #include "gmf_audio_common.h"
 #include "esp_gmf_audio_method_def.h"
 
-#define MIXER_OUT_ALIGN            (16)
 #define MIXER_DEFAULT_PROC_TIME_MS (10)
 
 /**
@@ -248,7 +247,7 @@ static esp_gmf_job_err_t esp_gmf_mixer_process(esp_gmf_audio_element_handle_t se
         out_len = ESP_GMF_JOB_ERR_OK;
         goto __mixer_release;
     }
-    ret = esp_gmf_port_acquire_aligned_out(out_port, &mixer->out_load, MIXER_OUT_ALIGN, mixer->process_num, ESP_GMF_MAX_DELAY);
+    ret = esp_gmf_port_acquire_out(out_port, &mixer->out_load, mixer->process_num, ESP_GMF_MAX_DELAY);
     ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, ret, out_len, {goto __mixer_release;});
     esp_ae_err_t porc_ret = esp_ae_mixer_process(mixer->mixer_hd, mixer->process_num / mixer->bytes_per_sample,
                                                  (void *)mixer->in_arr, mixer->out_load->buf);
@@ -391,8 +390,11 @@ esp_gmf_err_t esp_gmf_mixer_init(esp_ae_mixer_cfg_t *config, esp_gmf_obj_handle_
     ret = esp_gmf_obj_set_tag(obj, "mixer");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto MIXER_INIT_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};
-    ESP_GMF_ELEMENT_CFG(el_cfg, false, ESP_GMF_EL_PORT_CAP_MULTI, ESP_GMF_EL_PORT_CAP_SINGLE,
-                        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_PORT_TYPE_BYTE | ESP_GMF_PORT_TYPE_BLOCK);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_MULTI, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    el_cfg.dependency = true;
     ret = esp_gmf_audio_el_init(mixer, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto MIXER_INIT_FAIL, "Failed to initialize mixer element");
     *handle = obj;

@@ -39,7 +39,8 @@ extern "C" {
 #define ESP_GMF_ELEMENT_JOB_OPEN          BIT(0)
 #define ESP_GMF_ELEMENT_JOB_PROCESS       BIT(1)
 #define ESP_GMF_ELEMENT_JOB_CLOSE         BIT(2)
-#define ESP_GMF_ELEMENT_PORT_SIZE_DEFAULT (4 * 1024)
+#define ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT (768)
+#define ESP_GMF_ELEMENT_PORT_ADDR_ALIGNED_DEFAULT (16)  //  16 bytes aligned
 
 #define ESP_GMF_MAX_DELAY (0xFFFFFFFFUL)
 
@@ -48,31 +49,43 @@ extern "C" {
 #define ESP_GMF_ELEMENT_GET_OUT_PORT(x)   (((esp_gmf_element_t *)x)->out)
 #define ESP_GMF_ELEMENT_GET_DEPENDENCY(x) (((esp_gmf_element_t *)x)->dependency)
 
-#define ESP_GMF_ELEMENT_CFG(el_cfg, is_depend, in_cap, out_cap, in_type, out_type) do {  \
-    (el_cfg).dependency = (is_depend);                                                   \
-    (el_cfg).in_attr.cap = (in_cap);                                                     \
-    (el_cfg).out_attr.cap = (out_cap);                                                   \
-    (el_cfg).in_attr.type = (in_type);                                                   \
-    (el_cfg).out_attr.type = (out_type);                                                 \
+#define ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(attr, caps, addr_aligned, size_aligned, port_type, acq_data_size) do {  \
+    (attr).cap = (uint8_t)(caps);                                                                                \
+    (attr).port.buf_addr_aligned = (uint8_t)(addr_aligned);                                                      \
+    (attr).port.buf_size_aligned = (uint8_t)(size_aligned);                                                      \
+    (attr).port.dir = (ESP_GMF_PORT_DIR_IN);                                                                     \
+    (attr).port.type = (uint8_t)(port_type);                                                                     \
+    (attr).data_size = (int)(acq_data_size);                                                                     \
 } while (0)
 
-typedef void *esp_gmf_element_handle_t;
+#define ESP_GMF_ELEMENT_OUT_PORT_ATTR_SET(attr, caps, addr_aligned, size_aligned, port_type, acq_data_size) do {  \
+    (attr).cap = (uint8_t)(caps);                                                                                 \
+    (attr).port.buf_addr_aligned = (uint8_t)(addr_aligned);                                                       \
+    (attr).port.buf_size_aligned = (uint8_t)(size_aligned);                                                       \
+    (attr).port.dir = (ESP_GMF_PORT_DIR_OUT);                                                                     \
+    (attr).port.type = (uint8_t)(port_type);                                                                      \
+    (attr).data_size = (int)(acq_data_size);                                                                      \
+} while (0)
 
 /**
- * @brief  Enumeration defining the capabilities of an element's port
+ * @brief  Defining the bit mask for an element's port capabilities
  */
-typedef enum {
-    ESP_GMF_EL_PORT_CAP_SINGLE = 1,  /*!< Single port capability */
-    ESP_GMF_EL_PORT_CAP_MULTI  = 2   /*!< Multi-port capability */
-} esp_gmf_element_port_cap_t;
+#define ESP_GMF_EL_PORT_CAP_SINGLE (1)  /*!< Bit0 for single port capability */
+#define ESP_GMF_EL_PORT_CAP_MULTI (2)   /*!< Bit1 for multi-port capability */
+
+/**
+ * @brief  The GMF element handle
+ */
+typedef void *esp_gmf_element_handle_t;
 
 /**
  * @brief  Structure defining the attributes of an element's port
  */
 typedef struct {
-    esp_gmf_element_port_cap_t  cap;   /*!< Port capability */
-    esp_gmf_port_type_t         type;  /*!< Port type */
-    int                         size;  /*!< Port size */
+    uint8_t              cap;        /*!< An element can connect to one or more capability ports */
+    esp_gmf_port_attr_t  port;       /*!< Port attributes */
+    int                  data_size;  /*!< A minimum data size for element acquisition operations,
+                                          recommended for all elements, even those without specific processing requirements */
 } esp_gmf_element_port_attr_t;
 
 /**
@@ -456,7 +469,6 @@ esp_gmf_err_t esp_gmf_element_exe_method(esp_gmf_element_handle_t handle, const 
  * @return
  *       - ESP_GMF_OK               Method structure retrieved successfully
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument, such as a NULL handle or output pointer
- *       - ESP_GMF_ERR_NOT_FOUND    Method structure not found for the specified handle
  */
 esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, esp_gmf_method_t **mthd);
 

@@ -72,6 +72,8 @@ static const char *TAG = "AUDIO_EFFECTS_ELEMENT_TEST";
 #define PIPELINE_BLOCK_BIT     BIT(0)
 #define PIPELINE_BLOCK_RUN_BIT BIT(1)
 
+#define ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT (4096)
+
 static esp_err_t _pipeline_event(esp_gmf_event_pkt_t *event, void *ctx)
 {
     // The warning messages are used to make the content more noticeable.

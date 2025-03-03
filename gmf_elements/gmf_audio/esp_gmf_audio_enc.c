@@ -46,7 +46,6 @@ typedef struct {
     int                     in_frame_size;  /*!< The encoder in frame size */
     int                     out_frame_size; /*!< The recommend out frame buffer size */
     esp_gmf_payload_t      *self_load;      /*!< The payload which used to save incomplete frame data */
-    int                     in_acq_size;    /*!< One input frame size that encoder need to process */
     int                     in_left;        /*!< Left data size */
     esp_gmf_payload_t       in_load;        /*!< The input payload */
 } esp_gmf_audio_enc_t;
@@ -176,12 +175,12 @@ static esp_gmf_job_err_t esp_gmf_audio_enc_open(esp_gmf_audio_element_handle_t s
         ESP_LOGE(TAG, "Failed to obtain frame size, ret: %d", ret);
         return ESP_GMF_JOB_ERR_FAIL;
     }
-    enc->in_acq_size = enc->in_frame_size;
+    ESP_GMF_ELEMENT_GET(enc)->in_attr.data_size = enc->in_frame_size;
     if (enc_cfg->type == ESP_AUDIO_TYPE_PCM || enc_cfg->type == ESP_AUDIO_TYPE_G711A || enc_cfg->type == ESP_AUDIO_TYPE_G711U) {
-        enc->in_acq_size = enc->in_frame_size * audio_enc_get_rate(enc_cfg) * AUD_ENC_DEFAULT_INPUT_TIME_MS / 1000;
+        ESP_GMF_ELEMENT_GET(enc)->in_attr.data_size = enc->in_frame_size * audio_enc_get_rate(enc_cfg) * AUD_ENC_DEFAULT_INPUT_TIME_MS / 1000;
     }
     // Alloc one frame
-    esp_gmf_payload_new_with_len(enc->in_acq_size, &enc->self_load);
+    esp_gmf_payload_new_with_len(ESP_GMF_ELEMENT_GET(enc)->in_attr.data_size, &enc->self_load);
     ESP_GMF_CHECK(TAG, enc->self_load, {return ESP_GMF_JOB_ERR_FAIL;}, "Failed to create a in payload on open");
     ESP_LOGD(TAG, "Open, type: %d, in frame: %d, out frame: %d", enc_cfg->type, enc->in_frame_size, enc->out_frame_size);
     return ESP_GMF_JOB_ERR_OK;
@@ -200,7 +199,7 @@ static esp_gmf_job_err_t esp_gmf_audio_enc_process(esp_gmf_audio_element_handle_
     esp_gmf_payload_t *out_load = NULL;
     esp_audio_enc_in_frame_t enc_in_frame = {0};
     esp_audio_enc_out_frame_t enc_out_frame = {0};
-    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, audio_enc->in_acq_size, in_port->wait_ticks);
+    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, ESP_GMF_ELEMENT_GET(audio_enc)->in_attr.data_size, in_port->wait_ticks);
     ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __audio_enc_release;});
     ESP_GMF_CHECK(TAG, in_load->valid_size, {out_len = in_load->is_done == true ? ESP_GMF_JOB_ERR_OK : ESP_GMF_JOB_ERR_FAIL; goto __audio_enc_release;},
                   "There is no valid data");
@@ -350,8 +349,11 @@ esp_gmf_err_t esp_gmf_audio_enc_init(esp_audio_enc_config_t *config, esp_gmf_obj
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto ES_ENC_FAIL, "Failed to set obj tag");
     *handle = obj;
     esp_gmf_element_cfg_t el_cfg = {0};
-    ESP_GMF_ELEMENT_CFG(el_cfg, true, ESP_GMF_EL_PORT_CAP_SINGLE, ESP_GMF_EL_PORT_CAP_SINGLE,
-                        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_PORT_TYPE_BYTE | ESP_GMF_PORT_TYPE_BLOCK);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    ESP_GMF_ELEMENT_OUT_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    el_cfg.dependency = true;
     ret = esp_gmf_audio_el_init(audio_enc, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto ES_ENC_FAIL, "Failed to initialize audio encoder element");
     ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), obj);

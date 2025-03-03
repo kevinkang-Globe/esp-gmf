@@ -48,7 +48,6 @@ char               file2_path[100] = "";
 
 static void acquire_write_task(void *param)
 {
-    ESP_LOGI(TAG, "Going to read file, %p", param);
     esp_gmf_block_handle_t bk = (esp_gmf_block_handle_t)param;
     FILE *f = fopen(file_name, "rb");
     if (f == NULL) {
@@ -64,6 +63,12 @@ static void acquire_write_task(void *param)
     int result = 0;
     uint32_t file_sz = 0;
     bool run = true;
+
+    fseek(f, 0, SEEK_END);
+    file_sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    ESP_LOGI(TAG, "Going to read file, para:%p, file size:%ld,", param, file_sz);
+
     while (run) {
         uint32_t start_time = 0;
         do {
@@ -98,14 +103,14 @@ static void acquire_write_task(void *param)
         file_sz += ret;
         blk_buf.valid_size = ret;
         if (ret == 0 || (blk_buf.buf_length != ret)) {
-            ESP_LOGE(TAG, "File read finished, ret:%d", ret);
+            ESP_LOGI(TAG, "File read finished, size:%ld ret:%d", file_sz, ret);
             esp_gmf_block_done_write(bk);
             run = false;
         }
 
         esp_gmf_block_release_write(bk, &blk_buf, 0);
         if (ret != wanted_size) {
-            ESP_LOGE(TAG, "W2:%ld, ret:%d,sz:%ld,%p-%d-%d", wanted_size, ret, file_sz, blk_buf.buf, blk_buf.valid_size, blk_buf.is_last);
+            ESP_LOGD(TAG, "W2:%ld, ret:%d,sz:%ld,%p-%d-%d", wanted_size, ret, file_sz, blk_buf.buf, blk_buf.valid_size, blk_buf.is_last);
             blk_buf.is_last = true;
         } else {
             ESP_LOGD(TAG, "W:%ld, ret:%d, file:%ld,%p-%d-%d", wanted_size, ret, file_sz, blk_buf.buf, blk_buf.valid_size, blk_buf.is_last);
@@ -120,7 +125,7 @@ static void acquire_read_task(void *param)
 {
     esp_gmf_block_handle_t bk = (esp_gmf_block_handle_t)param;
     sprintf(file2_path, "%s%x", file2_name, file2_indx);
-    ESP_LOGI(TAG, "Going to write file, %p, %s", param, file2_path);
+    ESP_LOGI(TAG, "Going to write file, para:%p, path:%s", param, file2_path);
     FILE *f = fopen(file2_path, "wb+");
     if (f == NULL) {
         ESP_LOGE(TAG, "Open file failed on %s, %d", file2_path, __LINE__);
