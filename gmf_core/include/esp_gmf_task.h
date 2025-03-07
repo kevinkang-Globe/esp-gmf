@@ -62,6 +62,7 @@ typedef struct esp_gmf_task_config {
 typedef struct _esp_gmf_task {
     struct esp_gmf_obj_     base;           /*!< Base object for GMF tasks */
     esp_gmf_job_t          *working;        /*!< Currently executing job in the task */
+    esp_gmf_job_stack_t    *start_stack;    /*!< Stack for the start job */
 
     /* Properties */
     esp_gmf_event_cb        event_func;     /*!< Callback function for task events */

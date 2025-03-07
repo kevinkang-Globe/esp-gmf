@@ -127,6 +127,9 @@ static inline void __esp_gmf_task_free(esp_gmf_task_handle_t handle)
     if (tsk->api_sync_sem) {
         vSemaphoreDelete(tsk->api_sync_sem);
     }
+    if (tsk->start_stack) {
+        esp_gmf_job_stack_destroy(tsk->start_stack);
+    }
     esp_gmf_oal_free(tsk);
 }
 
@@ -162,14 +165,20 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
             // The means need more loops
             worker = tsk->working;
             continue;
+        } else if (worker->ret == ESP_GMF_JOB_ERR_TRUNCATE) {
+            ESP_LOGD(TAG, "Job truncated [tsk:%s-%p:%p-%p-%s], st:%s", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label,
+                     esp_gmf_event_get_state_str(tsk->state));
+            esp_gmf_job_stack_push(tsk->start_stack, (uint32_t)worker);
         } else if (worker->ret == ESP_GMF_JOB_ERR_DONE) {
             ESP_LOGI(TAG, "Job is done, [tsk:%s-%p, wk:%p, job:%p-%s]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label);
             esp_gmf_job_t *tmp = worker->next;
             esp_gmf_node_del_at((esp_gmf_node_t **)&tsk->working, (esp_gmf_node_t *)worker);
+            esp_gmf_job_stack_remove(tsk->start_stack, (uint32_t)worker);
             esp_gmf_job_item_free(worker);
             worker = tmp;
             if (worker == NULL) {
                 ESP_LOGD(TAG, "All jobs are finished, [tsk:%s-%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk);
+                esp_gmf_job_stack_clear(tsk->start_stack);
                 esp_gmf_task_event_loading_job(tsk, ESP_GMF_EVENT_STATE_FINISHED);
                 worker = tsk->working;
                 if (worker == NULL) {
@@ -184,8 +193,8 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
                      esp_gmf_event_get_state_str(tsk->state));
             if (tsk->state != ESP_GMF_EVENT_STATE_STOPPED) {
                 __esp_gmf_task_delete_jobs(tsk);
+                esp_gmf_job_stack_clear(tsk->start_stack);
                 esp_gmf_task_event_loading_job(tsk, ESP_GMF_EVENT_STATE_ERROR);
-                is_stop = 1;
                 worker = tsk->working;
                 if (worker == NULL) {
                     ESP_LOGV(TAG, "No more jobs after failed, [%s-%p, new job:%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker);
@@ -212,6 +221,7 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
         if (tsk->_stop && (tsk->state != ESP_GMF_EVENT_STATE_ERROR)) {
             ESP_LOGV(TAG, "Stop job, [%s-%p, wk:%p, job:%p-%s]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label);
             __esp_gmf_task_delete_jobs(tsk);
+            esp_gmf_job_stack_clear(tsk->start_stack);
             esp_gmf_task_event_loading_job(tsk, ESP_GMF_EVENT_STATE_STOPPED);
             worker = tsk->working;
             tsk->_stop = 0;
@@ -234,8 +244,10 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
             worker = NULL;
         }
         worker = tmp;
-        if (tmp == NULL && tsk->working) {
-            worker = tsk->working;
+        bool is_empty = false;
+        esp_gmf_job_stack_is_empty(tsk->start_stack, &is_empty);
+        if ((tmp == NULL) && (is_empty == false)) {
+            esp_gmf_job_stack_pop(tsk->start_stack, (uint32_t*)&worker);
         }
         ESP_LOGD(TAG, "Found next job[%p] to process", worker);
     }
@@ -287,17 +299,20 @@ esp_gmf_err_t esp_gmf_task_init(void *config, esp_gmf_task_handle_t *tsk_hd)
     esp_gmf_task_t *handle = calloc(1, sizeof(struct _esp_gmf_task));
     ESP_GMF_MEM_CHECK(TAG, handle, return ESP_GMF_ERR_MEMORY_LACK);
     handle->lock = esp_gmf_oal_mutex_create();
-    ESP_GMF_MEM_CHECK(TAG, handle->lock, goto _el_init_failed);
+    ESP_GMF_MEM_CHECK(TAG, handle->lock, goto _tsk_init_failed);
     handle->block_sem = xSemaphoreCreateBinary();
-    ESP_GMF_MEM_CHECK(TAG, handle->block_sem, goto _el_init_failed);
+    ESP_GMF_MEM_CHECK(TAG, handle->block_sem, goto _tsk_init_failed);
     handle->wait_sem = xSemaphoreCreateBinary();
-    ESP_GMF_MEM_CHECK(TAG, handle->wait_sem, goto _el_init_failed);
+    ESP_GMF_MEM_CHECK(TAG, handle->wait_sem, goto _tsk_init_failed);
     handle->api_sync_sem = xSemaphoreCreateBinary();
-    ESP_GMF_MEM_CHECK(TAG, handle->api_sync_sem, goto _el_init_failed);
+    ESP_GMF_MEM_CHECK(TAG, handle->api_sync_sem, goto _tsk_init_failed);
     esp_gmf_task_cfg_t *cfg = (esp_gmf_task_cfg_t *)config;
     handle->event_func = cfg->cb;
     handle->ctx = cfg->ctx;
     handle->api_sync_time = DEFAULT_TASK_OPT_MAX_TIME_MS;
+
+    esp_gmf_job_stack_create(&handle->start_stack);
+    ESP_GMF_MEM_CHECK(TAG, handle->start_stack, goto _tsk_init_failed);
 
     char tag[ESP_GMF_TAG_MAX_LEN] = {0};
     if (cfg->name) {
@@ -308,9 +323,9 @@ esp_gmf_err_t esp_gmf_task_init(void *config, esp_gmf_task_handle_t *tsk_hd)
 
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)handle;
     int ret = esp_gmf_obj_set_config(obj, cfg, sizeof(*cfg));
-    ESP_GMF_RET_ON_ERROR(TAG, ret, goto _el_init_failed, "Failed set OBJ configuration");
+    ESP_GMF_RET_ON_ERROR(TAG, ret, goto _tsk_init_failed, "Failed set OBJ configuration");
     ret = esp_gmf_obj_set_tag(obj, tag);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, goto _el_init_failed, "Failed set OBJ tag");
+    ESP_GMF_RET_ON_ERROR(TAG, ret, goto _tsk_init_failed, "Failed set OBJ tag");
     obj->new_obj = esp_gmf_task_init;
     obj->del_obj = esp_gmf_task_deinit;
 
@@ -335,13 +350,13 @@ esp_gmf_err_t esp_gmf_task_init(void *config, esp_gmf_task_handle_t *tsk_hd)
         if (ret == ESP_GMF_ERR_FAIL) {
             handle->_task_run = false;
             ESP_LOGE(TAG, "Create thread failed, [%s]", OBJ_GET_TAG((esp_gmf_obj_handle_t)handle));
-            goto _el_init_failed;
+            goto _tsk_init_failed;
         }
     }
     handle->state = ESP_GMF_EVENT_STATE_INITIALIZED;
     *tsk_hd = handle;
     return ESP_GMF_ERR_OK;
-_el_init_failed:
+_tsk_init_failed:
     __esp_gmf_task_free(handle);
     return ESP_GMF_ERR_FAIL;
 }
@@ -384,6 +399,14 @@ esp_gmf_err_t esp_gmf_task_register_ready_job(esp_gmf_task_handle_t handle, cons
     new_job->func = job;
     new_job->ctx = ctx;
     new_job->times = times;
+
+    // Add the first infinite processing job to the stack
+    bool is_empty = false;
+    esp_gmf_job_stack_is_empty(tsk->start_stack, &is_empty);
+    if ((times == ESP_GMF_JOB_TIMES_INFINITE) && (is_empty == true)) {
+        esp_gmf_job_stack_push(tsk->start_stack, (uint32_t)new_job);
+    }
+
     if (tsk->working == NULL) {
         tsk->working = new_job;
     } else {

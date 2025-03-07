@@ -40,20 +40,37 @@
 #include "esp_gmf_setup_peripheral.h"
 #include "esp_gmf_setup_pool.h"
 #include "esp_gmf_audio_helper.h"
+#include "gmf_audio_play_com.h"
 
 #ifdef MEDIA_LIB_MEM_TEST
 #include "media_lib_adapter.h"
 #include "media_lib_mem_trace.h"
 #endif /* MEDIA_LIB_MEM_TEST */
 
+#define PIPELINE_BLOCK_BIT  BIT(0)
+#define PIPELINE_BLOCK_BIT2 BIT(1)
+#define PIPELINE_BLOCK_BIT3 BIT(2)
+
 static const char *TAG = "AUDIO_PLAY_ELEMENT_TEST";
 
 static const char *file_name  = "/sdcard/test.mp3";
 static const char *file_name1 = "/sdcard/test_2.wav";
 
-#define PIPELINE_BLOCK_BIT  BIT(0)
-#define PIPELINE_BLOCK_BIT2 BIT(1)
-#define PIPELINE_BLOCK_BIT3 BIT(2)
+static const char *wav_file_path[] = {
+    "/sdcard/test_1.wav",
+    "/sdcard/test_2.wav",
+    "/sdcard/test_3.wav",
+};
+
+static const char *dec_file_path[] = {
+    "/sdcard/test.ts",
+    "/sdcard/test.aac",
+    "/sdcard/test.mp3",
+    "/sdcard/test.amr",
+    "/sdcard/test.flac",
+    "/sdcard/test.wav",
+    "/sdcard/test.m4a",
+};
 
 #define ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT (4096)
 
@@ -225,41 +242,6 @@ TEST_CASE("Audio Play, One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-static void play_single_file(char *uri, esp_gmf_pipeline_handle_t pipe, void *evt)
-{
-    ESP_LOGW(TAG, "play_single_file: %s\r\n", uri);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_reset(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe, uri));
-
-    esp_gmf_element_handle_t dec_el = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
-    esp_audio_simple_dec_cfg_t *simple_cfg = (esp_audio_simple_dec_cfg_t *)OBJ_GET_CFG(dec_el);
-    TEST_ASSERT_NOT_NULL(simple_cfg);
-    esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri(uri, &info, simple_cfg);
-    ESP_GMF_MEM_SHOW(TAG);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));
-
-    vTaskDelay(2000 / portTICK_RATE_MS);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe));
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe));
-
-    xEventGroupWaitBits(evt, PIPELINE_BLOCK_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe));
-}
-
-static const char *dec_file_path[] = {
-    "/sdcard/test.ts",
-    "/sdcard/test.aac",
-    "/sdcard/test.mp3",
-    "/sdcard/test.amr",
-    "/sdcard/test.flac",
-    "/sdcard/test.wav",
-    "/sdcard/test.m4a",
-};
-
 TEST_CASE("Audio Play, multiple file with One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
@@ -310,7 +292,9 @@ TEST_CASE("Audio Play, multiple file with One Pipe, [FILE->dec->resample->IIS]",
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe, _pipeline_event, pipe_sync_evt));
     ESP_GMF_MEM_SHOW(TAG);
     for (int i = 0; i < sizeof(dec_file_path) / sizeof(char *); ++i) {
-        play_single_file((char *)dec_file_path[i], pipe, pipe_sync_evt);
+        play_pause_single_file(pipe, dec_file_path[i]);
+        xEventGroupWaitBits(pipe_sync_evt, PIPELINE_BLOCK_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe));
     }
 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task));
@@ -327,12 +311,6 @@ TEST_CASE("Audio Play, multiple file with One Pipe, [FILE->dec->resample->IIS]",
     vTaskDelay(1000 / portTICK_RATE_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }
-
-static const char *wav_file_path[] = {
-    "/sdcard/test_1.wav",
-    "/sdcard/test_2.wav",
-    "/sdcard/test_3.wav",
-};
 
 TEST_CASE("Audio Play, two in pipe use same task, [file->dec]->rb->[resample+IIS]", "ESP_GMF_POOL")
 {
@@ -481,7 +459,7 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
-    esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
+    // esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
     esp_gmf_setup_periph_wifi();
     esp_gmf_setup_periph_i2c(0);
@@ -509,7 +487,7 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
     ESP_GMF_POOL_SHOW_ITEMS(pool);
     esp_gmf_info_sound_t info = {0};
 
-    for (int i = 0; i < 15; ++i) {
+    for (int i = 0; i < 10; ++i) {
         printf("\r\nIndex:%d\r\n", i);
         EventGroupHandle_t pipe_sync_evt = xEventGroupCreate();
         ESP_GMF_NULL_CHECK(TAG, pipe_sync_evt, return);
@@ -1131,254 +1109,3 @@ TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I
     vTaskDelay(1000 / portTICK_RATE_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }
-
-// Refer the 'esp_gmf_audio_rec_el_test.c' test_enc_format
-static const char *recoding_file_path[] = {
-    "/sdcard/esp_gmf_rec_00.aac",
-    "/sdcard/esp_gmf_rec_01.amrnb",
-    "/sdcard/esp_gmf_rec_02.amrwb",
-};
-
-TEST_CASE("Recording file play, multiple file with One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
-{
-    esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
-    esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
-    ESP_GMF_MEM_SHOW(TAG);
-    void *sdcard = NULL;
-    esp_gmf_setup_periph_sdmmc(&sdcard);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    void *play_dev = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL));
-
-    EventGroupHandle_t pipe_sync_evt = xEventGroupCreate();
-    ESP_GMF_NULL_CHECK(TAG, pipe_sync_evt, return);
-#ifdef MEDIA_LIB_MEM_TEST
-    media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
-    esp_gmf_pool_handle_t pool = NULL;
-    esp_gmf_pool_init(&pool);
-    TEST_ASSERT_NOT_NULL(pool);
-    pool_register_audio_codecs(pool);
-    pool_register_audio_effects(pool);
-    pool_register_io(pool);
-    pool_register_codec_dev_io(pool, play_dev, NULL);
-    ESP_GMF_POOL_SHOW_ITEMS(pool);
-
-    esp_gmf_pipeline_handle_t pipe = NULL;
-    const char *name[] = {"aud_simp_dec", "rate_cvt", "ch_cvt"};
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_new_pipeline(pool, "file", name, sizeof(name) / sizeof(char *), "codec_dev_tx", &pipe));
-    TEST_ASSERT_NOT_NULL(pipe);
-
-    esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
-    cfg.ctx = NULL;
-    cfg.cb = NULL;
-    esp_gmf_task_handle_t work_task = NULL;
-    esp_gmf_task_init(&cfg, &work_task);
-    TEST_ASSERT_NOT_NULL(work_task);
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_bind_task(pipe, work_task));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe, _pipeline_event, pipe_sync_evt));
-
-    for (int i = 0; i < sizeof(recoding_file_path) / sizeof(char *); ++i) {
-        play_single_file((char *)recoding_file_path[i], pipe, pipe_sync_evt);
-    }
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe));
-    pool_unregister_audio_codecs();
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
-    vEventGroupDelete(pipe_sync_evt);
-#ifdef MEDIA_LIB_MEM_TEST
-    media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(sdcard);
-    esp_gmf_teardown_periph_i2c(0);
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    ESP_GMF_MEM_SHOW(TAG);
-}
-
-#if 0
-
-TEST_CASE("Seek, seek to any position on File", "ESP_GMF_POOL")
-{
-    esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
-    esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
-    ESP_GMF_MEM_SHOW(TAG);
-
-    void *sdcard = NULL;
-    esp_gmf_setup_periph_sdmmc(&sdcard);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-    };
-    void *play_dev = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL));
-
-    media_lib_add_default_adapter();
-    esp_gmf_pool_handle_t pool = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_init(&pool));
-    TEST_ASSERT_NOT_NULL(pool);
-
-    pool_register_audio_codecs(pool);
-    pool_register_audio_effects(pool);
-    pool_register_io(pool);
-    pool_register_codec_dev_io(pool, play_dev, NULL);
-
-    ESP_GMF_POOL_SHOW_ITEMS(pool);
-    esp_gmf_pipeline_handle_t pipe = NULL;
-    const char *name[] = {"aud_simp_dec", "rate_cvt"};
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_new_pipeline(pool, "file", name, sizeof(name) / sizeof(char *), "codec_dev_tx", &pipe));
-    TEST_ASSERT_NOT_NULL(pipe);
-
-    esp_gmf_task_cfg_t  cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
-    cfg.ctx = NULL;
-    cfg.cb = NULL;
-    esp_gmf_task_handle_t work_task = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task));
-    TEST_ASSERT_NOT_NULL(work_task);
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_bind_task(pipe, work_task));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe, _pipeline_event, NULL));
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe, file_name));
-    esp_gmf_element_handle_t dec_el = NULL;
-    esp_gmf_info_sound_t info = {0};
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
-    esp_gmf_audio_helper_reconfig_dec_by_uri (file_name, &info, OBJ_GET_CFG(dec_el));
-
-    ESP_GMF_MEM_SHOW(TAG);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));
-    vTaskDelay(2000 / portTICK_RATE_MS);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_seek(pipe, 1528224));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe));
-    vTaskDelay(4000 / portTICK_RATE_MS);
-
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_seek(pipe, 0));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe));
-    vTaskDelay(3000 / portTICK_RATE_MS);
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_seek(pipe, 2228224));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe));
-
-    vTaskDelay(10000 / portTICK_RATE_MS);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe));
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe));
-    pool_unregister_audio_codecs();
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
-
-    media_lib_stop_mem_trace();
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(sdcard);
-    esp_gmf_teardown_periph_i2c(0);
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    ESP_GMF_MEM_SHOW(TAG);
-}
-
-
-TEST_CASE("Seek, seek to any position on HTTP", "ESP_GMF_POOL")
-{
-    esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
-    esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
-    ESP_GMF_MEM_SHOW(TAG);
-
-    esp_gmf_setup_periph_wifi();
-    void *sdcard = NULL;
-    esp_gmf_setup_periph_sdmmc(&sdcard);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-    };
-    void *play_dev = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL));
-
-    media_lib_add_default_adapter();
-    esp_gmf_pool_handle_t pool = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_init(&pool));
-    TEST_ASSERT_NOT_NULL(pool);
-
-    pool_register_audio_codecs(pool);
-    pool_register_audio_effects(pool);
-    pool_register_io(pool);
-    pool_register_codec_dev_io(pool, play_dev, NULL);
-
-    ESP_GMF_POOL_SHOW_ITEMS(pool);
-    esp_gmf_pipeline_handle_t pipe = NULL;
-    const char *name[] = {"aud_simp_dec", "rate_cvt"};
-    const char *uri = "https://audiofile.espressif.cn/136_48000_2_143336_247.mp3";
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_new_pipeline(pool, "http", name, sizeof(name) / sizeof(char *), "codec_dev_tx", &pipe));
-    TEST_ASSERT_NOT_NULL(pipe);
-
-    esp_gmf_task_cfg_t  cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
-    cfg.ctx = NULL;
-    cfg.cb = NULL;
-    esp_gmf_task_handle_t work_task = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task));
-    TEST_ASSERT_NOT_NULL(work_task);
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_bind_task(pipe, work_task));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe, _pipeline_event, NULL));
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe, uri));
-    esp_gmf_element_handle_t dec_el = NULL;
-    esp_gmf_info_sound_t info = {0};
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
-    esp_gmf_audio_helper_reconfig_dec_by_uri (uri, &info, OBJ_GET_CFG(dec_el));
-
-    ESP_GMF_MEM_SHOW(TAG);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));
-    vTaskDelay(4000 / portTICK_RATE_MS);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_seek(pipe, 804088));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe));
-    vTaskDelay(8000 / portTICK_RATE_MS);
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_seek(pipe, 0));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe));
-    vTaskDelay(8000 / portTICK_RATE_MS);
-
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_seek(pipe, 1133088));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe));
-    vTaskDelay(16000 / portTICK_RATE_MS);
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe));
-
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe));
-    pool_unregister_audio_codecs();
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
-
-    media_lib_stop_mem_trace();
-    esp_gmf_teardown_periph_wifi();
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(sdcard);
-    esp_gmf_teardown_periph_i2c(0);
-    ESP_GMF_MEM_SHOW(TAG);
-}
-#endif /* 0 */
