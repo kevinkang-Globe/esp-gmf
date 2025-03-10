@@ -36,6 +36,8 @@
 
 static const char *TAG = "TEST_GMF_ELEMENT";
 
+#define ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT (4096)
+
 esp_err_t element_event(esp_gmf_event_pkt_t *event, void *ctx)
 {
     ESP_LOGI(TAG, "Get event,from:%p, type:%d, sub:%d, payload:%p, size:%d",
@@ -69,7 +71,7 @@ TEST_CASE("Register and unregister port for GMF ELEMENT", "ESP_GMF_ELEMENT")
     esp_gmf_element_handle_t fake_dec_el = NULL;
     fake_dec_init(&fake_cfg, &fake_dec_el);
 
-    ESP_LOGW(TAG, "Regiter the in port, %d", __LINE__);
+    ESP_LOGW(TAG, "Register the in port, %d", __LINE__);
     esp_gmf_db_handle_t db = NULL;
     esp_gmf_db_new_ringbuf(10, 1024, &db);
     esp_gmf_port_handle_t in_port = NEW_ESP_GMF_PORT_IN_BYTE(esp_gmf_db_acquire_read, esp_gmf_db_release_read, NULL, db,
@@ -117,7 +119,7 @@ TEST_CASE("Register and unregister port for GMF ELEMENT", "ESP_GMF_ELEMENT")
         el_out_port = el_out_port->next;
     }
 
-    ESP_LOGW(TAG, "Unregiter the in port, %d", __LINE__);
+    ESP_LOGW(TAG, "Unregister the in port, %d", __LINE__);
     esp_gmf_element_unregister_in_port(fake_dec_el, in_port);
     esp_gmf_element_unregister_in_port(fake_dec_el, in_port1);
     esp_gmf_element_unregister_out_port(fake_dec_el, out_port);

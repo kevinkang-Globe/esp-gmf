@@ -121,14 +121,13 @@ static esp_gmf_job_err_t esp_gmf_interleave_process(esp_gmf_audio_element_handle
     esp_gmf_port_handle_t out_port = ESP_GMF_ELEMENT_GET(self)->out;
     esp_gmf_interleave_cfg *interleave_info = (esp_gmf_interleave_cfg *)OBJ_GET_CFG(self);
     int index = interleave_info->src_num;
-    int in_read_num = GMF_AUDIO_INPUT_SAMPLE_NUM * interleave->bytes_per_sample;
     int i = 0;
     bool is_done = false;
     esp_gmf_err_io_t load_ret = ESP_GMF_IO_OK;
     memset(interleave->in_load, 0, sizeof(esp_gmf_payload_t *) * index);
     interleave->out_load = NULL;
     while (in_port != NULL) {
-        load_ret = esp_gmf_port_acquire_in(in_port, &(interleave->in_load[i]), in_read_num, in_port->wait_ticks);
+        load_ret = esp_gmf_port_acquire_in(in_port, &(interleave->in_load[i]), ESP_GMF_ELEMENT_GET(interleave)->in_attr.data_size, in_port->wait_ticks);
         ESP_GMF_PORT_CHECK(TAG, load_ret, out_len, {out_len = ESP_GMF_JOB_ERR_FAIL; goto __intlv_release;}, "Failed to acquire in, idx:%d, ret: %d", i, load_ret);
         interleave->in_arr[i] = interleave->in_load[i]->buf;
         in_port = in_port->next;
@@ -248,8 +247,11 @@ esp_gmf_err_t esp_gmf_interleave_init(esp_gmf_interleave_cfg *config, esp_gmf_ob
     ret = esp_gmf_obj_set_tag(obj, "interleave");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto INTLV_INIT_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};
-    ESP_GMF_ELEMENT_CFG(el_cfg, true, ESP_GMF_EL_PORT_CAP_MULTI, ESP_GMF_EL_PORT_CAP_SINGLE,
-                        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_PORT_TYPE_BYTE | ESP_GMF_PORT_TYPE_BLOCK);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_MULTI, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    el_cfg.dependency = true;
     ret = esp_gmf_audio_el_init(interleave, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto INTLV_INIT_FAIL, "Failed to initialize interleave element");
     *handle = obj;

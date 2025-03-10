@@ -61,7 +61,7 @@ static esp_gmf_job_err_t fake_dec_process(esp_gmf_audio_element_handle_t self, v
     if (cfg->is_shared == false) {
         esp_gmf_port_enable_payload_share(in_port, false);
     }
-    int ret = esp_gmf_port_acquire_in(in_port, &in_load, ESP_GMF_ELEMENT_GET(self)->in_attr.size, portMAX_DELAY);
+    int ret = esp_gmf_port_acquire_in(in_port, &in_load, ESP_GMF_ELEMENT_GET(self)->in_attr.data_size, portMAX_DELAY);
     if (ret < 0) {
         ESP_LOGE(TAG, "Read data error, port:%p, ret:%d", in_port, ret);
         return ret == ESP_GMF_IO_ABORT ? ESP_GMF_JOB_ERR_OK : ESP_GMF_JOB_ERR_FAIL;
@@ -69,7 +69,7 @@ static esp_gmf_job_err_t fake_dec_process(esp_gmf_audio_element_handle_t self, v
     if (cfg->is_pass) {
         out_load = in_load;
     }
-    ret = esp_gmf_port_acquire_out(out_port, &out_load, ESP_GMF_ELEMENT_GET(self)->out_attr.size, portMAX_DELAY);
+    ret = esp_gmf_port_acquire_out(out_port, &out_load, ESP_GMF_ELEMENT_GET(self)->out_attr.data_size, portMAX_DELAY);
     vTaskDelay(10 / portTICK_PERIOD_MS);
     ret = esp_gmf_port_release_out(out_port, out_load, portMAX_DELAY);
     if (ret < 0) {
@@ -158,10 +158,10 @@ esp_err_t fake_dec_init(fake_dec_cfg_t *config, esp_gmf_obj_handle_t *handle)
         .cb = config->cb,
         .in_attr.cap = ESP_GMF_EL_PORT_CAP_SINGLE,
         .out_attr.cap = ESP_GMF_EL_PORT_CAP_SINGLE,
-        .in_attr.type = ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE,
-        .out_attr.type = ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE,
-        .in_attr.size = config->in_buf_size,
-        .out_attr.size = config->out_buf_size,
+        .in_attr.port.type = ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE,
+        .out_attr.port.type = ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE,
+        .in_attr.data_size = config->in_buf_size,
+        .out_attr.data_size = config->out_buf_size,
     };
     ret = esp_gmf_audio_el_init(fake, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto WAV_DEC_FAIL, "Failed Initialize audio el");

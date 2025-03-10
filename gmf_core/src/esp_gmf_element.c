@@ -86,10 +86,15 @@ esp_gmf_err_t esp_gmf_element_init(esp_gmf_element_handle_t handle, esp_gmf_elem
     el->dependency = config->dependency;
     el->in_attr.cap = config->in_attr.cap == 0 ? ESP_GMF_EL_PORT_CAP_SINGLE : config->in_attr.cap;
     el->out_attr.cap = config->out_attr.cap == 0 ? ESP_GMF_EL_PORT_CAP_SINGLE : config->out_attr.cap;
-    el->in_attr.type = config->in_attr.type == 0 ? ESP_GMF_PORT_TYPE_BYTE : config->in_attr.type;
-    el->out_attr.type = config->out_attr.type == 0 ? ESP_GMF_PORT_TYPE_BYTE : config->out_attr.type;
-    el->in_attr.size = config->in_attr.size == 0 ? ESP_GMF_ELEMENT_PORT_SIZE_DEFAULT : config->in_attr.size;
-    el->out_attr.size = config->out_attr.size == 0 ? ESP_GMF_ELEMENT_PORT_SIZE_DEFAULT : config->out_attr.size;
+    el->in_attr.port.type = config->in_attr.port.type == 0 ? ESP_GMF_PORT_TYPE_BYTE : config->in_attr.port.type;
+    el->out_attr.port.type = config->out_attr.port.type == 0 ? ESP_GMF_PORT_TYPE_BYTE : config->out_attr.port.type;
+    el->in_attr.data_size = config->in_attr.data_size == 0 ? ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT : config->in_attr.data_size;
+    el->out_attr.data_size = config->out_attr.data_size == 0 ? ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT : config->out_attr.data_size;
+
+    el->in_attr.port.buf_addr_aligned = config->in_attr.port.buf_addr_aligned == 0 ? ESP_GMF_ELEMENT_PORT_ADDR_ALIGNED_DEFAULT : config->in_attr.port.buf_addr_aligned;
+    el->out_attr.port.buf_addr_aligned = config->out_attr.port.buf_addr_aligned == 0 ? ESP_GMF_ELEMENT_PORT_ADDR_ALIGNED_DEFAULT : config->out_attr.port.buf_addr_aligned;
+    el->in_attr.port.buf_size_aligned = config->in_attr.port.buf_size_aligned == 0 ? 1 : config->in_attr.port.buf_size_aligned;
+    el->out_attr.port.buf_size_aligned = config->out_attr.port.buf_size_aligned == 0 ? 1 : config->out_attr.port.buf_size_aligned;
 
     el->ctx = config->ctx;
     el->job_mask = 0;
@@ -130,8 +135,8 @@ esp_gmf_err_t esp_gmf_element_register_in_port(esp_gmf_element_handle_t handle, 
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, io_inst, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    if ((el->in_attr.type & io_inst->type) == 0) {
-        ESP_LOGE(TAG, "The in port type[%x] is unsupported, expected:%x,[%p-%s]", io_inst->type, el->in_attr.type, handle, OBJ_GET_TAG(handle));
+    if ((el->in_attr.port.type & io_inst->attr.type) == 0) {
+        ESP_LOGE(TAG, "The in port type[%x] is unsupported, expected:%x,[%p-%s]", io_inst->attr.type, el->in_attr.port.type, handle, OBJ_GET_TAG(handle));
         return ESP_GMF_ERR_NOT_SUPPORT;
     }
     int cnt = _get_port_cnt(el->in);
@@ -139,6 +144,8 @@ esp_gmf_err_t esp_gmf_element_register_in_port(esp_gmf_element_handle_t handle, 
         ESP_LOGE(TAG, "Can't register more in ports for an element that is only support single port, cnt:%x,[%p-%s]", cnt, handle, OBJ_GET_TAG(handle));
         return ESP_GMF_ERR_NOT_SUPPORT;
     }
+    io_inst->attr.buf_size_aligned = el->in_attr.port.buf_size_aligned;
+    io_inst->attr.buf_addr_aligned = el->in_attr.port.buf_addr_aligned;
     if (el->in == NULL) {
         el->in = io_inst;
         io_inst->next = NULL;
@@ -177,8 +184,8 @@ esp_gmf_err_t esp_gmf_element_register_out_port(esp_gmf_element_handle_t handle,
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, io_inst, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    if ((el->out_attr.type & io_inst->type) == 0) {
-        ESP_LOGE(TAG, "The out port type[%x] is unsupported, expected:%x, [%p-%s]", io_inst->type, el->out_attr.type, handle, OBJ_GET_TAG(handle));
+    if ((el->out_attr.port.type & io_inst->attr.type) == 0) {
+        ESP_LOGE(TAG, "The out port type[%x] is unsupported, expected:%x, [%p-%s]", io_inst->attr.type, el->out_attr.port.type, handle, OBJ_GET_TAG(handle));
         return ESP_GMF_ERR_NOT_SUPPORT;
     }
     int cnt = _get_port_cnt(el->out);
@@ -186,6 +193,8 @@ esp_gmf_err_t esp_gmf_element_register_out_port(esp_gmf_element_handle_t handle,
         ESP_LOGE(TAG, "Can't register more out ports for an element that is only support single port, cnt:%x, [%p-%s]", cnt, handle, OBJ_GET_TAG(handle));
         return ESP_GMF_ERR_NOT_SUPPORT;
     }
+    io_inst->attr.buf_size_aligned = el->out_attr.port.buf_size_aligned;
+    io_inst->attr.buf_addr_aligned = el->out_attr.port.buf_addr_aligned;
     if (el->out == NULL) {
         el->out = io_inst;
         io_inst->next = NULL;

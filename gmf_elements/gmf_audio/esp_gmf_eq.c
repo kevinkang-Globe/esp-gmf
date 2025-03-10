@@ -233,7 +233,7 @@ static esp_gmf_job_err_t esp_gmf_eq_process(esp_gmf_audio_element_handle_t self,
     esp_gmf_port_handle_t out_port = ESP_GMF_ELEMENT_GET(self)->out;
     esp_gmf_payload_t *in_load = NULL;
     esp_gmf_payload_t *out_load = NULL;
-    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, GMF_AUDIO_INPUT_SAMPLE_NUM * eq->bytes_per_sample, ESP_GMF_MAX_DELAY);
+    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, ESP_GMF_ELEMENT_GET(eq)->in_attr.data_size, ESP_GMF_MAX_DELAY);
     ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __eq_release;});
     int samples_num = in_load->valid_size / (eq->bytes_per_sample);
     if (in_port->is_shared == 1) {
@@ -396,8 +396,11 @@ esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t *han
     ret = esp_gmf_obj_set_tag(obj, "eq");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto EQ_INI_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};
-    ESP_GMF_ELEMENT_CFG(el_cfg, true, ESP_GMF_EL_PORT_CAP_SINGLE, ESP_GMF_EL_PORT_CAP_SINGLE,
-                        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_PORT_TYPE_BYTE | ESP_GMF_PORT_TYPE_BLOCK);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    el_cfg.dependency = true;
     ret = esp_gmf_audio_el_init(eq, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto EQ_INI_FAIL, "Failed to initialize eq element");
     *handle = obj;

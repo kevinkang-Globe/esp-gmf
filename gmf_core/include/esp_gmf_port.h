@@ -33,7 +33,6 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#define ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT (4096)
 #define ESP_GMF_PORT_CHECK(log_tag, ret, ret_value, action, format, ...) {                              \
     if (unlikely(ret < ESP_OK)) {                                                                       \
         if (ret != ESP_GMF_IO_ABORT) {                                                                  \
@@ -53,6 +52,22 @@ extern "C" {
 #define ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, ret, ret_value, action) ESP_GMF_PORT_CHECK(TAG, ret, ret_value, action, "Failed to release in, ret: %d", ret)
 
 #define ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, ret, ret_value, action) ESP_GMF_PORT_CHECK(TAG, ret, ret_value, action, "Failed to release out, ret: %d", ret)
+
+/**
+ * @brief  Definition the direction of a GMF port (input or output)
+ */
+#define ESP_GMF_PORT_DIR_IN    (0)  /*!< Input port */
+#define ESP_GMF_PORT_DIR_OUT   (1)  /*!< Output port */
+
+/**
+ * @brief  Definition the bit mask for the type of data handled by a GMF port (byte or block)
+ *         - A byte-type port transfers values by copying data byte by byte. Users must allocate memory,
+ *           which means data transmission involves copying. This type of port allows convenient access to arbitrary byte lengths
+ *         - A block-type port transfers data by passing memory addresses. The memory used by the user is provided by another source,
+ *           so data transmission does not involve copying. However, accessing arbitrary byte lengths is less flexible and may require data concatenation
+ */
+#define  ESP_GMF_PORT_TYPE_BYTE   (0x01)  /*!< Bit0 for the byte type of GMF port */
+#define  ESP_GMF_PORT_TYPE_BLOCK  (0x02)  /*!< Bit1 for the block type of GMF port */
 
 /**
  * @brief  Handle to a GMF port
@@ -75,22 +90,6 @@ typedef esp_gmf_err_io_t (*port_release)(void *handle, esp_gmf_payload_t *load, 
 typedef void (*port_free)(void *p);
 
 /**
- * @brief  Enumeration for the direction of a GMF port (input or output)
- */
-typedef enum {
-    ESP_GMF_PORT_DIR_IN  = 0,  /*!< Input port */
-    ESP_GMF_PORT_DIR_OUT = 1,  /*!< Output port */
-} esp_gmf_port_dir_t;
-
-/**
- * @brief  Enumeration for the type of data handled by a GMF port (byte or block)
- */
-typedef enum {
-    ESP_GMF_PORT_TYPE_BYTE  = 0x00000001,  /*!< Byte type */
-    ESP_GMF_PORT_TYPE_BLOCK = 0x00000002,  /*!< Block type */
-} esp_gmf_port_type_t;
-
-/**
  * @brief  Structure defining the I/O operations of a GMF port
  */
 typedef struct {
@@ -98,6 +97,16 @@ typedef struct {
     port_release  release;  /*!< Function pointer for releasing data */
     port_free     del;      /*!< Function pointer for freeing the port */
 } esp_gmf_port_io_ops_t;
+
+/**
+ * @brief  Structure defining the attributes of a GMF port
+ */
+typedef struct {
+    uint8_t  buf_addr_aligned;  /*!< Byte-align the address of the buffer */
+    uint8_t  buf_size_aligned;  /*!< Byte-align the length of the buffer */
+    uint8_t  dir;               /*!< Port direction */
+    uint8_t  type;              /*!< Port type */
+} esp_gmf_port_attr_t;
 
 /**
  * @brief  Structure representing a GMF port
@@ -118,33 +127,31 @@ typedef struct {
  *          +---------+     +---------------+    +----------+
  */
 typedef struct esp_gmf_port_ {
-    struct esp_gmf_port_  *next;          /*!< Pointer to the next port */
-    void                  *writer;        /*!< Acquire out functions caller with the port */
-    void                  *reader;        /*!< Acquire in functions caller with the port */
-    esp_gmf_port_dir_t     dir;           /*!< Direction of the port */
-    esp_gmf_port_type_t    type;          /*!< Type of data handled by the port */
-    esp_gmf_port_io_ops_t  ops;           /*!< I/O operations of the port */
-    void                  *ctx;           /*!< User context for the port */
-    int                    user_buf_len;  /*!< Length of user buffer */
-    int                    wait_ticks;    /*!< Timeout for port operations */
-    esp_gmf_payload_t     *payload;       /*!< Payload pointer to be set */
-    uint8_t               is_shared : 1;  /*!< Payload is shared to the next element port or not, 1 for shared (default), 0 for dedicated */
-    esp_gmf_payload_t     *self_payload;  /*!< Self payload of the port */
-    struct esp_gmf_port_  *ref_port;      /*!< Pointer to the reference port */
-    int8_t                 ref_count;     /*!< Reference count indicating the number of active references */
-    uint8_t                out_align;     /*!< Byte alignment of the payload */
+    struct esp_gmf_port_  *next;           /*!< Pointer to the next port */
+    void                  *writer;         /*!< Acquire out functions caller with the port */
+    void                  *reader;         /*!< Acquire in functions caller with the port */
+    esp_gmf_port_io_ops_t  ops;            /*!< I/O operations of the port */
+    esp_gmf_port_attr_t    attr;           /*!< Port attributes */
+    int                    data_length;    /*!< Data length of the payload */
+    void                  *ctx;            /*!< User context for the port */
+    int                    wait_ticks;     /*!< Timeout for port operations */
+    esp_gmf_payload_t     *payload;        /*!< Payload pointer to be set */
+    uint8_t                is_shared : 1;  /*!< Payload is shared to the next element port or not, 1 for shared (default), 0 for dedicated */
+    esp_gmf_payload_t     *self_payload;   /*!< Self payload of the port */
+    struct esp_gmf_port_  *ref_port;       /*!< Pointer to the reference port */
+    int8_t                 ref_count;      /*!< Reference count indicating the number of active references */
 } esp_gmf_port_t;
 
 /**
  * @brief  Structure defining the configuration of a GMF port
  */
 typedef struct esp_gmf_port_config_ {
-    esp_gmf_port_dir_t     dir;         /*!< Direction of the port */
-    esp_gmf_port_type_t    type;        /*!< Type of data handled by the port */
-    esp_gmf_port_io_ops_t  ops;         /*!< I/O operations of the port */
-    void                  *ctx;         /*!< User context associated with the port */
-    int                    buf_length;  /*!< Length of the buffer */
-    int                    wait_ticks;  /*!< Timeout for port operations */
+    uint8_t                dir;          /*!< Direction of the port */
+    uint8_t                type;         /*!< Type of data handled by the port */
+    esp_gmf_port_io_ops_t  ops;          /*!< I/O operations of the port */
+    void                  *ctx;          /*!< User context associated with the port */
+    int                    data_length;  /*!< Data length of the port */
+    int                    wait_ticks;   /*!< Timeout for port operations */
 } esp_gmf_port_config_t;
 
 /**
@@ -331,25 +338,6 @@ esp_gmf_err_io_t esp_gmf_port_release_in(esp_gmf_port_handle_t handle, esp_gmf_p
 esp_gmf_err_io_t esp_gmf_port_acquire_out(esp_gmf_port_handle_t handle, esp_gmf_payload_t **load, uint32_t wanted_size, int wait_ticks);
 
 /**
- * @brief  Acquire output payload with specified size and byte alignment
- *         Behavior same as `esp_gmf_port_acquire_out` with additional byte alignment
- *
- * @param[in]      handle       The handle of the port
- * @param[in,out]  load         Pointer to store the acquired payload
- * @param[in]      align        Byte alignment of the acquired payload
- * @param[in]      wanted_size  Size of the payload to be acquired
- * @param[in]      wait_ticks   Number of ticks to wait, in milliseconds
- *
- * @return
- *       - ESP_GMF_IO_OK       Operation successful
- *       - ESP_GMF_IO_FAIL     Operation failed or invalid arguments
- *       - ESP_GMF_IO_ABORT    Operation aborted
- *       - ESP_GMF_IO_TIMEOUT  Operation timed out
- */
-esp_gmf_err_io_t esp_gmf_port_acquire_aligned_out(esp_gmf_port_handle_t handle, esp_gmf_payload_t **load, uint8_t align,
-                                                  uint32_t wanted_size, int wait_ticks);
-
-/**
  * @brief  Call the release operation or clean the payload pointer of the port
  *
  * @param[in]  handle      The handle of the port
@@ -364,19 +352,19 @@ esp_gmf_err_io_t esp_gmf_port_acquire_aligned_out(esp_gmf_port_handle_t handle, 
  */
 esp_gmf_err_io_t esp_gmf_port_release_out(esp_gmf_port_handle_t handle, esp_gmf_payload_t *load, int wait_ticks);
 
-static inline void *NEW_ESP_GMF_PORT(int dir, int type, void *acq, void *release,
+static inline void *NEW_ESP_GMF_PORT(uint8_t dir, uint8_t type, void *acq, void *release,
                                      void *del, void *ctx, int length, int ticks_ms)
 {
     esp_gmf_port_config_t port_config = {
-        .dir = (esp_gmf_port_dir_t)dir,
-        .type = (esp_gmf_port_type_t)type,
+        .dir = (uint8_t)dir,
+        .type = (uint8_t)type,
         .ops = {
             .acquire = (port_acquire)acq,
             .release = (port_release)release,
             .del = (port_free)del,
         },
         .ctx = ctx,
-        .buf_length = length,
+        .data_length = length,
         .wait_ticks = ticks_ms,
     };
     esp_gmf_port_handle_t new_port = NULL;

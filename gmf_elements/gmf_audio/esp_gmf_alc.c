@@ -159,7 +159,7 @@ static esp_gmf_job_err_t esp_gmf_alc_process(esp_gmf_audio_element_handle_t self
     esp_gmf_payload_t *out_load = NULL;
     // parameter set
     ESP_GMF_RET_ON_NOT_OK(TAG, alc_update_gain(alc), {return ESP_GMF_JOB_ERR_FAIL;}, "Failed to update gain");
-    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, GMF_AUDIO_INPUT_SAMPLE_NUM * alc->bytes_per_sample, ESP_GMF_MAX_DELAY);
+    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, ESP_GMF_ELEMENT_GET(alc)->in_attr.data_size, ESP_GMF_MAX_DELAY);
     ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __alc_release;});
     int samples_num = in_load->valid_size / (alc->bytes_per_sample);
     if (in_port->is_shared == 1) {
@@ -296,8 +296,11 @@ esp_gmf_err_t esp_gmf_alc_init(esp_ae_alc_cfg_t *config, esp_gmf_obj_handle_t *h
     ret = esp_gmf_obj_set_tag(obj, "alc");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto ALC_INIT_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};
-    ESP_GMF_ELEMENT_CFG(el_cfg, true, ESP_GMF_EL_PORT_CAP_SINGLE, ESP_GMF_EL_PORT_CAP_SINGLE,
-                        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_PORT_TYPE_BYTE | ESP_GMF_PORT_TYPE_BLOCK);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+                                    ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    ESP_GMF_ELEMENT_OUT_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+                                    ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    el_cfg.dependency = true;
     ret = esp_gmf_audio_el_init(alc, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto ALC_INIT_FAIL, "Failed to initialize alc element");
     *handle = obj;

@@ -55,6 +55,8 @@ static const char *file_name1 = "/sdcard/test_2.wav";
 #define PIPELINE_BLOCK_BIT2 BIT(1)
 #define PIPELINE_BLOCK_BIT3 BIT(2)
 
+#define ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT (4096)
+
 static esp_err_t _pipeline_event(esp_gmf_event_pkt_t *event, void *ctx)
 {
     // The warning messages are used to make the content more noticeable.

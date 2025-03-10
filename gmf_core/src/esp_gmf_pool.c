@@ -212,7 +212,7 @@ esp_gmf_err_t esp_gmf_pool_new_pipeline(esp_gmf_pool_handle_t handle, const char
         if (ret != ESP_GMF_ERR_OK) {
             goto NEW_PIPE_FAIL;
         }
-        ESP_LOGD(TAG, "TO link elments, [%p-%s]", new_el, OBJ_GET_TAG(new_el));
+        ESP_LOGD(TAG, "TO link elements, [%p-%s]", new_el, OBJ_GET_TAG(new_el));
         el_cnt++;
         if (el_cnt == 1) {
             new_first_el_obj = new_el;
@@ -222,9 +222,9 @@ esp_gmf_err_t esp_gmf_pool_new_pipeline(esp_gmf_pool_handle_t handle, const char
         if ((num_of_el_name > 1) && (el_cnt > 1)) {
             esp_gmf_port_handle_t out_port = NULL;
             esp_gmf_port_handle_t in_port = NULL;
-            out_port = NEW_ESP_GMF_PORT_OUT_BLOCK(NULL, NULL, NULL, NULL, (ESP_GMF_ELEMENT_GET(new_first_el_obj)->in_attr.size), ESP_GMF_MAX_DELAY);
+            out_port = NEW_ESP_GMF_PORT_OUT_BLOCK(NULL, NULL, NULL, NULL, (ESP_GMF_ELEMENT_GET(new_first_el_obj)->out_attr.data_size), ESP_GMF_MAX_DELAY);
             ESP_GMF_NULL_CHECK(TAG, out_port, {ret = ESP_GMF_ERR_MEMORY_LACK; goto NEW_PIPE_FAIL;});
-            in_port = NEW_ESP_GMF_PORT_IN_BLOCK(NULL, NULL, NULL, NULL, (ESP_GMF_ELEMENT_GET(new_first_el_obj)->in_attr.size), ESP_GMF_MAX_DELAY);
+            in_port = NEW_ESP_GMF_PORT_IN_BLOCK(NULL, NULL, NULL, NULL, (ESP_GMF_ELEMENT_GET(new_first_el_obj)->in_attr.data_size), ESP_GMF_MAX_DELAY);
             ESP_GMF_NULL_CHECK(TAG, in_port, {ret = ESP_GMF_ERR_MEMORY_LACK; goto NEW_PIPE_FAIL;});
             esp_gmf_element_register_out_port((esp_gmf_element_handle_t)new_prev_el_obj, out_port);
             esp_gmf_element_register_in_port(new_el, in_port);
@@ -248,10 +248,10 @@ esp_gmf_err_t esp_gmf_pool_new_pipeline(esp_gmf_pool_handle_t handle, const char
 
         if (io_type == ESP_GMF_IO_TYPE_BYTE) {
             in_port = NEW_ESP_GMF_PORT_IN_BYTE(esp_gmf_io_acquire_read, esp_gmf_io_release_read, NULL, new_in,
-                                               (ESP_GMF_ELEMENT_GET(new_first_el_obj)->in_attr.size), ESP_GMF_MAX_DELAY);
+                                               (ESP_GMF_ELEMENT_GET(new_first_el_obj)->in_attr.data_size), ESP_GMF_MAX_DELAY);
         } else if (io_type == ESP_GMF_IO_TYPE_BLOCK) {
             in_port = NEW_ESP_GMF_PORT_IN_BLOCK(esp_gmf_io_acquire_read, esp_gmf_io_release_read, NULL, new_in,
-                                                (ESP_GMF_ELEMENT_GET(new_first_el_obj)->in_attr.size), ESP_GMF_MAX_DELAY);
+                                                (ESP_GMF_ELEMENT_GET(new_first_el_obj)->in_attr.data_size), ESP_GMF_MAX_DELAY);
         } else {
             ESP_LOGE(TAG, "The IN type is incorrect,%d, [%p-%s]", io_type, new_in, OBJ_GET_TAG(new_in));
             ret = ESP_GMF_ERR_NOT_SUPPORT;
@@ -277,10 +277,10 @@ esp_gmf_err_t esp_gmf_pool_new_pipeline(esp_gmf_pool_handle_t handle, const char
 
         if (io_type == ESP_GMF_IO_TYPE_BYTE) {
             out_port = NEW_ESP_GMF_PORT_OUT_BYTE(esp_gmf_io_acquire_write, esp_gmf_io_release_write, NULL, new_out,
-                                                 (ESP_GMF_ELEMENT_GET(new_last_el_obj)->out_attr.size), ESP_GMF_MAX_DELAY);
+                                                 (ESP_GMF_ELEMENT_GET(new_last_el_obj)->out_attr.data_size), ESP_GMF_MAX_DELAY);
         } else if (io_type == ESP_GMF_IO_TYPE_BLOCK) {
             out_port = NEW_ESP_GMF_PORT_OUT_BLOCK(esp_gmf_io_acquire_write, esp_gmf_io_release_write, NULL, new_out,
-                                                  (ESP_GMF_ELEMENT_GET(new_last_el_obj)->out_attr.size), ESP_GMF_MAX_DELAY);
+                                                  (ESP_GMF_ELEMENT_GET(new_last_el_obj)->out_attr.data_size), ESP_GMF_MAX_DELAY);
         } else {
             ESP_LOGE(TAG, "The OUT type is incorrect, %d, [%p-%s]", io_type, new_out, OBJ_GET_TAG(new_out));
             ret = ESP_GMF_ERR_NOT_SUPPORT;
@@ -288,7 +288,7 @@ esp_gmf_err_t esp_gmf_pool_new_pipeline(esp_gmf_pool_handle_t handle, const char
         }
         ESP_GMF_NULL_CHECK(TAG, out_port, {ret = ESP_GMF_ERR_MEMORY_LACK; goto NEW_PIPE_FAIL;});
         esp_gmf_element_register_out_port((esp_gmf_element_handle_t)new_last_el_obj, out_port);
-        ESP_LOGD(TAG, "TO link OUT port, [%p-%s], new:%p, sz:%d", new_out, OBJ_GET_TAG(new_out), out_port, (ESP_GMF_ELEMENT_GET(new_last_el_obj)->out_attr.size));
+        ESP_LOGD(TAG, "TO link OUT port, [%p-%s], new:%p, sz:%d", new_out, OBJ_GET_TAG(new_out), out_port, (ESP_GMF_ELEMENT_GET(new_last_el_obj)->out_attr.data_size));
     }
     return ESP_GMF_ERR_OK;
 

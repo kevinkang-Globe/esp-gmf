@@ -74,7 +74,7 @@ static esp_gmf_job_err_t esp_gmf_copier_process(esp_gmf_element_handle_t self, v
     esp_gmf_payload_t *out_load = NULL;
     int out_len = -1;
     int idx = 0;
-    esp_gmf_err_io_t ret = esp_gmf_port_acquire_in(in, &in_load, in->user_buf_len, ESP_GMF_MAX_DELAY);
+    esp_gmf_err_io_t ret = esp_gmf_port_acquire_in(in, &in_load, in->data_length, ESP_GMF_MAX_DELAY);
     ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, ret, out_len, {goto __copy_release;});
     while (out) {
         out_load = NULL;
@@ -166,7 +166,10 @@ esp_gmf_err_t esp_gmf_copier_cast(esp_gmf_copier_cfg_t *config, esp_gmf_obj_hand
     ESP_GMF_ELEMENT_GET(copier)->ops.process = esp_gmf_copier_process;
     ESP_GMF_ELEMENT_GET(copier)->ops.close = esp_gmf_copier_close;
     esp_gmf_element_cfg_t el_cfg = {0};
-    ESP_GMF_ELEMENT_CFG(el_cfg, false, ESP_GMF_EL_PORT_CAP_SINGLE, ESP_GMF_EL_PORT_CAP_MULTI,
-                        ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_PORT_TYPE_BYTE | ESP_GMF_PORT_TYPE_BLOCK);
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 0, 0,
+                            ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    ESP_GMF_ELEMENT_OUT_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_MULTI, 0, 0,
+                                ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT);
+    el_cfg.dependency = false;
     return esp_gmf_element_init(copier, &el_cfg);
 }
