@@ -24,7 +24,7 @@
 
 #pragma once
 #include <string.h>
-#include  "esp_gmf_err.h"
+#include "esp_gmf_err.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_log.h"
 
@@ -153,7 +153,8 @@ static inline esp_gmf_err_t esp_gmf_job_stack_pop(esp_gmf_job_stack_t *stack, ui
     return ESP_GMF_ERR_OK;
 }
 
-static inline void esp_gmf_job_stack_clear(esp_gmf_job_stack_t *stack) {
+static inline void esp_gmf_job_stack_clear(esp_gmf_job_stack_t *stack)
+{
     if (!stack) {
         return;
     }
@@ -216,11 +217,12 @@ static inline void esp_gmf_job_stack_destroy(esp_gmf_job_stack_t *stack)
     esp_gmf_oal_free(stack);
 }
 
-static inline void esp_gmf_job_stack_show(const esp_gmf_job_stack_t *stack, int line) {
+static inline void esp_gmf_job_stack_show(const esp_gmf_job_stack_t *stack, int line)
+{
     const esp_gmf_job_node_t *cur = stack ? stack->top : NULL;
     printf("Job Stack [line:%d] (top -> bottom): ", line);
     while (cur) {
-        esp_gmf_job_t *job = (esp_gmf_job_t*)cur->node_addr;
+        esp_gmf_job_t *job = (esp_gmf_job_t *)cur->node_addr;
         printf("%s(%p) ", job->label, job->func);
         cur = cur->next;
     }

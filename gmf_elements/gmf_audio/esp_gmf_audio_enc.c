@@ -30,6 +30,8 @@
 #include "esp_gmf_audio_enc.h"
 #include "esp_audio_enc_default.h"
 #include "esp_gmf_cache.h"
+#include "esp_gmf_cap.h"
+#include "esp_gmf_caps_def.h"
 
 #define AUD_ENC_DEFAULT_INPUT_TIME_MS (20)
 #define SET_ENC_BASIC_INFO(cfg, info) do {          \
@@ -301,6 +303,17 @@ static esp_gmf_err_t esp_gmf_audio_enc_destroy(esp_gmf_audio_element_handle_t se
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_enc_caps_func(esp_gmf_cap_t **caps)
+{
+    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t dec_caps = {0};
+    dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_ENCODER;
+    dec_caps.attr_fun = NULL;
+    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_audio_enc_init(esp_audio_enc_config_t *config, esp_gmf_obj_handle_t *handle)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -346,9 +359,11 @@ esp_gmf_err_t esp_gmf_audio_enc_cast(esp_audio_enc_config_t *config, esp_gmf_obj
     free_esp_gmf_audio_enc_cfg(OBJ_GET_CFG(handle));
     esp_gmf_obj_set_config(handle, new_config, sizeof(*config));
     esp_gmf_audio_element_t *audio_enc_el = (esp_gmf_audio_element_t *)handle;
+
     audio_enc_el->base.ops.open = esp_gmf_audio_enc_open;
     audio_enc_el->base.ops.process = esp_gmf_audio_enc_process;
     audio_enc_el->base.ops.close = esp_gmf_audio_enc_close;
     audio_enc_el->base.ops.event_receiver = audio_enc_received_event_handler;
+    audio_enc_el->base.ops.load_caps = _load_enc_caps_func;
     return ESP_GMF_ERR_OK;
 }

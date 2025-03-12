@@ -58,7 +58,7 @@ esp_gmf_err_t esp_gmf_port_init(esp_gmf_port_config_t *cfg, esp_gmf_port_handle_
     memcpy(&port->ops, &cfg->ops, sizeof(port->ops));
     port->ctx = cfg->ctx;
     port->wait_ticks = cfg->wait_ticks;
-    port->is_shared = 1; // Shared the payload for other port by default
+    port->is_shared = 1;  // Shared the payload for other port by default
     *out_result = (esp_gmf_port_handle_t)port;
     ESP_LOGD(TAG, "Create a port:%p, t:%d, dir:%d, sub:%p, len:%d", port,
              port->attr.type, port->attr.dir, port->ctx, port->data_length);

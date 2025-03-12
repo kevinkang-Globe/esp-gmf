@@ -29,6 +29,7 @@
 #include "esp_gmf_info.h"
 #include "gmf_fake_dec.h"
 #include "mock_dec.h"
+#include "esp_gmf_caps_def.h"
 
 static const char *TAG = "FAKE_DEC";
 
@@ -41,6 +42,20 @@ typedef struct {
     char                    fake_name[32];
     mock_dec_el_args_t      args;
 } fake_decoder_t;
+
+static esp_gmf_err_t audio_attr_iter_fun(uint32_t attr_index, esp_gmf_cap_attr_t *attr)
+{
+    switch (attr_index) {
+        case 0: {
+            ESP_GMF_CAP_ATTR_SET_STEPWISE(attr, STR_2_EIGHTCC("TEST"), 8000, 3000, 22000);
+            break;
+        }
+        default:
+            attr->prop_type = ESP_GMF_PROP_TYPE_NONE;
+            return ESP_GMF_ERR_NOT_FOUND;
+    }
+    return ESP_GMF_ERR_OK;
+}
 
 static esp_gmf_job_err_t fake_dec_open(esp_gmf_audio_element_handle_t self, void *para)
 {
@@ -164,7 +179,7 @@ esp_err_t fake_dec_init(fake_dec_cfg_t *config, esp_gmf_obj_handle_t *handle)
     };
     ret = esp_gmf_audio_el_init(fake, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto WAV_DEC_FAIL, "Failed Initialize audio el");
-    ESP_LOGE(TAG, "Create fake dec,%s-%p, in:%d, out:%d", OBJ_GET_TAG(obj), obj, config->in_buf_size, config->out_buf_size);
+    ESP_LOGI(TAG, "Create fake dec,%s-%p, in:%d, out:%d", OBJ_GET_TAG(obj), obj, config->in_buf_size, config->out_buf_size);
     return ESP_OK;
 
 WAV_DEC_FAIL:
@@ -321,6 +336,17 @@ static esp_gmf_err_t __get_filter(esp_gmf_element_handle_t handle, esp_gmf_args_
     return ESP_OK;
 }
 
+static esp_gmf_err_t _load_caps_func(esp_gmf_cap_t **caps)
+{
+    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t dec_caps = {0};
+    dec_caps.cap_eightcc = STR_2_EIGHTCC("FAKEDEC");
+    dec_caps.attr_fun = audio_attr_iter_fun;
+    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+    return ESP_GMF_ERR_OK;
+}
+
 esp_err_t fake_dec_cast(fake_dec_cfg_t *config, esp_gmf_obj_handle_t handle)
 {
     ESP_GMF_MEM_CHECK(TAG, config, return ESP_ERR_INVALID_ARG);
@@ -329,6 +355,7 @@ esp_err_t fake_dec_cast(fake_dec_cfg_t *config, esp_gmf_obj_handle_t handle)
     fake_el->base.ops.open = fake_dec_open;
     fake_el->base.ops.process = fake_dec_process;
     fake_el->base.ops.close = fake_dec_close;
+    fake_el->base.ops.load_caps = _load_caps_func;
 
     fake_dec_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_CHECK(TAG, cfg, return ESP_GMF_ERR_MEMORY_LACK);

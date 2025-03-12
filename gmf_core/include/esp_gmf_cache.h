@@ -22,7 +22,7 @@
  *
  */
 
- #pragma once
+#pragma once
 
 #include <string.h>
 #include "esp_gmf_oal_mem.h"
@@ -188,11 +188,11 @@ static inline esp_gmf_err_t esp_gmf_cache_acquire(esp_gmf_cache_t *handle, uint3
     *load_out = &handle->load;
     ESP_LOGD("GMF_CACHE", "ACQ, filled: %ld, Origin_valid_size: %d", handle->buf_filled, handle->origin_load.valid_size);
 
-    /*
-    *  1. If the original buffer has sufficient data, return its address directly to the user
-    *  2. Copy the remaining data from the original buffer to the cache buffer
-    *  3. If the original buffer does not have enough data for the user, provide the cached buffer address instead
-    */
+    /**
+     *  1. If the original buffer has sufficient data, return its address directly to the user
+     *  2. Copy the remaining data from the original buffer to the cache buffer
+     *  3. If the original buffer does not have enough data for the user, provide the cached buffer address instead
+     */
 
     if (handle->buf_filled == 0) {
         if (handle->origin_load.valid_size >= expected_size) {
@@ -207,8 +207,8 @@ static inline esp_gmf_err_t esp_gmf_cache_acquire(esp_gmf_cache_t *handle, uint3
     }
     if (handle->buf_filled || (handle->origin_load.valid_size < expected_size)) {
         int n = (handle->buf_len - handle->buf_filled) > handle->origin_load.valid_size
-                    ? handle->origin_load.valid_size
-                    : (handle->buf_len - handle->buf_filled);
+            ? handle->origin_load.valid_size
+            : (handle->buf_len - handle->buf_filled);
         memcpy(handle->buf + handle->buf_filled, handle->origin_load.buf, n);
         handle->origin_load.buf += n;
         handle->origin_load.valid_size -= n;
@@ -230,7 +230,7 @@ static inline esp_gmf_err_t esp_gmf_cache_acquire(esp_gmf_cache_t *handle, uint3
 /**
  * @brief  Release the payload data previously acquired with `esp_gmf_cache_acquire`
  *
- * @note   The filled portion of the buffer is cleared only if its size equals the buffer length
+ * @note  The filled portion of the buffer is cleared only if its size equals the buffer length
  *
  * @param[in]  handle  Pointer to the cache handle
  * @param[in]  load    Pointer to the payload data to be released

@@ -67,10 +67,10 @@ esp_gmf_node_t *esp_gmf_node_get_tail(esp_gmf_node_t *root);
 /**
  * @brief  Add a node to the end of a linked list
  *
- * @param[in]  root  Root node of the linked list
- * @param[in]  new   Node to be added to the end of the linked list
+ * @param[in]  root      Root node of the linked list
+ * @param[in]  new_node  Node to be added to the end of the linked list
  */
-void esp_gmf_node_add_last(esp_gmf_node_t *root, esp_gmf_node_t *new);
+void esp_gmf_node_add_last(esp_gmf_node_t *root, esp_gmf_node_t *new_node);
 
 /**
  * @brief  Clear a linked list, freeing associated resources
@@ -87,7 +87,7 @@ void esp_gmf_node_clear(esp_gmf_node_t **root, node_free del);
  *
  * @return
  *       - > 0  Number of nodes in the linked list
- *       -  0   Invalid argument provided or the list is empty
+ *       - 0    Invalid argument provided or the list is empty
  */
 int esp_gmf_node_get_size(esp_gmf_node_t *root);
 

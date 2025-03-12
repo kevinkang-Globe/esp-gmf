@@ -56,15 +56,15 @@ esp_gmf_node_t *esp_gmf_node_get_tail(esp_gmf_node_t *root)
     return last;
 }
 
-void esp_gmf_node_add_last(esp_gmf_node_t *root, esp_gmf_node_t *new)
+void esp_gmf_node_add_last(esp_gmf_node_t *root, esp_gmf_node_t *new_node)
 {
     esp_gmf_node_t *last = esp_gmf_node_get_tail(root);
     if (last != NULL) {
-        last->next = new;
-        new->prev = last;
-        new->next = NULL;
+        last->next = new_node;
+        new_node->prev = last;
+        new_node->next = NULL;
     } else {
-        ESP_LOGE("NODE", "The root is NULL, %s, %p, %p", __func__, root, new);
+        ESP_LOGE("NODE", "The root is NULL, %s, %p, %p", __func__, root, new_node);
     }
 }
 

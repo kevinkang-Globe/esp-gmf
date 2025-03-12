@@ -31,6 +31,8 @@
 #include "esp_heap_caps.h"
 #include "gmf_audio_common.h"
 #include "esp_gmf_audio_method_def.h"
+#include "esp_gmf_cap.h"
+#include "esp_gmf_caps_def.h"
 
 #define MIXER_DEFAULT_PROC_TIME_MS (10)
 
@@ -332,6 +334,17 @@ static esp_gmf_err_t esp_gmf_mixer_destroy(esp_gmf_audio_element_handle_t self)
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_mixer_caps_func(esp_gmf_cap_t **caps)
+{
+    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t dec_caps = {0};
+    dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_MIXER;
+    dec_caps.attr_fun = NULL;
+    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_mixer_set_mode(esp_gmf_audio_element_handle_t handle, uint8_t src_idx, esp_ae_mixer_mode_t mode)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -436,5 +449,6 @@ esp_gmf_err_t esp_gmf_mixer_cast(esp_ae_mixer_cfg_t *config, esp_gmf_obj_handle_
     mixer_el->base.ops.process = esp_gmf_mixer_process;
     mixer_el->base.ops.close = esp_gmf_mixer_close;
     mixer_el->base.ops.event_receiver = mixer_received_event_handler;
+    mixer_el->base.ops.load_caps = _load_mixer_caps_func;
     return ESP_GMF_ERR_OK;
 }

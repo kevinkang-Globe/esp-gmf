@@ -30,7 +30,8 @@
 #include "esp_gmf_fade.h"
 #include "gmf_audio_common.h"
 #include "esp_gmf_audio_method_def.h"
-
+#include "esp_gmf_cap.h"
+#include "esp_gmf_caps_def.h"
 /**
  * @brief  Audio fade context in GMF
  */
@@ -237,6 +238,17 @@ static esp_gmf_err_t esp_gmf_fade_destroy(esp_gmf_audio_element_handle_t self)
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_fade_caps_func(esp_gmf_cap_t **caps)
+{
+    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t dec_caps = {0};
+    dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_FADE;
+    dec_caps.attr_fun = NULL;
+    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_fade_set_mode(esp_gmf_audio_element_handle_t handle, esp_ae_fade_mode_t mode)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -342,5 +354,6 @@ esp_gmf_err_t esp_gmf_fade_cast(esp_ae_fade_cfg_t *config, esp_gmf_obj_handle_t 
     fade_el->base.ops.process = esp_gmf_fade_process;
     fade_el->base.ops.close = esp_gmf_fade_close;
     fade_el->base.ops.event_receiver = fade_received_event_handler;
+    fade_el->base.ops.load_caps = _load_fade_caps_func;
     return ESP_GMF_ERR_OK;
 }
