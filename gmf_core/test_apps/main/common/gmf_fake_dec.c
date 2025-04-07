@@ -101,7 +101,10 @@ static esp_gmf_job_err_t fake_dec_close(esp_gmf_audio_element_handle_t self, voi
 static esp_err_t fake_dec_destroy(esp_gmf_audio_element_handle_t self)
 {
     ESP_LOGW(TAG, "Destroyed, %p", self);
-    esp_gmf_oal_free(OBJ_GET_CFG(self));
+    void *cfg = OBJ_GET_CFG(self);
+    if (cfg) {
+        esp_gmf_oal_free(cfg);
+    }
     esp_gmf_audio_el_deinit(self);
     esp_gmf_oal_free(self);
     return ESP_OK;
@@ -109,9 +112,7 @@ static esp_err_t fake_dec_destroy(esp_gmf_audio_element_handle_t self)
 
 static esp_err_t fake_dec_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, cfg, return ESP_ERR_INVALID_ARG);
     ESP_GMF_MEM_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
-
     fake_dec_cfg_t *fake_cfg = (fake_dec_cfg_t *)cfg;
     esp_gmf_obj_handle_t new_obj = NULL;
     int ret = fake_dec_init(fake_cfg, &new_obj);
@@ -130,25 +131,23 @@ static esp_err_t fake_dec_new(void *cfg, esp_gmf_obj_handle_t *handle)
 
 esp_err_t fake_dec_init(fake_dec_cfg_t *config, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, config, return ESP_ERR_INVALID_ARG);
     ESP_GMF_MEM_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
     fake_decoder_t *fake = esp_gmf_oal_calloc(1, sizeof(fake_decoder_t));
     ESP_GMF_MEM_CHECK(TAG, fake, return ESP_ERR_NO_MEM);
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)fake;
-    int ret = esp_gmf_obj_set_config(obj, config, sizeof(*config));
-
-    fake_dec_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
-    ESP_GMF_MEM_CHECK(TAG, cfg, {esp_gmf_oal_free(fake); return ESP_GMF_ERR_MEMORY_LACK;});
-    memcpy(cfg, config, sizeof(*config));
-    esp_gmf_obj_set_config(obj, cfg, sizeof(*cfg));
-
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto WAV_DEC_FAIL, "Failed set OBJ configuration");
-    if (config->name) {
-        ret = esp_gmf_obj_set_tag(obj, config->name);
-    } else {
-        ret = esp_gmf_obj_set_tag(obj, "fake_dec");
-    }
+    esp_gmf_err_t ret = ESP_GMF_ERR_OK;
+    ret = esp_gmf_obj_set_tag(obj, "fake_dec");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto WAV_DEC_FAIL, "Failed set OBJ tag");
+    if (config) {
+        fake_dec_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
+        ESP_GMF_MEM_CHECK(TAG, cfg, {esp_gmf_oal_free(fake); return ESP_GMF_ERR_MEMORY_LACK;});
+        memcpy(cfg, config, sizeof(*config));
+        esp_gmf_obj_set_config(obj, cfg, sizeof(*cfg));
+        if (config->name) {
+            ret = esp_gmf_obj_set_tag(obj, cfg->name);
+            ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto WAV_DEC_FAIL, "Failed set OBJ tag");
+        }
+    }
 
     obj->new_obj = fake_dec_new;
     obj->del_obj = fake_dec_destroy;

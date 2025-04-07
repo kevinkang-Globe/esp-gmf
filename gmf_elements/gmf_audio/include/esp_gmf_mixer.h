@@ -31,11 +31,16 @@
 extern "C" {
 #endif /* __cplusplus */
 
+/**
+ * @brief  Default mixer source info
+ *         If `src_info` is NULL in `esp_ae_mixer_cfg_t`, the mixer will use esp_gmf_default_mixer_src_info as default
+ *         And `src_num` will set to `sizeof(esp_gmf_default_mixer_src_info) / sizeof(esp_ae_mixer_info_t)`;
+ */
 #define DEFAULT_ESP_GMF_MIXER_CONFIG() {  \
     .sample_rate     = 48000,             \
     .bits_per_sample = 16,                \
     .channel         = 2,                 \
-    .src_num         = 2,                 \
+    .src_num         = 0,                 \
     .src_info        = NULL,              \
 }
 

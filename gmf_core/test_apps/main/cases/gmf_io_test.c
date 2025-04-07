@@ -97,6 +97,5 @@ TEST_CASE("GMF IO read and write", "ESP_GMF_IO")
 
     esp_gmf_io_close(writer);
     esp_gmf_obj_delete(writer);
-
     ESP_GMF_MEM_SHOW(TAG);
 }

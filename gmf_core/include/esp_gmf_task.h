@@ -126,7 +126,7 @@ typedef struct {
  *       - ESP_GMF_ERR_MEMORY_LACK  If there is insufficient memory to perform the initialization
  *       - Others                   Indicating failure
  */
-esp_gmf_err_t esp_gmf_task_init(void *config, esp_gmf_task_handle_t *tsk_hd);
+esp_gmf_err_t esp_gmf_task_init(esp_gmf_task_cfg_t *config, esp_gmf_task_handle_t *tsk_hd);
 
 /**
  * @brief  Deinitialize a GMF task, freeing associated resources

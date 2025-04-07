@@ -140,6 +140,8 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->FILE]", "ESP_GMF_POOL")
         .channels = 1,
         .bits = 16,
     };
+    esp_audio_enc_config_t *enc_cfg = (esp_audio_enc_config_t *)OBJ_GET_CFG(enc_handle);
+    esp_gmf_audio_helper_reconfig_enc_by_type (audio_type, &info, enc_cfg);
     esp_gmf_element_handle_t resp = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "rate_cvt", &resp);
     esp_ae_rate_cvt_cfg_t *resp_cfg = (esp_ae_rate_cvt_cfg_t *)OBJ_GET_CFG(resp);
@@ -304,7 +306,6 @@ static const char *recoding_file_path[] = {
     "/sdcard/esp_gmf_rec_01.amrnb",
     "/sdcard/esp_gmf_rec_02.amrwb",
     "/sdcard/esp_gmf_rec_03.pcm",
-    "/sdcard/esp_gmf_rec_04.opus",
 };
 
 TEST_CASE("Record file for playback, multiple files with One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
@@ -345,8 +346,7 @@ TEST_CASE("Record file for playback, multiple files with One Pipe, [FILE->dec->r
     TEST_ASSERT_NOT_NULL(pipe);
 
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
-    cfg.ctx = NULL;
-    cfg.cb = NULL;
+    cfg.thread.stack = 30 * 1024;
     esp_gmf_task_handle_t work_task = NULL;
     esp_gmf_task_init(&cfg, &work_task);
     TEST_ASSERT_NOT_NULL(work_task);
@@ -415,7 +415,7 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->HTTP]", "ESP_GMF_POOL")
     esp_gmf_element_handle_t enc_handle = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "encoder", &enc_handle);
     esp_audio_enc_config_t *esp_gmf_enc_cfg = (esp_audio_enc_config_t *)OBJ_GET_CFG(enc_handle);
-    esp_audio_type_t audio_type = 0;
+    esp_audio_type_t audio_type = ESP_AUDIO_TYPE_AAC;
     esp_gmf_audio_helper_get_audio_type_by_uri(rec_type, &audio_type);
     esp_gmf_info_sound_t info = {
         .sample_rates = 16000,

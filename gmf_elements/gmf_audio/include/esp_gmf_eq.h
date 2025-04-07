@@ -30,6 +30,11 @@
 extern "C" {
 #endif /* __cplusplus */
 
+/**
+ * @brief  Default EQ parameters
+ *         If `para` is NULL in the `esp_ae_eq_cfg_t` , the EQ will use `esp_gmf_default_eq_paras` as default
+ *         And the `filter_num` will be set to sizeof(esp_gmf_default_eq_paras) / sizeof(esp_ae_eq_filter_para_t)
+ */
 #define DEFAULT_ESP_GMF_EQ_CONFIG() {  \
     .sample_rate     = 48000,          \
     .bits_per_sample = 16,             \

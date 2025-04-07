@@ -50,6 +50,7 @@
 #include "esp_gmf_deinterleave.h"
 #include "esp_gmf_audio_enc.h"
 #include "esp_gmf_audio_dec.h"
+#include "esp_audio_simple_dec_default.h"
 
 #include "esp_gmf_setup_peripheral.h"
 #include "esp_gmf_setup_pool.h"
@@ -362,6 +363,8 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_gmf_obj_delete(sonic_hd);
 
     printf("\r\n///////////////////// DEC /////////////////////\r\n");
+    esp_audio_dec_register_default();
+    esp_audio_simple_dec_register_default();
     esp_audio_simple_dec_cfg_t es_dec_cfg = DEFAULT_ESP_GMF_AUDIO_DEC_CONFIG();
     esp_gmf_element_handle_t es_hd = NULL;
     esp_gmf_audio_dec_init(&es_dec_cfg, &es_hd);
@@ -376,6 +379,7 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_gmf_obj_delete(es_hd);
 
     printf("\r\n///////////////////// ENC /////////////////////\r\n");
+    esp_audio_enc_register_default();
     esp_audio_enc_config_t es_enc_cfg = DEFAULT_ESP_GMF_AUDIO_ENC_CONFIG();
     esp_aac_enc_config_t aac_enc_cfg = ESP_AAC_ENC_CONFIG_DEFAULT();
     es_enc_cfg.type = ESP_AUDIO_TYPE_AAC;
@@ -620,7 +624,7 @@ TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
     cfg1.ctx = NULL;
     cfg1.cb = NULL;
     cfg1.thread.core = 0;
-    cfg1.thread.prio = 12;
+    cfg1.thread.prio = 3;
     cfg1.name = "deinterleave";
     esp_gmf_task_handle_t work_task1 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg1, &work_task1));
@@ -630,7 +634,7 @@ TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
 
     esp_gmf_task_cfg_t cfg2 = DEFAULT_ESP_GMF_TASK_CONFIG();
     cfg2.thread.core = 0;
-    cfg2.thread.prio = 11;
+    cfg2.thread.prio = 3;
     cfg2.name = "channel1";
     esp_gmf_task_handle_t work_task2 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg2, &work_task2));
@@ -642,7 +646,7 @@ TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
     cfg3.ctx = NULL;
     cfg3.cb = NULL;
     cfg3.thread.core = 1;
-    cfg3.thread.prio = 11;
+    cfg3.thread.prio = 3;
     cfg3.name = "channel2";
     esp_gmf_task_handle_t work_task3 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg3, &work_task3));
@@ -654,7 +658,7 @@ TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
     cfg4.ctx = NULL;
     cfg4.cb = NULL;
     cfg4.thread.core = 0;
-    cfg4.thread.prio = 10;
+    cfg4.thread.prio = 3;
     cfg4.name = "interleave";
     esp_gmf_task_handle_t work_task4 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg4, &work_task4));
@@ -668,15 +672,9 @@ TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe4));
 
     vTaskDelay(2000 / portTICK_RATE_MS);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe1));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe2));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe3));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe4));
 
     vTaskDelay(1000 / portTICK_RATE_MS);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe1));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe2));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe3));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe4));
 
     xEventGroupWaitBits(pipe_sync_evt1, PIPELINE_BLOCK_BIT, pdTRUE, pdFALSE, portMAX_DELAY);

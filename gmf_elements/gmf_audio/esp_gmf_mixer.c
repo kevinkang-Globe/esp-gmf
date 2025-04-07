@@ -57,7 +57,7 @@ typedef struct {
 
 static const char *TAG = "ESP_GMF_MIXER";
 
-static esp_ae_mixer_info_t esp_gmf_default_mixer_src_info[] = {
+const esp_ae_mixer_info_t esp_gmf_default_mixer_src_info[] = {
     {1.0, 0.5, 500},
     {0.5, 0.0, 500},
 };
@@ -80,12 +80,12 @@ static inline esp_gmf_err_t dupl_esp_ae_mixer_cfg(esp_ae_mixer_cfg_t *config, es
 
 static inline void free_esp_ae_mixer_cfg(esp_ae_mixer_cfg_t *config)
 {
-    if (config && config->src_info) {
-        esp_gmf_oal_free(config->src_info);
-        config->src_info = NULL;
-        config->src_num = 0;
+    if (config) {
+        if (config->src_info && (config->src_info != esp_gmf_default_mixer_src_info)) {
+            esp_gmf_oal_free(config->src_info);
+        }
+        esp_gmf_oal_free(config);
     }
-    esp_gmf_oal_free(config);
 }
 
 static inline esp_gmf_job_err_t mixer_update_apply_setting(esp_gmf_mixer_t *mixer)
@@ -158,8 +158,6 @@ static esp_gmf_err_t __mixer_set_audio_info(esp_gmf_audio_element_handle_t handl
 
 static esp_gmf_err_t esp_gmf_mixer_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_ae_mixer_cfg_t *mixer_cfg = (esp_ae_mixer_cfg_t *)cfg;
     esp_gmf_obj_handle_t new_obj = NULL;
@@ -326,13 +324,11 @@ static esp_gmf_err_t mixer_received_event_handler(esp_gmf_event_pkt_t *evt, void
 
 static esp_gmf_err_t esp_gmf_mixer_destroy(esp_gmf_audio_element_handle_t self)
 {
-    if (self != NULL) {
-        esp_gmf_mixer_t *mixer = (esp_gmf_mixer_t *)self;
-        ESP_LOGD(TAG, "Destroyed, %p", self);
-        free_esp_ae_mixer_cfg(OBJ_GET_CFG(self));
-        esp_gmf_audio_el_deinit(self);
-        esp_gmf_oal_free(mixer);
-    }
+    esp_gmf_mixer_t *mixer = (esp_gmf_mixer_t *)self;
+    ESP_LOGD(TAG, "Destroyed, %p", self);
+    free_esp_ae_mixer_cfg(OBJ_GET_CFG(self));
+    esp_gmf_audio_el_deinit(self);
+    esp_gmf_oal_free(mixer);
     return ESP_GMF_ERR_OK;
 }
 
@@ -366,7 +362,6 @@ esp_gmf_err_t esp_gmf_mixer_set_audio_info(esp_gmf_audio_element_handle_t handle
 
 esp_gmf_err_t esp_gmf_mixer_init(esp_ae_mixer_cfg_t *config, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
@@ -375,15 +370,16 @@ esp_gmf_err_t esp_gmf_mixer_init(esp_ae_mixer_cfg_t *config, esp_gmf_obj_handle_
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)mixer;
     obj->new_obj = esp_gmf_mixer_new;
     obj->del_obj = esp_gmf_mixer_destroy;
-    if (config->src_info == NULL) {
-        // Provide default parameters
-        config->src_info = esp_gmf_default_mixer_src_info;
-        config->src_num = sizeof(esp_gmf_default_mixer_src_info) / sizeof(esp_ae_mixer_info_t);
+    if (config) {
+        if (config->src_info == NULL) {
+            config->src_info = esp_gmf_default_mixer_src_info;
+            config->src_num = sizeof(esp_gmf_default_mixer_src_info) / sizeof(esp_ae_mixer_info_t);
+        }
+        esp_ae_mixer_cfg_t *new_config = NULL;
+        dupl_esp_ae_mixer_cfg(config, &new_config);
+        ESP_GMF_CHECK(TAG, new_config, {ret = ESP_GMF_ERR_MEMORY_LACK; goto MIXER_INIT_FAIL;}, "Failed to allocate mixer configuration");
+        esp_gmf_obj_set_config(obj, new_config, sizeof(esp_ae_mixer_cfg_t));
     }
-    esp_ae_mixer_cfg_t *new_config = NULL;
-    dupl_esp_ae_mixer_cfg(config, &new_config);
-    ESP_GMF_CHECK(TAG, new_config, {ret = ESP_GMF_ERR_MEMORY_LACK; goto MIXER_INIT_FAIL;}, "Failed to allocate mixer configuration");
-    esp_gmf_obj_set_config(obj, new_config, sizeof(esp_ae_mixer_cfg_t));
     ret = esp_gmf_obj_set_tag(obj, "mixer");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto MIXER_INIT_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};

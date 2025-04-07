@@ -33,16 +33,13 @@
  * @brief Copier context in GMF
  */
 typedef struct esp_gmf_copier {
-    struct esp_gmf_element parent;   /*!< The GMF copier handle */
-    uint8_t                copy_num; /*!< The output stream number */
+    struct esp_gmf_element parent;  /*!< The GMF copier handle */
 } esp_gmf_copier_t;
 
 static const char *TAG = "ESP_GMF_COPIER";
 
 static esp_gmf_err_t esp_gmf_copier_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_gmf_copier_cfg_t *copier_cfg = (esp_gmf_copier_cfg_t *)cfg;
     esp_gmf_obj_handle_t new_obj = NULL;
@@ -129,28 +126,32 @@ static esp_gmf_job_err_t esp_gmf_copier_close(esp_gmf_element_handle_t self, voi
 
 static esp_gmf_err_t esp_gmf_copier_destroy(esp_gmf_element_handle_t self)
 {
-    if (self != NULL) {
-        ESP_LOGD(TAG, "Destroyed");
-        esp_gmf_element_deinit(self);
-        esp_gmf_oal_free(self);
+    ESP_LOGD(TAG, "Destroyed");
+    void *cfg = OBJ_GET_CFG(self);
+    if (cfg) {
+        esp_gmf_oal_free(cfg);
     }
+    esp_gmf_element_deinit(self);
+    esp_gmf_oal_free(self);
     return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_copier_init(esp_gmf_copier_cfg_t *config, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_gmf_copier_t *copier = esp_gmf_oal_calloc(1, sizeof(esp_gmf_copier_t));
-    ESP_GMF_MEM_VERIFY(TAG, copier, {return ESP_GMF_ERR_MEMORY_LACK;},
-                       "copier", sizeof(esp_gmf_copier_t));
-    copier->copy_num = config->copy_num;
+    ESP_GMF_MEM_VERIFY(TAG, copier, {return ESP_GMF_ERR_MEMORY_LACK;}, "copier", sizeof(esp_gmf_copier_t));
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)copier;
     obj->new_obj = esp_gmf_copier_new;
     obj->del_obj = esp_gmf_copier_destroy;
-    esp_gmf_err_t ret = esp_gmf_obj_set_config(obj, config, sizeof(*config));
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto COPIER_FAIL, "Failed set OBJ configuration");
+    esp_gmf_err_t ret = ESP_GMF_ERR_OK;
+    if (config) {
+        esp_gmf_copier_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
+        ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto COPIER_FAIL;}, "copier configuration", sizeof(*config));
+        memcpy(cfg, config, sizeof(*config));
+        esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
+    }
     ret = esp_gmf_obj_set_tag(obj, "copier");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto COPIER_FAIL, "Failed set OBJ tag");
     *handle = obj;
@@ -162,7 +163,6 @@ COPIER_FAIL:
 
 esp_gmf_err_t esp_gmf_copier_cast(esp_gmf_copier_cfg_t *config, esp_gmf_obj_handle_t handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     esp_gmf_element_handle_t copier = (esp_gmf_element_handle_t)handle;
     ESP_GMF_ELEMENT_GET(copier)->ops.open = esp_gmf_copier_open;
