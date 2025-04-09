@@ -152,7 +152,7 @@ esp_gmf_err_io_t esp_gmf_pbuf_acquire_read(esp_gmf_pbuf_handle_t handle, esp_gmf
     pbuf_unlock(pbuf->lock);
     ESP_LOGD(TAG, "ACQ_RD, p:%p, h:%p b:%p, l:%d, vld:%d,last:%d, c:%d", pbuf,
              pbuf->fill_head, blk->buf, blk->buf_length, blk->valid_size, blk->is_last, pbuf->buf_cnt);
-    return blk->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 esp_gmf_err_io_t esp_gmf_pbuf_release_read(esp_gmf_pbuf_handle_t handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
@@ -241,7 +241,7 @@ esp_gmf_err_io_t esp_gmf_pbuf_acquire_write(esp_gmf_pbuf_handle_t handle, esp_gm
     ESP_LOGD(TAG, "ACQ_WR, w:%ld, b:%p, l:%d, vld:%d self:%p, nxt:%p, c:%d", wanted_size, blk->buf,
              blk->buf_length, blk->valid_size, pbuf->empty_head, pbuf->empty_head->next, pbuf->buf_cnt);
     pbuf_unlock(pbuf->lock);
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 esp_gmf_err_io_t esp_gmf_pbuf_release_write(esp_gmf_pbuf_handle_t handle, esp_gmf_data_bus_block_t *blk, int block_ticks)

@@ -139,13 +139,20 @@ static esp_gmf_err_io_t _file_acquire_read(esp_gmf_io_handle_t handle, void *pay
     file_io_stream_t *file_io = (file_io_stream_t *)handle;
     esp_gmf_payload_t *pload = (esp_gmf_payload_t *)payload;
     int rlen = read(file_io->file, pload->buf, wanted_size);
-    pload->valid_size = rlen;
-    ESP_LOGD(TAG, "Read len: %d", rlen);
-    if (rlen == 0) {
-        pload->is_done = true;
-        ESP_LOGI(TAG, "No more data, ret: %d", rlen);
-    } else if (rlen == -1) {
+    ESP_LOGD(TAG, "Read len: %d-%ld", rlen, wanted_size);
+    if (rlen == -1) {
         ESP_LOGE(TAG, "The error is happened in reading data, error msg: %s", strerror(errno));
+        return rlen;
+    }
+    pload->valid_size = rlen;
+    if (rlen < wanted_size) {
+        rlen = read(file_io->file, pload->buf + rlen, (wanted_size - rlen));
+        if (rlen == 0) {
+            pload->is_done = true;
+            ESP_LOGI(TAG, "No more data, ret: %d", rlen);
+            return rlen;
+        }
+        pload->valid_size += rlen;
     }
     return rlen;
 }

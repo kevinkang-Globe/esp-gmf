@@ -130,9 +130,9 @@ static esp_gmf_job_err_t esp_gmf_deinterleave_process(esp_gmf_audio_element_hand
     int samples_num = deinterleave->in_load->valid_size / (deinterleave->bytes_per_sample * deinterleave_info->channel);
     // Not do deinterleave anymore if one channel failed
     while (out_port != NULL) {
-        esp_gmf_err_io_t ret = esp_gmf_port_acquire_out(out_port, &(deinterleave->out_load[i]),
-                                                       samples_num ? samples_num * deinterleave->bytes_per_sample : deinterleave->in_load->buf_length, ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_CHECK(TAG, ret, out_len, {out_len = ESP_GMF_JOB_ERR_FAIL; goto __deintlv_release;}, "Failed to acquire out, idx:%d, ret: %d", i, ret);
+        load_ret = esp_gmf_port_acquire_out(out_port, &(deinterleave->out_load[i]),
+                                            samples_num ? samples_num * deinterleave->bytes_per_sample : deinterleave->in_load->buf_length, ESP_GMF_MAX_DELAY);
+        ESP_GMF_PORT_CHECK(TAG, load_ret, out_len, {out_len = ESP_GMF_JOB_ERR_FAIL; goto __deintlv_release;}, "Failed to acquire out, idx:%d, ret: %d", i, load_ret);
         deinterleave->out_arr[i] = deinterleave->out_load[i]->buf;
         out_port = out_port->next;
         i++;

@@ -236,7 +236,7 @@ esp_gmf_err_io_t esp_gmf_block_acquire_read(esp_gmf_block_handle_t handle, esp_g
         blk->buf_length = wanted_size;
     }
     esp_gmf_oal_mutex_unlock(hd->lock);
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 esp_gmf_err_io_t esp_gmf_block_release_read(esp_gmf_block_handle_t handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
@@ -322,7 +322,7 @@ esp_gmf_err_io_t esp_gmf_block_acquire_write(esp_gmf_block_handle_t handle, esp_
     blk->valid_size = 0;
 
     esp_gmf_oal_mutex_unlock(hd->lock);
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 esp_gmf_err_io_t esp_gmf_block_release_write(esp_gmf_block_handle_t handle, esp_gmf_data_bus_block_t *blk, int block_ticks)

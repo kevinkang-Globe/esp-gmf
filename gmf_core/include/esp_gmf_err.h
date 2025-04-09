@@ -30,7 +30,7 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#define ESP_GMF_ERR_BASE      (0x60000)
+#define ESP_GMF_ERR_BASE      (-0x2000)
 #define ESP_GMF_ERR_CORE_BASE (ESP_GMF_ERR_BASE + 0x0)
 
 /**
@@ -39,27 +39,27 @@ extern "C" {
 typedef enum {
     ESP_GMF_IO_OK      = ESP_OK,    /*!< Operation successful */
     ESP_GMF_IO_FAIL    = ESP_FAIL,  /*!< Operation failed */
-    ESP_GMF_IO_ABORT   = -2,        /*!< Operation aborted */
-    ESP_GMF_IO_TIMEOUT = -3,        /*!< Operation timed out */
+    ESP_GMF_IO_TIMEOUT = -2,        /*!< Operation timed out */
+    ESP_GMF_IO_ABORT   = -3,        /*!< Operation aborted */
 } esp_gmf_err_io_t;
 
 typedef enum {
     ESP_GMF_ERR_OK             = ESP_OK,
     ESP_GMF_ERR_FAIL           = ESP_FAIL,
-    ESP_GMF_ERR_UNKNOWN        = ESP_GMF_ERR_CORE_BASE + 0,
-    ESP_GMF_ERR_ALREADY_EXISTS = ESP_GMF_ERR_CORE_BASE + 1,
-    ESP_GMF_ERR_MEMORY_LACK    = ESP_GMF_ERR_CORE_BASE + 2,
-    ESP_GMF_ERR_INVALID_URI    = ESP_GMF_ERR_CORE_BASE + 3,
-    ESP_GMF_ERR_INVALID_PATH   = ESP_GMF_ERR_CORE_BASE + 4,
-    ESP_GMF_ERR_INVALID_ARG    = ESP_GMF_ERR_CORE_BASE + 5,
-    ESP_GMF_ERR_INVALID_STATE  = ESP_GMF_ERR_CORE_BASE + 6,
-    ESP_GMF_ERR_OUT_OF_RANGE   = ESP_GMF_ERR_CORE_BASE + 7,
-    ESP_GMF_ERR_NOT_READY      = ESP_GMF_ERR_CORE_BASE + 8,
-    ESP_GMF_ERR_NOT_SUPPORT    = ESP_GMF_ERR_CORE_BASE + 9,
-    ESP_GMF_ERR_NOT_FOUND      = ESP_GMF_ERR_CORE_BASE + 10,
-    ESP_GMF_ERR_NOT_ENOUGH     = ESP_GMF_ERR_CORE_BASE + 12,
-    ESP_GMF_ERR_NO_DATA        = ESP_GMF_ERR_CORE_BASE + 13,
-    ESP_GMF_ERR_TIMEOUT        = ESP_GMF_ERR_CORE_BASE + 14,
+    ESP_GMF_ERR_TIMEOUT        = ESP_GMF_IO_TIMEOUT,
+    ESP_GMF_ERR_UNKNOWN        = ESP_GMF_ERR_CORE_BASE - 0,
+    ESP_GMF_ERR_ALREADY_EXISTS = ESP_GMF_ERR_CORE_BASE - 1,
+    ESP_GMF_ERR_MEMORY_LACK    = ESP_GMF_ERR_CORE_BASE - 2,
+    ESP_GMF_ERR_INVALID_URI    = ESP_GMF_ERR_CORE_BASE - 3,
+    ESP_GMF_ERR_INVALID_PATH   = ESP_GMF_ERR_CORE_BASE - 4,
+    ESP_GMF_ERR_INVALID_ARG    = ESP_GMF_ERR_CORE_BASE - 5,
+    ESP_GMF_ERR_INVALID_STATE  = ESP_GMF_ERR_CORE_BASE - 6,
+    ESP_GMF_ERR_OUT_OF_RANGE   = ESP_GMF_ERR_CORE_BASE - 7,
+    ESP_GMF_ERR_NOT_READY      = ESP_GMF_ERR_CORE_BASE - 8,
+    ESP_GMF_ERR_NOT_SUPPORT    = ESP_GMF_ERR_CORE_BASE - 9,
+    ESP_GMF_ERR_NOT_FOUND      = ESP_GMF_ERR_CORE_BASE - 10,
+    ESP_GMF_ERR_NOT_ENOUGH     = ESP_GMF_ERR_CORE_BASE - 12,
+    ESP_GMF_ERR_NO_DATA        = ESP_GMF_ERR_CORE_BASE - 13,
 } esp_gmf_err_t;
 
 #define ESP_GMF_CHECK(TAG, a, action, msg) if (!(a)) {                           \

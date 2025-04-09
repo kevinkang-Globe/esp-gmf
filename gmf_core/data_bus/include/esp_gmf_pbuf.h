@@ -76,6 +76,7 @@ esp_gmf_err_t esp_gmf_pbuf_destroy(esp_gmf_pbuf_handle_t handle);
  * @note  1. If called before any write operation, it will return ESP_GMF_IO_FAIL
  *        2. `esp_gmf_pbuf_acquire_read` and `esp_gmf_pbuf_release_read` must be called in pairs, and consecutive acquisition
  *            followed by consecutive release is not allowed
+ *        3. The actual valid size is stored in `blk->valid_size`
  *
  * @param[in]   handle       Handle to the pointer buffer
  * @param[out]  blk          Pointer to the data bus block structure to store the acquired data

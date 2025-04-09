@@ -220,7 +220,7 @@ static esp_gmf_job_err_t esp_gmf_mixer_process(esp_gmf_audio_element_handle_t se
     int wait_time = 0;
     while (in_port != NULL) {
         wait_time = i == 0 ? ESP_GMF_MAX_DELAY : 0;
-        esp_gmf_err_io_t ret = esp_gmf_port_acquire_in(in_port, &(mixer->in_load[i]), mixer->process_num, wait_time);
+        ret = esp_gmf_port_acquire_in(in_port, &(mixer->in_load[i]), mixer->process_num, wait_time);
         if (ret == ESP_GMF_IO_FAIL) {
             ESP_LOGE(TAG, "Acquire in failed, idx:%d, ret: %d", i, ret);
             out_len = ESP_GMF_JOB_ERR_FAIL;

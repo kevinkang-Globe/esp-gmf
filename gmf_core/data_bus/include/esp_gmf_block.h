@@ -81,6 +81,7 @@ esp_gmf_err_t esp_gmf_block_destroy(esp_gmf_block_handle_t handle);
  *           match the expected value due to the buffer's inability to wrap from the tail to the head.
  *        2. The obtained buffer address is internal and should not be freed externally
  *        3. The `wanted_size` can't be greater than block_size * block_cnt
+ *        4. The actual valid size is stored in `blk->valid_size`
  *
  * @param[in]   handle       Handle to the block buffer
  * @param[out]  blk          Pointer to the data bus block structure to store the acquired data

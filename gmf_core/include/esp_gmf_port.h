@@ -34,7 +34,7 @@ extern "C" {
 #endif  /* __cplusplus */
 
 #define ESP_GMF_PORT_CHECK(log_tag, ret, ret_value, action, format, ...) {                              \
-    if (unlikely(ret < ESP_OK)) {                                                                       \
+    if (unlikely(ret < ESP_GMF_IO_OK)) {                                                                       \
         if (ret != ESP_GMF_IO_ABORT) {                                                                  \
             ESP_LOGE(log_tag, "%s(%d): " format, __FUNCTION__, __LINE__ __VA_OPT__(, ) __VA_ARGS__);    \
             ret_value = ESP_GMF_ERR_FAIL;                                                               \
@@ -288,6 +288,7 @@ esp_gmf_err_t esp_gmf_port_del_at(esp_gmf_port_handle_t *head, esp_gmf_port_hand
  * @brief  Acquire the expected valid data into the specified payload, regardless of whether the payload is NULL or not
  *         If writer of port is valid, the payload from the previous element stored on the port `payload` pointer is fetched
  *         If the `*load` pointer is NULL, a new payload will be allocated before calling the acquire operation
+ *         The actual valid size is stored in `load->valid_size`
  *
  * @param[in]      handle       The handle of the port
  * @param[in,out]  load         Pointer to store the acquired payload
@@ -295,7 +296,6 @@ esp_gmf_err_t esp_gmf_port_del_at(esp_gmf_port_handle_t *head, esp_gmf_port_hand
  * @param[in]      wait_ticks   Number of ticks to wait, in milliseconds
  *
  * @return
- *       - > 0                 The specific length of data being read
  *       - ESP_GMF_IO_OK       Operation successful
  *       - ESP_GMF_IO_FAIL     Operation failed or invalid arguments
  *       - ESP_GMF_IO_ABORT    Operation aborted
@@ -322,6 +322,7 @@ esp_gmf_err_io_t esp_gmf_port_release_in(esp_gmf_port_handle_t handle, esp_gmf_p
  * @brief  Acquire the buffer of the expected size into the specified payload,
  *         If the reader of the port is valid, store the provided or allocated payload to the input port of the next element
  *         If reader pointer is NULL, prepare a payload if `*load` is invalid before calling the acquire operation
+ *         The actual valid size is stored in `load->valid_size`
  *
  * @param[in]      handle       The handle of the port
  * @param[in,out]  load         Pointer to store the acquired payload
@@ -329,7 +330,6 @@ esp_gmf_err_io_t esp_gmf_port_release_in(esp_gmf_port_handle_t handle, esp_gmf_p
  * @param[in]      wait_ticks   Number of ticks to wait, in milliseconds
  *
  * @return
- *       - > 0                 The specific length of space can be write
  *       - ESP_GMF_IO_OK       Operation successful
  *       - ESP_GMF_IO_FAIL     Operation failed or invalid arguments
  *       - ESP_GMF_IO_ABORT    Operation aborted

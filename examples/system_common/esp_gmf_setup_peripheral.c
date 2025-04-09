@@ -274,10 +274,15 @@ void teardown_periph_play_codec(void *play_dev)
 {
     esp_codec_dev_close(play_dev);
     esp_codec_dev_delete(play_dev);
+    play_dev = NULL;
     audio_codec_delete_codec_if(out_codec_if);
+    out_codec_if = NULL;
     audio_codec_delete_ctrl_if(out_ctrl_if);
+    out_ctrl_if = NULL;
     audio_codec_delete_gpio_if(gpio_if);
+    gpio_if = NULL;
     audio_codec_delete_data_if(out_data_if);
+    out_data_if = NULL;
     i2s_channel_disable(tx_handle);
     i2s_del_channel(tx_handle);
     tx_handle = NULL;
