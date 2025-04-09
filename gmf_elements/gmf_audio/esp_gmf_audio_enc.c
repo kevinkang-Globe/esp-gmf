@@ -162,7 +162,6 @@ static esp_gmf_err_t esp_gmf_audio_enc_new(void *cfg, esp_gmf_obj_handle_t *hand
 
 static esp_gmf_job_err_t esp_gmf_audio_enc_open(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_audio_enc_t *enc = (esp_gmf_audio_enc_t *)self;
     esp_audio_enc_config_t *enc_cfg = (esp_audio_enc_config_t *)OBJ_GET_CFG(enc);
     ESP_GMF_CHECK(TAG, enc_cfg, {return ESP_GMF_JOB_ERR_FAIL;}, "There is no encoder configuration");
@@ -185,7 +184,6 @@ static esp_gmf_job_err_t esp_gmf_audio_enc_open(esp_gmf_audio_element_handle_t s
 
 static esp_gmf_job_err_t esp_gmf_audio_enc_process(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_audio_enc_t *audio_enc = (esp_gmf_audio_enc_t *)self;
     int out_len = 0;
     esp_audio_err_t ret = ESP_AUDIO_ERR_OK;
@@ -258,7 +256,6 @@ __audio_enc_release:
 
 static esp_gmf_job_err_t esp_gmf_audio_enc_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     ESP_LOGD(TAG, "Closed, %p", self);
     esp_gmf_audio_enc_t *enc = (esp_gmf_audio_enc_t *)self;
     if (enc->cached_payload) {

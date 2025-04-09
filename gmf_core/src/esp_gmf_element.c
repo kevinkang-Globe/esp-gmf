@@ -266,7 +266,7 @@ esp_gmf_err_t esp_gmf_element_get_prev_el(esp_gmf_element_handle_t handle, esp_g
 esp_gmf_job_err_t esp_gmf_element_process_open(esp_gmf_element_handle_t handle, void *para)
 {
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    if (el->ops.open == NULL) {
+    if ((el == NULL) || (el->ops.open == NULL)) {
         ESP_LOGE(TAG, "There is no open function [%p-%s]", handle, OBJ_GET_TAG(handle));
         return ESP_GMF_ERR_FAIL;
     }
@@ -287,7 +287,7 @@ esp_gmf_job_err_t esp_gmf_element_process_open(esp_gmf_element_handle_t handle, 
 esp_gmf_job_err_t esp_gmf_element_process_running(esp_gmf_element_handle_t handle, void *para)
 {
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    if (el->ops.process == NULL) {
+    if ((el == NULL) || (el->ops.process == NULL)) {
         ESP_LOGE(TAG, "There is no process function [%p-%s]", handle, OBJ_GET_TAG(handle));
         return ESP_GMF_ERR_FAIL;
     }
@@ -297,7 +297,7 @@ esp_gmf_job_err_t esp_gmf_element_process_running(esp_gmf_element_handle_t handl
 esp_gmf_job_err_t esp_gmf_element_process_close(esp_gmf_element_handle_t handle, void *para)
 {
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    if (el->ops.close == NULL) {
+    if ((el == NULL) || (el->ops.close == NULL)) {
         ESP_LOGE(TAG, "There is no close function [%p-%s]", handle, OBJ_GET_TAG(handle));
         return ESP_GMF_ERR_FAIL;
     }

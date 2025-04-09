@@ -176,7 +176,6 @@ static esp_gmf_job_err_t esp_gmf_sonic_open(esp_gmf_audio_element_handle_t self,
 
 static esp_gmf_job_err_t esp_gmf_sonic_process(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)self;
     int out_len = -1;
     esp_ae_err_t ret = ESP_AE_ERR_OK;
@@ -231,7 +230,6 @@ __sonic_release:
 
 static esp_gmf_job_err_t esp_gmf_sonic_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
     if (sonic->sonic_hd != NULL) {

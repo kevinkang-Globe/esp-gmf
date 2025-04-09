@@ -178,7 +178,6 @@ static esp_gmf_err_t esp_gmf_mixer_new(void *cfg, esp_gmf_obj_handle_t *handle)
 
 static esp_gmf_job_err_t esp_gmf_mixer_open(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_mixer_t *mixer = (esp_gmf_mixer_t *)self;
     esp_ae_mixer_cfg_t *mixer_info = (esp_ae_mixer_cfg_t *)OBJ_GET_CFG(self);
     ESP_GMF_NULL_CHECK(TAG, mixer_info, {return ESP_GMF_JOB_ERR_FAIL;})
@@ -203,7 +202,6 @@ static esp_gmf_job_err_t esp_gmf_mixer_open(esp_gmf_audio_element_handle_t self,
 
 static esp_gmf_job_err_t esp_gmf_mixer_process(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_mixer_t *mixer = (esp_gmf_mixer_t *)self;
     int out_len = -1;
     int read_len = 0;
@@ -280,7 +278,6 @@ __mixer_release:
 
 static esp_gmf_job_err_t esp_gmf_mixer_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     esp_gmf_mixer_t *mixer = (esp_gmf_mixer_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
     if (mixer->mixer_hd != NULL) {

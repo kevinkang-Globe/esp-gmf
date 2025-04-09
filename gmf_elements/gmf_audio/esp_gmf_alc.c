@@ -133,7 +133,6 @@ static esp_gmf_err_t esp_gmf_alc_new(void *cfg, esp_gmf_obj_handle_t *handle)
 
 static esp_gmf_job_err_t esp_gmf_alc_open(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_alc_t *alc = (esp_gmf_alc_t *)self;
     esp_ae_alc_cfg_t *alc_info = (esp_ae_alc_cfg_t *)OBJ_GET_CFG(self);
     ESP_GMF_NULL_CHECK(TAG, alc_info, {return ESP_GMF_JOB_ERR_FAIL;});
@@ -150,7 +149,6 @@ static esp_gmf_job_err_t esp_gmf_alc_open(esp_gmf_audio_element_handle_t self, v
 
 static esp_gmf_job_err_t esp_gmf_alc_process(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_alc_t *alc = (esp_gmf_alc_t *)self;
     int out_len = -1;
     esp_gmf_port_handle_t in_port = ESP_GMF_ELEMENT_GET(self)->in;
@@ -196,7 +194,6 @@ __alc_release:
 
 static esp_gmf_job_err_t esp_gmf_alc_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     esp_gmf_alc_t *alc = (esp_gmf_alc_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
     if (alc->alc_hd != NULL) {

@@ -131,7 +131,6 @@ static esp_gmf_err_t esp_gmf_fade_new(void *cfg, esp_gmf_obj_handle_t *handle)
 
 static esp_gmf_job_err_t esp_gmf_fade_open(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_fade_t *fade = (esp_gmf_fade_t *)self;
     esp_ae_fade_cfg_t *fade_info = (esp_ae_fade_cfg_t *)OBJ_GET_CFG(self);
     ESP_GMF_NULL_CHECK(TAG, fade_info, {return ESP_GMF_JOB_ERR_FAIL;});
@@ -147,7 +146,6 @@ static esp_gmf_job_err_t esp_gmf_fade_open(esp_gmf_audio_element_handle_t self, 
 
 static esp_gmf_job_err_t esp_gmf_fade_process(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_fade_t *fade = (esp_gmf_fade_t *)self;
     int out_len = -1;
     ESP_GMF_RET_ON_NOT_OK(TAG, fade_update_apply_setting(fade), {return ESP_GMF_JOB_ERR_FAIL;}, "Failed to apply fade setting");
@@ -194,7 +192,6 @@ __fade_release:
 
 static esp_gmf_job_err_t esp_gmf_fade_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     esp_gmf_fade_t *fade = (esp_gmf_fade_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
     if (fade->fade_hd != NULL) {
