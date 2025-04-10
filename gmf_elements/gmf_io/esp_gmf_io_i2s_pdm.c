@@ -54,7 +54,6 @@ bool _i2s_pdm_tx_done_callback(i2s_chan_handle_t handle, i2s_event_data_t *event
 static esp_gmf_err_t _i2s_pdm_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
     ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, io, {return ESP_ERR_INVALID_ARG;});
     *io = NULL;
     esp_gmf_obj_handle_t new_io = NULL;
     i2s_pdm_io_cfg_t *config = (i2s_pdm_io_cfg_t *)cfg;

@@ -102,7 +102,6 @@ static esp_gmf_err_t esp_gmf_bit_cvt_new(void *cfg, esp_gmf_obj_handle_t *handle
 
 static esp_gmf_job_err_t esp_gmf_bit_cvt_open(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_bit_cvt_t *bit_cvt = (esp_gmf_bit_cvt_t *)self;
     esp_ae_bit_cvt_cfg_t *bit_info = (esp_ae_bit_cvt_cfg_t *)OBJ_GET_CFG(self);
     ESP_GMF_NULL_CHECK(TAG, bit_info, {return ESP_GMF_JOB_ERR_FAIL;});
@@ -121,7 +120,6 @@ static esp_gmf_job_err_t esp_gmf_bit_cvt_open(esp_gmf_audio_element_handle_t sel
 
 static esp_gmf_job_err_t esp_gmf_bit_cvt_process(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_bit_cvt_t *bit_cvt = (esp_gmf_bit_cvt_t *)self;
     int out_len = -1;
     esp_gmf_port_handle_t in_port = ESP_GMF_ELEMENT_GET(self)->in;
@@ -170,7 +168,6 @@ __bit_release:
 
 static esp_gmf_job_err_t esp_gmf_bit_cvt_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     esp_gmf_bit_cvt_t *bit_cvt = (esp_gmf_bit_cvt_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
     if (bit_cvt->bit_hd != NULL) {

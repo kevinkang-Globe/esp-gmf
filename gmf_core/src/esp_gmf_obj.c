@@ -36,7 +36,11 @@ esp_gmf_err_t esp_gmf_obj_dupl(esp_gmf_obj_handle_t old_obj, esp_gmf_obj_handle_
     ESP_GMF_NULL_CHECK(TAG, old_obj, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, new_obj, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_obj_t *tmp = (esp_gmf_obj_t *)old_obj;
-    return tmp->new_obj(tmp->cfg, new_obj);
+    if (tmp->new_obj) {
+        return tmp->new_obj(tmp->cfg, new_obj);
+    }
+    ESP_LOGE(TAG, "%s is no new function [%p-%s], ", __func__, old_obj, OBJ_GET_TAG(old_obj));
+    return ESP_GMF_ERR_FAIL;
 }
 
 esp_gmf_err_t esp_gmf_obj_new(esp_gmf_obj_handle_t old_obj, void *cfg, esp_gmf_obj_handle_t *new_obj)
@@ -45,7 +49,11 @@ esp_gmf_err_t esp_gmf_obj_new(esp_gmf_obj_handle_t old_obj, void *cfg, esp_gmf_o
     ESP_GMF_NULL_CHECK(TAG, cfg, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, new_obj, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_obj_t *tmp = (esp_gmf_obj_t *)old_obj;
-    return tmp->new_obj(cfg, new_obj);
+    if (tmp->new_obj) {
+        return tmp->new_obj(cfg, new_obj);
+    }
+    ESP_LOGE(TAG, "%s is no new function [%p-%s], ", __func__, old_obj, OBJ_GET_TAG(old_obj));
+    return ESP_GMF_ERR_FAIL;
 }
 
 esp_gmf_err_t esp_gmf_obj_delete(esp_gmf_obj_handle_t obj)
@@ -57,7 +65,11 @@ esp_gmf_err_t esp_gmf_obj_delete(esp_gmf_obj_handle_t obj)
         esp_gmf_oal_free((void *)h->tag);
         h->tag = NULL;
     }
-    return h->del_obj(h);
+    if (h->del_obj) {
+        return h->del_obj(h);
+    }
+    ESP_LOGE(TAG, "There is no delete function [%p-%s]", obj, OBJ_GET_TAG(obj));
+    return ESP_GMF_ERR_FAIL;
 }
 
 esp_gmf_err_t esp_gmf_obj_set_config(esp_gmf_obj_handle_t obj, void *cfg, int cfg_size)

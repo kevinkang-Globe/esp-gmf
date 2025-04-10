@@ -98,7 +98,6 @@ static esp_gmf_err_t esp_gmf_audio_dec_new(void *cfg, esp_gmf_obj_handle_t *hand
 
 static esp_gmf_job_err_t esp_gmf_audio_dec_open(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_audio_dec_t *audio_dec = (esp_gmf_audio_dec_t *)self;
     esp_audio_simple_dec_cfg_t *dec_cfg = (esp_audio_simple_dec_cfg_t *)OBJ_GET_CFG(self);
     if (dec_cfg == NULL) {
@@ -218,7 +217,6 @@ __aud_proc_release:
 
 static esp_gmf_job_err_t esp_gmf_audio_dec_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     ESP_LOGD(TAG, "Closed, %p", self);
     esp_gmf_audio_dec_t *audio_dec = (esp_gmf_audio_dec_t *)self;
     if (audio_dec->dec_hd != NULL) {

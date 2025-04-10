@@ -94,7 +94,6 @@ static esp_gmf_err_t esp_gmf_deinterleave_new(void *cfg, esp_gmf_obj_handle_t *h
 
 static esp_gmf_job_err_t esp_gmf_deinterleave_open(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
     esp_gmf_deinterleave_cfg *deinterleave_info = (esp_gmf_deinterleave_cfg *)OBJ_GET_CFG(self);
     ESP_GMF_NULL_CHECK(TAG, deinterleave_info, {return ESP_GMF_JOB_ERR_FAIL;})
@@ -114,7 +113,6 @@ static esp_gmf_job_err_t esp_gmf_deinterleave_open(esp_gmf_audio_element_handle_
 
 static esp_gmf_job_err_t esp_gmf_deinterleave_process(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
     int out_len = -1;
     int i = 0;
@@ -179,7 +177,6 @@ __deintlv_release:
 
 static esp_gmf_job_err_t esp_gmf_deinterleave_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
     if (deinterleave->out_arr != NULL) {

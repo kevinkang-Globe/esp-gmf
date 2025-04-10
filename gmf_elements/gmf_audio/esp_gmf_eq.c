@@ -203,7 +203,6 @@ static esp_gmf_err_t esp_gmf_eq_new(void *cfg, esp_gmf_obj_handle_t *handle)
 
 static esp_gmf_job_err_t esp_gmf_eq_open(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_JOB_ERR_FAIL;});
     esp_gmf_eq_t *eq = (esp_gmf_eq_t *)self;
     esp_ae_eq_cfg_t *eq_info = (esp_ae_eq_cfg_t *)OBJ_GET_CFG(self);
     ESP_GMF_NULL_CHECK(TAG, eq_info, {return ESP_GMF_JOB_ERR_FAIL;});
@@ -272,7 +271,6 @@ __eq_release:
 
 static esp_gmf_job_err_t esp_gmf_eq_close(esp_gmf_audio_element_handle_t self, void *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_OK;});
     esp_gmf_eq_t *eq = (esp_gmf_eq_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
     if (eq->eq_hd != NULL) {
