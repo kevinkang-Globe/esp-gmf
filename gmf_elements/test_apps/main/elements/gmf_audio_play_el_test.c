@@ -139,8 +139,17 @@ TEST_CASE("Create and destroy pipeline", "ESP_GMF_POOL")
     };
     void *play_dev = NULL;
     void *record_dev = NULL;
-    esp_gmf_setup_periph_codec(&aud_info, &aud_info, &play_dev, &record_dev);
-
+#ifdef CONFIG_IDF_TARGET_ESP32
+    esp_gmf_setup_periph_aud_info aud_info1 = {
+        .sample_rate = 48000,
+        .channel = 2,
+        .bits_per_sample = 16,
+        .port_num = 1,
+    };
+    esp_gmf_setup_periph_codec(&aud_info, &aud_info1, &play_dev, &record_dev);
+#else
+    esp_gmf_setup_periph_codec(&aud_info, &aud_info, &play_dev, NULL);
+#endif  /* CONFIG_IDF_TARGET_ESP32 */
     esp_gmf_pool_handle_t pool = NULL;
     esp_gmf_pool_init(&pool);
     TEST_ASSERT_NOT_NULL(pool);
@@ -924,11 +933,12 @@ TEST_CASE("Copier, 2 pipeline test, One pipeline play file to I2S, another save 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe, file_name));
 
     ESP_GMF_MEM_SHOW(TAG);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_info_sound_t info = {0};
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
     esp_gmf_audio_helper_reconfig_dec_by_uri(file_name, &info, OBJ_GET_CFG(dec_el));
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));
 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_out_uri(pipe2, "/sdcard/test_save1.wav"));
 
@@ -1016,8 +1026,8 @@ TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I
     const char *name3[] = {"rate_cvt"};
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_new_pipeline(pool, NULL, name3, sizeof(name3) / sizeof(char *), "file", &pipe3));
     TEST_ASSERT_NOT_NULL(pipe3);
-    esp_gmf_element_handle_t *rate_hd = NULL;
-    esp_gmf_pipeline_get_el_by_name(pipe2, "rate_cvt", rate_hd);
+    esp_gmf_element_handle_t rate_hd = NULL;
+    esp_gmf_pipeline_get_el_by_name(pipe2, "rate_cvt", &rate_hd);
 
     esp_gmf_db_handle_t db = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_db_new_ringbuf(10, 1024, &db));

@@ -65,8 +65,6 @@ static char *get_mount_path(char *uri)
 
 static esp_gmf_err_t _file_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, io, {return ESP_GMF_ERR_INVALID_ARG;});
     *io = NULL;
     esp_gmf_obj_handle_t new_io = NULL;
     file_io_cfg_t *config = (file_io_cfg_t *)cfg;
@@ -227,13 +225,14 @@ static esp_gmf_err_t _file_close(esp_gmf_io_handle_t io)
 
 static esp_gmf_err_t _file_delete(esp_gmf_io_handle_t io)
 {
-    if (io != NULL) {
-        file_io_stream_t *file_io = (file_io_stream_t *)io;
-        ESP_LOGD(TAG, "Delete, %s-%p", OBJ_GET_TAG(file_io), file_io);
-        esp_gmf_oal_free(OBJ_GET_CFG(file_io));
-        esp_gmf_io_deinit(io);
-        esp_gmf_oal_free(file_io);
+    file_io_stream_t *file_io = (file_io_stream_t *)io;
+    ESP_LOGD(TAG, "Delete, %s-%p", OBJ_GET_TAG(file_io), file_io);
+    void *cfg = OBJ_GET_CFG(io);
+    if (cfg) {
+        esp_gmf_oal_free(cfg);
     }
+    esp_gmf_io_deinit(io);
+    esp_gmf_oal_free(file_io);
     return ESP_GMF_ERR_OK;
 }
 

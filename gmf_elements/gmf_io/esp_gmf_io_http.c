@@ -112,8 +112,6 @@ static int _http_read_data(http_stream_t *http, char *buffer, int len)
 
 static esp_gmf_err_t _http_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, io, {return ESP_GMF_ERR_INVALID_ARG;});
     *io = NULL;
     esp_gmf_obj_handle_t new_io = NULL;
     http_io_cfg_t *config = (http_io_cfg_t *)cfg;
@@ -400,16 +398,17 @@ static int _http_process(esp_gmf_io_handle_t self, void *params)
 
 static esp_gmf_err_t _http_destroy(esp_gmf_io_handle_t self)
 {
-    if (self != NULL) {
-        http_stream_t *http = (http_stream_t *)self;
-        ESP_LOGD(TAG, "%s-%p", __FUNCTION__, http);
-        if (http->data_bus) {
-            esp_gmf_db_deinit(http->data_bus);
-        }
-        esp_gmf_oal_free(OBJ_GET_CFG(http));
-        esp_gmf_io_deinit(http);
-        esp_gmf_oal_free(http);
+    http_stream_t *http = (http_stream_t *)self;
+    ESP_LOGD(TAG, "%s-%p", __FUNCTION__, http);
+    if (http->data_bus) {
+        esp_gmf_db_deinit(http->data_bus);
     }
+    void *cfg = OBJ_GET_CFG(self);
+    if (cfg) {
+        esp_gmf_oal_free(cfg);
+    }
+    esp_gmf_io_deinit(http);
+    esp_gmf_oal_free(http);
     return ESP_GMF_ERR_OK;
 }
 

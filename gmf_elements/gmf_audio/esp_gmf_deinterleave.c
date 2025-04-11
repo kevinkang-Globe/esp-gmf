@@ -74,8 +74,6 @@ static inline void deinterleave_change_src_info(esp_gmf_audio_element_handle_t s
 
 static esp_gmf_err_t esp_gmf_deinterleave_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_gmf_deinterleave_cfg *deinterleave_cfg = (esp_gmf_deinterleave_cfg *)cfg;
     esp_gmf_obj_handle_t new_obj = NULL;
@@ -217,19 +215,16 @@ static esp_gmf_err_t deinterleave_received_event_handler(esp_gmf_event_pkt_t *ev
 
 static esp_gmf_err_t esp_gmf_deinterleave_destroy(esp_gmf_audio_element_handle_t self)
 {
-    if (self != NULL) {
-        esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
-        ESP_LOGD(TAG, "Destroyed, %p", self);
-        free_esp_ae_deinterleave_cfg(OBJ_GET_CFG(self));
-        esp_gmf_audio_el_deinit(self);
-        esp_gmf_oal_free(deinterleave);
-    }
+    esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
+    ESP_LOGD(TAG, "Destroyed, %p", self);
+    free_esp_ae_deinterleave_cfg(OBJ_GET_CFG(self));
+    esp_gmf_audio_el_deinit(self);
+    esp_gmf_oal_free(deinterleave);
     return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_deinterleave_init(esp_gmf_deinterleave_cfg *config, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
@@ -238,10 +233,12 @@ esp_gmf_err_t esp_gmf_deinterleave_init(esp_gmf_deinterleave_cfg *config, esp_gm
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)deinterleave;
     obj->new_obj = esp_gmf_deinterleave_new;
     obj->del_obj = esp_gmf_deinterleave_destroy;
-    esp_gmf_deinterleave_cfg *new_config = NULL;
-    dupl_esp_ae_deinterleave_cfg(config, &new_config);
-    ESP_GMF_CHECK(TAG, new_config, {ret = ESP_GMF_ERR_MEMORY_LACK; goto DEINTLV_INIT_FAIL;}, "Failed to allocate deinterleave configuration");
-    esp_gmf_obj_set_config(obj, new_config, sizeof(esp_gmf_deinterleave_cfg));
+    if (config) {
+        esp_gmf_deinterleave_cfg *new_config = NULL;
+        dupl_esp_ae_deinterleave_cfg(config, &new_config);
+        ESP_GMF_CHECK(TAG, new_config, {ret = ESP_GMF_ERR_MEMORY_LACK; goto DEINTLV_INIT_FAIL;}, "Failed to allocate deinterleave configuration");
+        esp_gmf_obj_set_config(obj, new_config, sizeof(esp_gmf_deinterleave_cfg));
+    }
     ret = esp_gmf_obj_set_tag(obj, "deinterleave");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto DEINTLV_INIT_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};

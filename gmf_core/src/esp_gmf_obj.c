@@ -46,7 +46,6 @@ esp_gmf_err_t esp_gmf_obj_dupl(esp_gmf_obj_handle_t old_obj, esp_gmf_obj_handle_
 esp_gmf_err_t esp_gmf_obj_new(esp_gmf_obj_handle_t old_obj, void *cfg, esp_gmf_obj_handle_t *new_obj)
 {
     ESP_GMF_NULL_CHECK(TAG, old_obj, return ESP_GMF_ERR_INVALID_ARG);
-    ESP_GMF_NULL_CHECK(TAG, cfg, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, new_obj, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_obj_t *tmp = (esp_gmf_obj_t *)old_obj;
     if (tmp->new_obj) {

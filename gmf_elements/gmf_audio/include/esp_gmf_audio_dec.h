@@ -32,7 +32,7 @@ extern "C" {
 #endif /* __cplusplus */
 
 #define DEFAULT_ESP_GMF_AUDIO_DEC_CONFIG() {    \
-    .dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3,  \
+    .dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_NONE,  \
     .dec_cfg  = NULL,                           \
     .cfg_size = 0,                              \
 }

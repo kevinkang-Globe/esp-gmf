@@ -33,9 +33,9 @@
 #include "driver/i2c.h"
 #include "esp_gmf_gpio_config.h"
 #include "esp_gmf_setup_peripheral.h"
-#if SOC_SDMMC_HOST_SUPPORTED
+#if SOC_SDMMC_IO_POWER_EXTERNAL
 #include "sd_pwr_ctrl_by_on_chip_ldo.h"
-#endif /* SOC_SDMMC_HOST_SUPPORTED */
+#endif  /* SOC_SDMMC_IO_POWER_EXTERNAL */
 #ifdef USE_ESP_GMF_ESP_CODEC_DEV_IO
 #include "esp_gmf_io_codec_dev.h"
 #include "esp_gmf_io_i2s_pdm.h"
@@ -167,13 +167,17 @@ static const audio_codec_data_if_t *setup_periph_new_i2s_data(void *tx_hd, void 
 static void setup_periph_new_play_codec()
 {
 #ifdef CONFIG_IDF_TARGET_ESP32C3
-    gpio_if = audio_codec_new_gpio();
+    if (gpio_if == NULL) {
+        gpio_if = audio_codec_new_gpio();
+    }
     gpio_if->setup(ESP_GMF_AMP_IO_NUM, AUDIO_GPIO_DIR_OUT, AUDIO_GPIO_MODE_PULL_DOWN);
     gpio_if->set(ESP_GMF_AMP_IO_NUM, 1);
 #else
     audio_codec_i2c_cfg_t i2c_ctrl_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR, .port = 0, .bus_handle = i2c_handle};
     out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_ctrl_cfg);
-    gpio_if = audio_codec_new_gpio();
+    if (gpio_if == NULL) {
+        gpio_if = audio_codec_new_gpio();
+    }
     // New output codec interface
     es8311_codec_cfg_t es8311_cfg = {
         .codec_mode = ESP_CODEC_DEV_WORK_MODE_DAC,
@@ -191,7 +195,9 @@ static void setup_periph_new_record_codec()
 #if defined CONFIG_IDF_TARGET_ESP32P4
     audio_codec_i2c_cfg_t i2c_ctrl_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR, .port = 0, .bus_handle = i2c_handle};
     in_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_ctrl_cfg);
-    gpio_if = audio_codec_new_gpio();
+    if (gpio_if == NULL) {
+        gpio_if = audio_codec_new_gpio();
+    }
     // New output codec interface
     es8311_codec_cfg_t es8311_cfg = {
         .codec_mode = ESP_CODEC_DEV_WORK_MODE_BOTH,
@@ -204,7 +210,9 @@ static void setup_periph_new_record_codec()
 #elif CONFIG_IDF_TARGET_ESP32
     audio_codec_i2c_cfg_t i2c_ctrl_cfg = {.addr = ES7243_CODEC_DEFAULT_ADDR, .port = 0, .bus_handle = i2c_handle};
     in_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_ctrl_cfg);
-    gpio_if = audio_codec_new_gpio();
+    if (gpio_if == NULL) {
+        gpio_if = audio_codec_new_gpio();
+    }
     // New output codec interface
     es7243_codec_cfg_t es7243_cfg = {
         .ctrl_if = in_ctrl_if,
@@ -273,6 +281,7 @@ static void setup_periph_record_codec(esp_gmf_setup_periph_aud_info *aud_info, v
 void teardown_periph_play_codec(void *play_dev)
 {
     esp_codec_dev_close(play_dev);
+    play_dev = NULL;
     esp_codec_dev_delete(play_dev);
     play_dev = NULL;
     audio_codec_delete_codec_if(out_codec_if);
@@ -307,7 +316,7 @@ void esp_gmf_setup_periph_sdmmc(void **out_card)
     sdmmc_card_t *card = NULL;
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
-#if defined CONFIG_IDF_TARGET_ESP32P4
+#if SOC_SDMMC_IO_POWER_EXTERNAL
     host.slot = SDMMC_HOST_SLOT_0;
     host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
     sd_pwr_ctrl_ldo_config_t ldo_config = {
@@ -320,7 +329,7 @@ void esp_gmf_setup_periph_sdmmc(void **out_card)
         return;
     }
     host.pwr_ctrl_handle = pwr_ctrl_handle;
-#endif /* defined CONFIG_IDF_TARGET_ESP32P4 */
+#endif /* SOC_SDMMC_IO_POWER_EXTERNAL */
 
 #if defined CONFIG_IDF_TARGET_ESP32
     gpio_config_t sdcard_pwr_pin_cfg = {
@@ -362,7 +371,14 @@ void esp_gmf_setup_periph_sdmmc(void **out_card)
 
 void esp_gmf_teardown_periph_sdmmc(void *card)
 {
-    esp_vfs_fat_sdcard_unmount("/sdcard", card);
+    sdmmc_card_t *sd_card = card;
+    esp_vfs_fat_sdcard_unmount("/sdcard", sd_card);
+#if SOC_SDMMC_IO_POWER_EXTERNAL
+    int ret = sd_pwr_ctrl_del_on_chip_ldo(sd_card->host.pwr_ctrl_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to delete the on-chip LDO power control driver");
+    }
+#endif  /* SOC_SDMMC_IO_POWER_EXTERNAL */
 }
 
 #else

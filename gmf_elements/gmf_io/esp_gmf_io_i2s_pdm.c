@@ -53,7 +53,6 @@ bool _i2s_pdm_tx_done_callback(i2s_chan_handle_t handle, i2s_event_data_t *event
 
 static esp_gmf_err_t _i2s_pdm_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_ERR_INVALID_ARG;});
     *io = NULL;
     esp_gmf_obj_handle_t new_io = NULL;
     i2s_pdm_io_cfg_t *config = (i2s_pdm_io_cfg_t *)cfg;
@@ -178,15 +177,17 @@ static esp_gmf_err_t _i2s_pdm_close(esp_gmf_io_handle_t io)
 
 static esp_gmf_err_t _i2s_pdm_delete(esp_gmf_io_handle_t io)
 {
-    if (io != NULL) {
-        i2s_pdm_io_stream_t *i2s_pdm_io = (i2s_pdm_io_stream_t *)io;
-        ESP_LOGD(TAG, "Delete, %s-%p", OBJ_GET_TAG(i2s_pdm_io), i2s_pdm_io);
-        if (i2s_pdm_io->pdm_event) {
-            vEventGroupDelete(i2s_pdm_io->pdm_event);
-        }
-        esp_gmf_io_deinit(io);
-        esp_gmf_oal_free(i2s_pdm_io);
+    i2s_pdm_io_stream_t *i2s_pdm_io = (i2s_pdm_io_stream_t *)io;
+    ESP_LOGD(TAG, "Delete, %s-%p", OBJ_GET_TAG(i2s_pdm_io), i2s_pdm_io);
+    if (i2s_pdm_io->pdm_event) {
+        vEventGroupDelete(i2s_pdm_io->pdm_event);
     }
+    void *cfg = OBJ_GET_CFG(io);
+    if (cfg) {
+        esp_gmf_oal_free(cfg);
+    }
+    esp_gmf_io_deinit(io);
+    esp_gmf_oal_free(i2s_pdm_io);
     return ESP_GMF_ERR_OK;
 }
 

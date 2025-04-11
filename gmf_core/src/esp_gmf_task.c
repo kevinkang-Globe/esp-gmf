@@ -133,7 +133,7 @@ static inline void __esp_gmf_task_free(esp_gmf_task_handle_t handle)
     esp_gmf_oal_free(tsk);
 }
 
-int esp_gmf_job_item_free(void *ptr)
+static int esp_gmf_job_item_free(void *ptr)
 {
     esp_gmf_job_t *job = (esp_gmf_job_t *)ptr;
     esp_gmf_oal_free((void *)job->label);
@@ -247,7 +247,7 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
         bool is_empty = false;
         esp_gmf_job_stack_is_empty(tsk->start_stack, &is_empty);
         if ((tmp == NULL) && (is_empty == false)) {
-            esp_gmf_job_stack_pop(tsk->start_stack, (uint32_t*)&worker);
+            esp_gmf_job_stack_pop(tsk->start_stack, (uint32_t *)&worker);
         }
         ESP_LOGD(TAG, "Found next job[%p] to process", worker);
     }
@@ -292,7 +292,12 @@ ESP_GMF_THREAD_EXIT:
     esp_gmf_oal_thread_delete(tsk->oal_thread);
 }
 
-esp_gmf_err_t esp_gmf_task_init(void *config, esp_gmf_task_handle_t *tsk_hd)
+static esp_gmf_err_t _task_new(void *cfg, esp_gmf_obj_handle_t *handle)
+{
+    return esp_gmf_task_init((esp_gmf_task_cfg_t *)cfg, handle);
+}
+
+esp_gmf_err_t esp_gmf_task_init(esp_gmf_task_cfg_t *config, esp_gmf_task_handle_t *tsk_hd)
 {
     ESP_GMF_NULL_CHECK(TAG, tsk_hd, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, config, return ESP_GMF_ERR_INVALID_ARG);
@@ -326,7 +331,7 @@ esp_gmf_err_t esp_gmf_task_init(void *config, esp_gmf_task_handle_t *tsk_hd)
     ESP_GMF_RET_ON_ERROR(TAG, ret, goto _tsk_init_failed, "Failed set OBJ configuration");
     ret = esp_gmf_obj_set_tag(obj, tag);
     ESP_GMF_RET_ON_ERROR(TAG, ret, goto _tsk_init_failed, "Failed set OBJ tag");
-    obj->new_obj = esp_gmf_task_init;
+    obj->new_obj = _task_new;
     obj->del_obj = esp_gmf_task_deinit;
 
     if (cfg->thread.stack > 0) {
@@ -381,7 +386,6 @@ esp_gmf_err_t esp_gmf_task_deinit(esp_gmf_task_handle_t handle)
     ESP_LOGD(TAG, "%s, %s", __func__, OBJ_GET_TAG(tsk));
     __esp_gmf_task_delete_jobs(tsk);
     esp_gmf_oal_mutex_unlock(tsk->lock);
-    esp_gmf_obj_set_config((esp_gmf_obj_handle_t)tsk, ((esp_gmf_obj_t *)tsk)->cfg, 0);
     esp_gmf_obj_set_tag((esp_gmf_obj_handle_t)tsk, NULL);
     __esp_gmf_task_free(tsk);
     return ESP_GMF_ERR_OK;

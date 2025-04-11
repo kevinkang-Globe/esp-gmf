@@ -42,8 +42,6 @@ static const char *const TAG = "ESP_GMF_EMBED_FLASH";
 
 static esp_gmf_err_t _embed_flash_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, io, {return ESP_ERR_INVALID_ARG;});
     *io = NULL;
     esp_gmf_obj_handle_t new_io = NULL;
     embed_flash_io_cfg_t *config = (embed_flash_io_cfg_t *)cfg;
@@ -140,13 +138,14 @@ static esp_gmf_err_t _embed_flash_close(esp_gmf_io_handle_t io)
 
 static esp_gmf_err_t _embed_flash_destroy(esp_gmf_io_handle_t io)
 {
-    if (io != NULL) {
-        embed_flash_io_t *embed_flash = (embed_flash_io_t *)io;
-        ESP_LOGD(TAG, "Delete, %s-%p", OBJ_GET_TAG(embed_flash), embed_flash);
-        esp_gmf_oal_free(OBJ_GET_CFG(io));
-        esp_gmf_io_deinit(io);
-        esp_gmf_oal_free(embed_flash);
+    embed_flash_io_t *embed_flash = (embed_flash_io_t *)io;
+    ESP_LOGD(TAG, "Delete, %s-%p", OBJ_GET_TAG(embed_flash), embed_flash);
+    void *cfg = OBJ_GET_CFG(io);
+    if (cfg) {
+        esp_gmf_oal_free(cfg);
     }
+    esp_gmf_io_deinit(io);
+    esp_gmf_oal_free(embed_flash);
     return ESP_GMF_ERR_OK;
 }
 

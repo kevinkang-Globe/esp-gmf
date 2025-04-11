@@ -55,7 +55,11 @@ void play_pause_single_file( esp_gmf_pipeline_handle_t pipe, const char *uri)
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
     esp_audio_simple_dec_cfg_t *simple_cfg = (esp_audio_simple_dec_cfg_t *)OBJ_GET_CFG(dec_el);
     TEST_ASSERT_NOT_NULL(simple_cfg);
-    esp_gmf_info_sound_t info = {0};
+    esp_gmf_info_sound_t info = {
+        .sample_rates = 48000,
+        .channels = 2,
+        .bits = 16,
+    };
     esp_gmf_audio_helper_reconfig_dec_by_uri(uri, &info, simple_cfg);
     ESP_GMF_MEM_SHOW(TAG);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));

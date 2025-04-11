@@ -29,6 +29,7 @@
 #include "esp_log.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_sys.h"
+#include "esp_memory_utils.h"
 
 static const char *TAG = "ESP_GMF_OAL_SYS";
 
@@ -121,10 +122,11 @@ esp_gmf_err_t esp_gmf_oal_sys_get_real_time_stats(int elapsed_time_ms)
 
                 task_elapsed_time = end_array[j].ulRunTimeCounter - start_array[i].ulRunTimeCounter;
                 percentage_time = (task_elapsed_time * 100UL) / ((float)total_elapsed_time * portNUM_PROCESSORS);
+                bool is_task_inter = esp_ptr_internal((const void *)(pxTaskGetStackStart(start_array[i].xHandle)));
                 ESP_LOGI(TAG, "| %-17s | %-11d |%.2f%%  | %-4u | %-9u | %-7s | %-8x | %s",
                          start_array[i].pcTaskName, (int)task_elapsed_time, percentage_time, start_array[i].uxCurrentPriority,
                          (int)start_array[i].usStackHighWaterMark, task_state[(start_array[i].eCurrentState)],
-                         start_array[i].xCoreID, task_stack[esp_ptr_internal(pxTaskGetStackStart(start_array[i].xHandle))]);
+                         start_array[i].xCoreID, task_stack[(int)(is_task_inter)]);
 
                 // Mark that task have been matched by overwriting their handles
                 start_array[i].xHandle = NULL;

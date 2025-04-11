@@ -98,7 +98,10 @@ static esp_gmf_err_t _file_delete(esp_gmf_io_handle_t io)
 {
     fake_io_t *file_io = (fake_io_t *)io;
     ESP_LOGE(TAG, "%s, %s-%p", __func__, OBJ_GET_TAG(file_io), file_io);
-    esp_gmf_oal_free(OBJ_GET_CFG(file_io));
+    void *cfg = OBJ_GET_CFG(io);
+    if (cfg) {
+        esp_gmf_oal_free(cfg);
+    }
     esp_gmf_io_deinit(io);
     esp_gmf_oal_free(file_io);
     return ESP_GMF_ERR_OK;

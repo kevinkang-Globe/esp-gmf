@@ -78,8 +78,6 @@ static inline void free_esp_audio_simple_cfg(esp_audio_simple_dec_cfg_t *config)
 
 static esp_gmf_err_t esp_gmf_audio_dec_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_audio_simple_dec_cfg_t *dec_cfg = (esp_audio_simple_dec_cfg_t *)cfg;
     esp_gmf_obj_handle_t new_obj = NULL;
@@ -125,7 +123,7 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
     esp_gmf_info_sound_t snd_info = {0};
     esp_gmf_info_file_t info = {0};
     if (audio_dec->in_data.len == 0) {
-        load_ret = esp_gmf_port_acquire_in(in_port, &audio_dec->in_load,  ESP_GMF_ELEMENT_GET(audio_dec)->in_attr.data_size, in_port->wait_ticks);
+        load_ret = esp_gmf_port_acquire_in(in_port, &audio_dec->in_load, ESP_GMF_ELEMENT_GET(audio_dec)->in_attr.data_size, in_port->wait_ticks);
         ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __aud_proc_release;});
         audio_dec->in_data.buffer = audio_dec->in_load->buf;
         audio_dec->in_data.len = audio_dec->in_load->valid_size;
@@ -233,7 +231,6 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_close(esp_gmf_audio_element_handle_t 
 
 static esp_gmf_err_t esp_gmf_audio_dec_destroy(esp_gmf_audio_element_handle_t self)
 {
-    ESP_GMF_NULL_CHECK(TAG, self, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_LOGD(TAG, "Destroyed, %p", self);
     free_esp_audio_simple_cfg(OBJ_GET_CFG(self));
     esp_gmf_audio_el_deinit(self);
@@ -243,7 +240,6 @@ static esp_gmf_err_t esp_gmf_audio_dec_destroy(esp_gmf_audio_element_handle_t se
 
 esp_gmf_err_t esp_gmf_audio_dec_init(esp_audio_simple_dec_cfg_t *config, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
@@ -252,10 +248,12 @@ esp_gmf_err_t esp_gmf_audio_dec_init(esp_audio_simple_dec_cfg_t *config, esp_gmf
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)dec_hd;
     obj->new_obj = esp_gmf_audio_dec_new;
     obj->del_obj = esp_gmf_audio_dec_destroy;
-    esp_audio_simple_dec_cfg_t *cfg = NULL;
-    dupl_esp_audio_simple_cfg(config, &cfg);
-    ESP_GMF_CHECK(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto ES_DEC_FAIL;}, "Failed to allocate audio decoder configuration");
-    esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
+    if (config) {
+        esp_audio_simple_dec_cfg_t *cfg = NULL;
+        dupl_esp_audio_simple_cfg(config, &cfg);
+        ESP_GMF_CHECK(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto ES_DEC_FAIL;}, "Failed to allocate audio decoder configuration");
+        esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
+    }
     ret = esp_gmf_obj_set_tag(obj, "aud_simp_dec");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto ES_DEC_FAIL, "Failed to set obj tag");
     *handle = obj;
@@ -276,7 +274,6 @@ ES_DEC_FAIL:
 
 esp_gmf_err_t esp_gmf_audio_dec_cast(esp_audio_simple_dec_cfg_t *config, esp_gmf_obj_handle_t handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     esp_audio_simple_dec_cfg_t *cfg = NULL;
     dupl_esp_audio_simple_cfg(config, &cfg);

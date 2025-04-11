@@ -255,7 +255,7 @@ esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_gmf_
     } else if (strstr(uri, ".opus")) {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_RAW_OPUS;
         esp_opus_dec_cfg_t opus_cfg = ESP_OPUS_DEC_CONFIG_DEFAULT();
-        opus_cfg.channel= info->channels;
+        opus_cfg.channel = info->channels;
         opus_cfg.sample_rate = info->sample_rates;
         if ((dec_cfg->dec_cfg == NULL)
             || (dec_cfg->cfg_size != sizeof(esp_opus_dec_cfg_t))) {
@@ -270,6 +270,24 @@ esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_gmf_
             memcpy(dec_cfg->dec_cfg, &opus_cfg, dec_cfg->cfg_size);
             ESP_LOGE(TAG, "IS HERE, %s", uri);
         }
+    } else if (strstr(uri, ".pcm")) {
+        dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_PCM;
+        esp_pcm_dec_cfg_t *cfg = dec_cfg->dec_cfg;
+        if ((dec_cfg->dec_cfg == NULL)
+            || (dec_cfg->cfg_size != sizeof(esp_pcm_dec_cfg_t))) {
+            if (dec_cfg->dec_cfg) {
+                esp_gmf_oal_free(dec_cfg->dec_cfg);
+                dec_cfg->dec_cfg = NULL;
+                dec_cfg->cfg_size = 0;
+            }
+            cfg = esp_gmf_oal_calloc(1, sizeof(esp_pcm_dec_cfg_t));
+            ESP_GMF_MEM_CHECK(TAG, cfg, return ESP_GMF_ERR_MEMORY_LACK;);
+            dec_cfg->cfg_size = sizeof(esp_pcm_dec_cfg_t);
+            dec_cfg->dec_cfg = cfg;
+        }
+        cfg->sample_rate = info->sample_rates;
+        cfg->channel = info->channels;
+        cfg->bits_per_sample = info->bits;
     } else {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_NONE;
         ESP_LOGW(TAG, "Not support for simple decoder, %s", uri);

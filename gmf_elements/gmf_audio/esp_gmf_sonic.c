@@ -138,8 +138,6 @@ static esp_gmf_err_t __sonic_get_pitch(esp_gmf_audio_element_handle_t handle, es
 
 static esp_gmf_err_t esp_gmf_sonic_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_ae_sonic_cfg_t *sonic_cfg = (esp_ae_sonic_cfg_t *)cfg;
     esp_gmf_obj_handle_t new_obj = NULL;
@@ -266,13 +264,14 @@ static esp_gmf_err_t sonic_received_event_handler(esp_gmf_event_pkt_t *evt, void
 
 static esp_gmf_err_t esp_gmf_sonic_destroy(esp_gmf_audio_element_handle_t self)
 {
-    if (self != NULL) {
-        esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)self;
-        ESP_LOGD(TAG, "Destroyed, %p", self);
-        esp_gmf_oal_free(OBJ_GET_CFG(self));
-        esp_gmf_audio_el_deinit(self);
-        esp_gmf_oal_free(sonic);
+    esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)self;
+    ESP_LOGD(TAG, "Destroyed, %p", self);
+    void *cfg = OBJ_GET_CFG(self);
+    if (cfg) {
+        esp_gmf_oal_free(cfg);
     }
+    esp_gmf_audio_el_deinit(self);
+    esp_gmf_oal_free(sonic);
     return ESP_GMF_ERR_OK;
 }
 
@@ -334,7 +333,6 @@ esp_gmf_err_t esp_gmf_sonic_get_pitch(esp_gmf_audio_element_handle_t handle, flo
 
 esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
@@ -343,10 +341,12 @@ esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)sonic;
     obj->new_obj = esp_gmf_sonic_new;
     obj->del_obj = esp_gmf_sonic_destroy;
-    esp_ae_sonic_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
-    ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto SONIC_INIT_FAIL;}, "sonic configuration", sizeof(*config));
-    memcpy(cfg, config, sizeof(*config));
-    esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
+    if (config) {
+        esp_ae_sonic_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
+        ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto SONIC_INIT_FAIL;}, "sonic configuration", sizeof(*config));
+        memcpy(cfg, config, sizeof(*config));
+        esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
+    }
     ret = esp_gmf_obj_set_tag(obj, "sonic");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto SONIC_INIT_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};
