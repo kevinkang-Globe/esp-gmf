@@ -40,7 +40,8 @@ static bool        write_run;
 static const char *file_name  = "/sdcard/gmf_ut_test.mp3";
 static const char *file2_name = "/sdcard/gmf_ut_test_out.mp3";
 extern uint32_t    mem_start;
-static void        read_task(void *param)
+
+static void read_task(void *param)
 {
     ESP_LOGI(TAG, "Going to read, %p", param);
     esp_gmf_pbuf_handle_t pbuf = (esp_gmf_pbuf_handle_t)param;

@@ -31,6 +31,8 @@
 #include "esp_ae_data_weaver.h"
 #include "esp_heap_caps.h"
 #include "gmf_audio_common.h"
+#include "esp_gmf_cap.h"
+#include "esp_gmf_caps_def.h"
 
 #define ESP_GMF_PROCESS_SAMPLE (256)
 
@@ -222,6 +224,17 @@ static esp_gmf_err_t esp_gmf_interleave_destroy(esp_gmf_audio_element_handle_t s
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_interleave_caps_func(esp_gmf_cap_t **caps)
+{
+    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t dec_caps = {0};
+    dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_INTERLEAVE;
+    dec_caps.attr_fun = NULL;
+    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_interleave_init(esp_gmf_interleave_cfg *config, esp_gmf_obj_handle_t *handle)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -267,9 +280,11 @@ esp_gmf_err_t esp_gmf_interleave_cast(esp_gmf_interleave_cfg *config, esp_gmf_ob
     free_esp_ae_interleave_cfg(OBJ_GET_CFG(handle));
     esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
     esp_gmf_audio_element_t *interleave_el = (esp_gmf_audio_element_t *)handle;
+
     interleave_el->base.ops.open = esp_gmf_interleave_open;
     interleave_el->base.ops.process = esp_gmf_interleave_process;
     interleave_el->base.ops.close = esp_gmf_interleave_close;
     interleave_el->base.ops.event_receiver = interleave_received_event_handler;
+    interleave_el->base.ops.load_caps = _load_interleave_caps_func;
     return ESP_GMF_ERR_OK;
 }

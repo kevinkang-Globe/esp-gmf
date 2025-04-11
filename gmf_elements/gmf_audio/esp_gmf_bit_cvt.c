@@ -30,6 +30,8 @@
 #include "esp_gmf_bit_cvt.h"
 #include "gmf_audio_common.h"
 #include "esp_gmf_audio_method_def.h"
+#include "esp_gmf_cap.h"
+#include "esp_gmf_caps_def.h"
 
 /**
  * @brief Audio bit conversion context in GMF
@@ -213,6 +215,17 @@ static esp_gmf_err_t esp_gmf_bit_cvt_destroy(esp_gmf_audio_element_handle_t self
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_bit_cvt_caps_func(esp_gmf_cap_t **caps)
+{
+    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t dec_caps = {0};
+    dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_BIT_CONVERT;
+    dec_caps.attr_fun = NULL;
+    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_bit_cvt_set_dest_bits(esp_gmf_audio_element_handle_t handle, uint8_t dest_bits)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -284,5 +297,6 @@ esp_gmf_err_t esp_gmf_bit_cvt_cast(esp_ae_bit_cvt_cfg_t *config, esp_gmf_obj_han
     bit_cvt_el->base.ops.process = esp_gmf_bit_cvt_process;
     bit_cvt_el->base.ops.close = esp_gmf_bit_cvt_close;
     bit_cvt_el->base.ops.event_receiver = bit_cvt_received_event_handler;
+    bit_cvt_el->base.ops.load_caps = _load_bit_cvt_caps_func;
     return ESP_GMF_ERR_OK;
 }

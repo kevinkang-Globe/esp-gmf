@@ -34,7 +34,7 @@ extern "C" {
 #endif  /* __cplusplus */
 
 #define ESP_GMF_PORT_CHECK(log_tag, ret, ret_value, action, format, ...) {                              \
-    if (unlikely(ret < ESP_GMF_IO_OK)) {                                                                       \
+    if (unlikely(ret < ESP_GMF_IO_OK)) {                                                                \
         if (ret != ESP_GMF_IO_ABORT) {                                                                  \
             ESP_LOGE(log_tag, "%s(%d): " format, __FUNCTION__, __LINE__ __VA_OPT__(, ) __VA_ARGS__);    \
             ret_value = ESP_GMF_ERR_FAIL;                                                               \
@@ -56,8 +56,8 @@ extern "C" {
 /**
  * @brief  Definition the direction of a GMF port (input or output)
  */
-#define ESP_GMF_PORT_DIR_IN    (0)  /*!< Input port */
-#define ESP_GMF_PORT_DIR_OUT   (1)  /*!< Output port */
+#define ESP_GMF_PORT_DIR_IN   (0)  /*!< Input port */
+#define ESP_GMF_PORT_DIR_OUT  (1)  /*!< Output port */
 
 /**
  * @brief  Definition the bit mask for the type of data handled by a GMF port (byte or block)
@@ -66,8 +66,8 @@ extern "C" {
  *         - A block-type port transfers data by passing memory addresses. The memory used by the user is provided by another source,
  *           so data transmission does not involve copying. However, accessing arbitrary byte lengths is less flexible and may require data concatenation
  */
-#define  ESP_GMF_PORT_TYPE_BYTE   (0x01)  /*!< Bit0 for the byte type of GMF port */
-#define  ESP_GMF_PORT_TYPE_BLOCK  (0x02)  /*!< Bit1 for the block type of GMF port */
+#define ESP_GMF_PORT_TYPE_BYTE  (0x01)  /*!< Bit0 for the byte type of GMF port */
+#define ESP_GMF_PORT_TYPE_BLOCK (0x02)  /*!< Bit1 for the block type of GMF port */
 
 /**
  * @brief  Handle to a GMF port

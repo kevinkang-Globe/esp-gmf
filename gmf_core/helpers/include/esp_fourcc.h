@@ -33,17 +33,25 @@
     - Add audio, video and pixel format with fourcc(four character code)
 */
 
+typedef uint32_t esp_fourcc_t;  // 32-bit FOURCC code
+
 #define ESP_FOURCC_TO_INT(a, b, c, d) ((uint32_t)(a) | ((uint32_t)(b) << 8) | ((uint32_t)(c) << 16) | ((uint32_t)(d) << 24))
 
-#define ESP_FOURCC_TO_STR(fourcc)         \
-    (char[])                              \
-    {                                     \
-        (char)((fourcc) & 0xFF),          \
-        (char)(((fourcc) >> 8) & 0xFF),   \
-        (char)(((fourcc) >> 16) & 0xFF),  \
-        (char)(((fourcc) >> 24) & 0xFF),  \
-        '\0'                              \
+// Convert 32-bit FOURCC to string
+static inline void gmf_fourcc_to_str(uint32_t fourcc, char out[5]) {
+    for (int i = 0; i < 4; i++) {
+        out[i] = (char)((fourcc >> (i * 4)) & 0xFF);
     }
+    out[4] = '\0';
+}
+
+// Macro to convert an FOURCC code to a string
+#define ESP_FOURCC_TO_STR(fourcc)  ({ \
+    static char fourcc_str[5]; \
+    fourcc_str[0] = fourcc_str[1] = fourcc_str[2] = fourcc_str[3] = fourcc_str[4] = '\0'; \
+    gmf_fourcc_to_str(fourcc, fourcc_str); \
+    fourcc_str; \
+})
 
 /***************************************************************/
 /*                         Video codec                         */

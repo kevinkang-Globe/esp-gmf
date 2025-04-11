@@ -30,7 +30,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif  /* __cplusplus */
 
 /**
  * @brief  Function pointer type for GMF method functions
@@ -43,11 +43,11 @@ typedef esp_gmf_err_t (*esp_gmf_method_func)(void *handle, esp_gmf_args_desc_t *
  *         This structure defines a linked list node for storing GMF methods
  */
 typedef struct esp_gmf_method {
-    struct esp_gmf_method  *next;       /*!< Pointer to the next method node */
-    const char             *name;       /*!< Name of the method */
-    esp_gmf_method_func     func;       /*!< Function pointer to the method implementation */
-    uint16_t                args_cnt;   /*!< Number of the argument description */
-    esp_gmf_args_desc_t    *args_desc;  /*!< A pointer to argument description structure */
+    struct esp_gmf_method *next;       /*!< Pointer to the next method node */
+    const char            *name;       /*!< Name of the method */
+    esp_gmf_method_func    func;       /*!< Function pointer to the method implementation */
+    uint16_t               args_cnt;   /*!< Number of the argument description */
+    esp_gmf_args_desc_t   *args_desc;  /*!< A pointer to argument description structure */
 } esp_gmf_method_t;
 
 /**
@@ -60,8 +60,8 @@ typedef struct esp_gmf_method {
  * @param[out]  handle  Pointer to the handle for the newly created method
  *
  * @return
- *       - ESP_GMF_ERR_OK: Success
- *       - ESP_GMF_ERR_MEMORY_LACK: Memory allocation failure
+ *       - ESP_GMF_ERR_OK           Success
+ *       - ESP_GMF_ERR_MEMORY_LACK  Memory allocation failure
  */
 static inline esp_gmf_err_t esp_gmf_method_create(const char *name, esp_gmf_method_func func, esp_gmf_args_desc_t *args, esp_gmf_method_t **handle)
 {
@@ -74,8 +74,8 @@ static inline esp_gmf_err_t esp_gmf_method_create(const char *name, esp_gmf_meth
                 return ESP_GMF_ERR_MEMORY_LACK;
             }
         }
-        new_method->args_cnt = esp_gmf_args_desc_count(args);
-        new_method->func = func;
+        new_method->args_cnt  = esp_gmf_args_desc_count(args);
+        new_method->func      = func;
         new_method->args_desc = args;
         new_method->next = NULL;
         *handle = new_method;
@@ -94,8 +94,8 @@ static inline esp_gmf_err_t esp_gmf_method_create(const char *name, esp_gmf_meth
  * @param[in]      args  The arguments description list
  *
  * @return
- *     - ESP_GMF_ERR_OK           Success
- *     - ESP_GMF_ERR_MEMORY_LACK  Memory allocation failure
+ *       - ESP_GMF_ERR_OK           Success
+ *       - ESP_GMF_ERR_MEMORY_LACK  Memory allocation failure
  */
 static inline esp_gmf_err_t esp_gmf_method_append(esp_gmf_method_t **head, const char *name, esp_gmf_method_func func, esp_gmf_args_desc_t *args)
 {
@@ -142,7 +142,7 @@ static inline void esp_gmf_method_destroy(esp_gmf_method_t *head)
 /**
  * @brief  Display the list of GMF methods and their argument descriptions
  *
- * @param[in]  head Pointer to the head of the method list
+ * @param[in]  head  Pointer to the head of the method list
  */
 static inline void esp_gmf_method_show(esp_gmf_method_t *head)
 {
@@ -208,4 +208,4 @@ static inline esp_gmf_err_t esp_gmf_method_query_args(esp_gmf_method_t *head, es
 
 #ifdef __cplusplus
 }
-#endif
+#endif  /* __cplusplus */

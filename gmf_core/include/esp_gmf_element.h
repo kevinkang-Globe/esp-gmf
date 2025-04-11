@@ -31,15 +31,16 @@
 #include "esp_gmf_info.h"
 #include "esp_gmf_port.h"
 #include "esp_gmf_method.h"
+#include "esp_gmf_cap.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
 
-#define ESP_GMF_ELEMENT_JOB_OPEN          BIT(0)
-#define ESP_GMF_ELEMENT_JOB_PROCESS       BIT(1)
-#define ESP_GMF_ELEMENT_JOB_CLOSE         BIT(2)
-#define ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT (768)
+#define ESP_GMF_ELEMENT_JOB_OPEN                  BIT(0)
+#define ESP_GMF_ELEMENT_JOB_PROCESS               BIT(1)
+#define ESP_GMF_ELEMENT_JOB_CLOSE                 BIT(2)
+#define ESP_GMF_ELEMENT_PORT_DATA_SIZE_DEFAULT    (768)
 #define ESP_GMF_ELEMENT_PORT_ADDR_ALIGNED_DEFAULT (16)  //  16 bytes aligned
 
 #define ESP_GMF_MAX_DELAY (0xFFFFFFFFUL)
@@ -50,28 +51,28 @@ extern "C" {
 #define ESP_GMF_ELEMENT_GET_DEPENDENCY(x) (((esp_gmf_element_t *)x)->dependency)
 
 #define ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(attr, caps, addr_aligned, size_aligned, port_type, acq_data_size) do {  \
-    (attr).cap = (uint8_t)(caps);                                                                                \
+    (attr).cap                   = (uint8_t)(caps);                                                              \
     (attr).port.buf_addr_aligned = (uint8_t)(addr_aligned);                                                      \
     (attr).port.buf_size_aligned = (uint8_t)(size_aligned);                                                      \
-    (attr).port.dir = (ESP_GMF_PORT_DIR_IN);                                                                     \
-    (attr).port.type = (uint8_t)(port_type);                                                                     \
-    (attr).data_size = (int)(acq_data_size);                                                                     \
+    (attr).port.dir              = (ESP_GMF_PORT_DIR_IN);                                                        \
+    (attr).port.type             = (uint8_t)(port_type);                                                         \
+    (attr).data_size             = (int)(acq_data_size);                                                         \
 } while (0)
 
 #define ESP_GMF_ELEMENT_OUT_PORT_ATTR_SET(attr, caps, addr_aligned, size_aligned, port_type, acq_data_size) do {  \
-    (attr).cap = (uint8_t)(caps);                                                                                 \
+    (attr).cap                   = (uint8_t)(caps);                                                               \
     (attr).port.buf_addr_aligned = (uint8_t)(addr_aligned);                                                       \
     (attr).port.buf_size_aligned = (uint8_t)(size_aligned);                                                       \
-    (attr).port.dir = (ESP_GMF_PORT_DIR_OUT);                                                                     \
-    (attr).port.type = (uint8_t)(port_type);                                                                      \
-    (attr).data_size = (int)(acq_data_size);                                                                      \
+    (attr).port.dir              = (ESP_GMF_PORT_DIR_OUT);                                                        \
+    (attr).port.type             = (uint8_t)(port_type);                                                          \
+    (attr).data_size             = (int)(acq_data_size);                                                          \
 } while (0)
 
 /**
  * @brief  Defining the bit mask for an element's port capabilities
  */
 #define ESP_GMF_EL_PORT_CAP_SINGLE (1)  /*!< Bit0 for single port capability */
-#define ESP_GMF_EL_PORT_CAP_MULTI (2)   /*!< Bit1 for multi-port capability */
+#define ESP_GMF_EL_PORT_CAP_MULTI  (2)  /*!< Bit1 for multi-port capability */
 
 /**
  * @brief  The GMF element handle
@@ -85,17 +86,23 @@ typedef struct {
     uint8_t              cap;        /*!< An element can connect to one or more capability ports */
     esp_gmf_port_attr_t  port;       /*!< Port attributes */
     int                  data_size;  /*!< A minimum data size for element acquisition operations,
-                                          recommended for all elements, even those without specific processing requirements */
+                                         recommended for all elements, even those without specific processing requirements */
 } esp_gmf_element_port_attr_t;
+
+/**
+ * @brief  Function pointer type for load element capability
+ */
+typedef esp_gmf_err_t (*esp_gmf_load_caps_func)(esp_gmf_cap_t **caps);
 
 /**
  * @brief  Structure defining the operations of an element
  */
 typedef struct {
-    esp_gmf_job_func  open;            /*!< Function to open the element */
-    esp_gmf_job_func  process;         /*!< Function to process the element */
-    esp_gmf_job_func  close;           /*!< Function to close the element */
-    esp_gmf_event_cb  event_receiver;  /*!< Event receiver function */
+    esp_gmf_job_func        open;            /*!< Function to open the element */
+    esp_gmf_job_func        process;         /*!< Function to process the element */
+    esp_gmf_job_func        close;           /*!< Function to close the element */
+    esp_gmf_load_caps_func  load_caps;       /*!< Function to load element capability description */
+    esp_gmf_event_cb        event_receiver;  /*!< Event receiver function */
 } esp_gmf_element_ops_t;
 
 /**
@@ -117,6 +124,7 @@ typedef struct esp_gmf_element {
     esp_gmf_event_state_t           cur_state;      /*!< Current state */
     esp_gmf_event_cb                event_func;     /*!< Event function */
     esp_gmf_method_t               *method;         /*!< It can access the data members and member functions of the objects */
+    esp_gmf_cap_t                  *caps;           /*!< Element capabilities */
 
     /* Protect */
     void                           *ctx;            /*!< User Context */
@@ -127,11 +135,11 @@ typedef struct esp_gmf_element {
  * @brief  Configuration structure for a GMF element
  */
 typedef struct {
-    void                           *ctx;         /*!< User context */
-    esp_gmf_event_cb                cb;          /*!< Callback function */
-    esp_gmf_element_port_attr_t     in_attr;     /*!< Input port attributes */
-    esp_gmf_element_port_attr_t     out_attr;    /*!< Output port attributes */
-    bool                            dependency;  /*!< Indicates if the element depends on other information to open */
+    void                        *ctx;         /*!< User context */
+    esp_gmf_event_cb             cb;          /*!< Callback function */
+    esp_gmf_element_port_attr_t  in_attr;     /*!< Input port attributes */
+    esp_gmf_element_port_attr_t  out_attr;    /*!< Output port attributes */
+    bool                         dependency;  /*!< Indicates if the element depends on other information to open */
 } esp_gmf_element_cfg_t;
 
 /**
@@ -173,6 +181,8 @@ esp_gmf_err_t esp_gmf_element_set_event_func(esp_gmf_element_handle_t handle, es
 /**
  * @brief  Register an input port for the specific element
  *
+ * @note  The registered port will be destroyed when `esp_gmf_element_unregister_out_port` is called
+ *
  * @param[in]  handle   GMF element handle
  * @param[in]  io_inst  port handle to register
  *
@@ -199,6 +209,8 @@ esp_gmf_err_t esp_gmf_element_unregister_in_port(esp_gmf_element_handle_t handle
 
 /**
  * @brief  Register an output port for the specific element
+ *
+ * @note  The registered port will be destroyed when `esp_gmf_element_unregister_out_port` is called
  *
  * @param[in]  handle   GMF element handle
  * @param[in]  io_inst  Output port handle to register
@@ -428,18 +440,21 @@ esp_gmf_err_t esp_gmf_element_notify_vid_info(esp_gmf_element_handle_t handle, e
 /**
  * @brief  Register a method for a GMF element
  *
- *         This function registers a method identified by `id` with the GMF element specified by `handle`
- *         The method will be associated with the function pointer `func`
+ *         This function registers a method identified by `name` with the GMF element specified by `handle`
+ *         The method is associated with the function pointer `func` and will be executed when called
+ *
+ * @note  The registered method and associated resources will be destroyed when the element is destroyed
+ *        via `esp_gmf_element_destroy`
  *
  * @param[in]  handle     Handle to the GMF element where the method will be registered
- * @param[in]  name       Name for the method to be registered
+ * @param[in]  name       Name of the method to be registered
  * @param[in]  func       Function pointer to the method implementation
- * @param[in]  args_desc  A pointer to the argument description
+ * @param[in]  args_desc  A pointer to the argument description structure for the method
  *
  * @return
- *       - ESP_GMF_ERR_OK           On success
- *       - ESP_GMF_ERR_MEMORY_LACK  No enogth memory
- *       - ESP_GMF_ERR_INVALID_ARG  If the handle or func is invalid
+ *       - ESP_GMF_ERR_OK           Method registered successfully
+ *       - ESP_GMF_ERR_MEMORY_LACK  Insufficient memory to register the method
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument, such as a NULL handle or function pointer
  */
 esp_gmf_err_t esp_gmf_element_register_method(esp_gmf_element_handle_t handle, const char *name,
                                               esp_gmf_method_func func, esp_gmf_args_desc_t *args_desc);
@@ -458,7 +473,7 @@ esp_gmf_err_t esp_gmf_element_register_method(esp_gmf_element_handle_t handle, c
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid handle or arguments
  */
 esp_gmf_err_t esp_gmf_element_exe_method(esp_gmf_element_handle_t handle, const char *name,
-                                                  uint8_t *buf, int buf_len);
+                                         uint8_t *buf, int buf_len);
 
 /**
  * @brief  Retrieve the method structure associated with a given ESP-GMF element
@@ -471,6 +486,22 @@ esp_gmf_err_t esp_gmf_element_exe_method(esp_gmf_element_handle_t handle, const 
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument, such as a NULL handle or output pointer
  */
 esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, esp_gmf_method_t **mthd);
+
+/**
+ * @brief  Retrieve the capability structure associated with a given ESP-GMF element
+ *         On the first call, if the element's esp_gmf_load_caps_func is valid, it will load
+ *         the capability structure by calling esp_gmf_load_caps_func. The created capability
+ *         structure will be destroyed when the element is destroyed via esp_gmf_element_destroy
+ *
+ * @param[in]   handle  Pointer to the ESP-GMF element handle
+ * @param[out]  caps    Pointer to a pointer where the address of the capability structure
+ *                      will be stored upon successful retrieval
+ *
+ * @return
+ *       - ESP_GMF_OK               Capability structure successfully retrieved
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument, such as a NULL handle or output pointer
+ */
+esp_gmf_err_t esp_gmf_element_get_caps(esp_gmf_element_handle_t handle, esp_gmf_cap_t **caps);
 
 #ifdef __cplusplus
 }

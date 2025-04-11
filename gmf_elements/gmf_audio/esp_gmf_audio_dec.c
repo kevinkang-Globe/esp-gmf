@@ -30,6 +30,9 @@
 #include "esp_audio_types.h"
 #include "esp_audio_simple_dec_default.h"
 #include "gmf_audio_common.h"
+#include "esp_gmf_cap.h"
+#include "esp_fourcc.h"
+#include "esp_gmf_caps_def.h"
 
 #define DEFAULT_DEC_OUTPUT_BUFFER_SIZE                     1024
 #define AUDIO_DEC_CALC_PTS(out_len, sample_rate, ch, bits) (out_len) * 8000 / ((sample_rate) * (ch) * (bits))
@@ -48,6 +51,22 @@ typedef struct {
 } esp_gmf_audio_dec_t;
 
 static const char *TAG = "ESP_GMF_ASMP_DEC";
+
+static esp_gmf_err_t _dec_caps_iter_fun(uint32_t attr_index, esp_gmf_cap_attr_t *attr)
+{
+    switch (attr_index) {
+        case 0: {
+            const static uint32_t support_dec_type[] = {ESP_FOURCC_MP3, ESP_FOURCC_AAC, ESP_FOURCC_OPUS, ESP_FOURCC_FLAC, ESP_FOURCC_AMRNB, ESP_FOURCC_AMRWB, ESP_FOURCC_ALAC};
+            ESP_GMF_CAP_ATTR_SET_DISCRETE(attr, ESP_FOURCC_TO_INT('T', 'Y', 'P', 'E'),  (uint32_t *) &support_dec_type,
+                                          sizeof(support_dec_type) / sizeof(uint32_t), sizeof(uint32_t));
+            break;
+        }
+        default:
+            attr->prop_type = ESP_GMF_PROP_TYPE_NONE;
+            return ESP_GMF_ERR_NOT_SUPPORT;
+    }
+    return ESP_GMF_ERR_OK;
+}
 
 static inline esp_gmf_err_t dupl_esp_audio_simple_cfg(esp_audio_simple_dec_cfg_t *config, esp_audio_simple_dec_cfg_t **new_config)
 {
@@ -238,6 +257,17 @@ static esp_gmf_err_t esp_gmf_audio_dec_destroy(esp_gmf_audio_element_handle_t se
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_dec_caps_func(esp_gmf_cap_t **caps)
+{
+    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t dec_caps = {0};
+    dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_DECODER;
+    dec_caps.attr_fun = _dec_caps_iter_fun;
+    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_audio_dec_init(esp_audio_simple_dec_cfg_t *config, esp_gmf_obj_handle_t *handle)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -282,8 +312,10 @@ esp_gmf_err_t esp_gmf_audio_dec_cast(esp_audio_simple_dec_cfg_t *config, esp_gmf
     free_esp_audio_simple_cfg(OBJ_GET_CFG(handle));
     esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
     esp_gmf_audio_element_t *audio_dec_el = (esp_gmf_audio_element_t *)handle;
+
     audio_dec_el->base.ops.open = esp_gmf_audio_dec_open;
     audio_dec_el->base.ops.process = esp_gmf_audio_dec_process;
     audio_dec_el->base.ops.close = esp_gmf_audio_dec_close;
+    audio_dec_el->base.ops.load_caps = _load_dec_caps_func;
     return ESP_GMF_ERR_OK;
 }

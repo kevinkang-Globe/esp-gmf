@@ -106,6 +106,9 @@ esp_gmf_err_t esp_gmf_element_deinit(esp_gmf_element_handle_t handle)
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
     esp_gmf_method_destroy(el->method);
+    if (el->caps) {
+        esp_gmf_cap_destroy(el->caps);
+    }
     esp_gmf_port_handle_t port = el->in;
     while (port) {
         esp_gmf_port_handle_t tmp = port->next;
@@ -465,5 +468,21 @@ esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, esp_gm
     ESP_GMF_NULL_CHECK(TAG, mthd, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
     *mthd = el->method;
+    return ESP_GMF_ERR_OK;
+}
+
+esp_gmf_err_t esp_gmf_element_get_caps(esp_gmf_element_handle_t handle, esp_gmf_cap_t **caps)
+{
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
+    ESP_GMF_NULL_CHECK(TAG, caps, return ESP_GMF_ERR_INVALID_ARG);
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    if ((el->caps == NULL) && el->ops.load_caps) {
+        int ret = el->ops.load_caps(&el->caps);
+        if (ret != ESP_GMF_ERR_OK) {
+            ESP_LOGE(TAG, "Load caps failed, ret:%x, [%p-%s]\r\n", ret, el, OBJ_GET_TAG(el));
+            return ret;
+        }
+    }
+    *caps = el->caps;
     return ESP_GMF_ERR_OK;
 }

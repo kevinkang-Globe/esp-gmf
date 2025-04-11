@@ -85,9 +85,9 @@ typedef enum {
     }                                                                                             \
 } while (0)
 
-#define ESP_GMF_MEM_VERIFY(TAG, a, action, name, size) if (!(a)) {                                      \
-    ESP_LOGE(TAG, "%s(%d): Failed to allocate memory for %s(%d).", __FUNCTION__, __LINE__, name, size); \
-    action;                                                                                             \
+#define ESP_GMF_MEM_VERIFY(TAG, a, action, name, size) if (!(a)) {                                       \
+    ESP_LOGE(TAG, "%s(%d): Failed to allocate memory for %s(%d).", __FUNCTION__, __LINE__, name, size);  \
+    action;                                                                                              \
 }
 
 #define ESP_GMF_MEM_CHECK(TAG, a, action) ESP_GMF_CHECK(TAG, a, action, "Memory exhausted")
