@@ -195,6 +195,7 @@ esp_gmf_err_io_t esp_gmf_port_acquire_in(esp_gmf_port_handle_t handle, esp_gmf_p
     }
     esp_gmf_err_io_t ret = ESP_GMF_ERR_OK;
     esp_gmf_element_handle_t el = (esp_gmf_element_handle_t)port->reader;
+    // Both reader and writer existed
     if (el && port->writer) {
         // Not first element
         ESP_LOGD(TAG, "ACQ IN, GET, port:%p-%d, el:%p-%s, PLD[h:%p, b:%p, v:%d]",
@@ -222,17 +223,18 @@ esp_gmf_err_io_t esp_gmf_port_acquire_in(esp_gmf_port_handle_t handle, esp_gmf_p
         } else {
             port->payload = *load;
         }
-        if (port->attr.type == ESP_GMF_PORT_TYPE_BYTE) {
+        if ((port->attr.type == ESP_GMF_PORT_TYPE_BYTE) && ((*load)->buf_length < wanted_size)) {
             // Check whether the buffer length is sufficient for use; if not, reallocate it.
             ret = esp_gmf_payload_realloc_aligned_buf(*load, port->attr.buf_addr_aligned, wanted_size);
             ESP_GMF_RET_ON_ERROR(TAG, ret, return ESP_GMF_IO_FAIL, "ACQ IN, reallocate payload buffer failed, ret:%d, %s, p:%p, new_sz:%ld",
                                  ret, __func__, port, wanted_size);
         }
+        esp_gmf_element_t *nxt_el = el ? ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next) : NULL;
         ESP_LOGD(TAG, "ACQ IN, port:%p-%d, el:%p-%s, PLD[p:%p, h:%p, b:%p, l:%d], nxt_el:%p-%s", port, port->attr.type, el, OBJ_GET_TAG(el), port->payload,
-                 *load, (*load)->buf, (*load)->buf_length, ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next), OBJ_GET_TAG(ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)));
+                 *load, (*load)->buf, (*load)->buf_length, nxt_el, OBJ_GET_TAG(nxt_el));
         if ((port->payload->needs_free) && (port->attr.type != ESP_GMF_PORT_TYPE_BLOCK) && (port->is_shared)
-            && ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next) && ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->out) {
-            ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->out->payload = port->payload;
+            && nxt_el && nxt_el->out) {
+            nxt_el->out->payload = port->payload;
         }
         if (port->ops.acquire) {
             ret = port->ops.acquire(port->ctx, *load, wanted_size, wait_ticks);
@@ -283,24 +285,38 @@ esp_gmf_err_io_t esp_gmf_port_acquire_out(esp_gmf_port_handle_t handle, esp_gmf_
     }
     int ret = ESP_GMF_ERR_OK;
     esp_gmf_element_handle_t el = (esp_gmf_element_handle_t)port->writer;
+    esp_gmf_payload_t *in_original_load = *load;
     if ((*load) && ((*load) == ESP_GMF_ELEMENT_GET(el)->in->payload)) {
         if (wanted_size > ESP_GMF_ELEMENT_GET(el)->in->payload->buf_length) {
             ESP_LOGE(TAG, "Input and output use the same payload, but the acquired length is too large. I:%p-%d, O:%p-%ld",
                      ESP_GMF_ELEMENT_GET(el)->in->payload, ESP_GMF_ELEMENT_GET(el)->in->payload->buf_length, (*load), wanted_size);
             return ESP_GMF_IO_FAIL;
         }
-        // When in and out use same payload, clear the next element out payload which is set by acquire in.
+        // When in and out use same payload, clear the next element out payload which is set by acquire in
         if (ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next) && ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->out) {
             ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->out->payload = NULL;
         }
     }
+    if (*load == NULL) {
+        if (port->payload) {
+            *load = port->payload;
+        } else {
+            if (port->self_payload == NULL) {
+                esp_gmf_payload_new(&port->self_payload);
+                ESP_GMF_MEM_CHECK(TAG, port->self_payload, return ESP_GMF_IO_FAIL);
+                ESP_LOGI(TAG, "ACQ OUT, new self payload:%p, port:%p, el:%p-%s", port->self_payload, port, el, OBJ_GET_TAG(el));
+            }
+            port->payload = port->self_payload;
+            *load = port->self_payload;
+        }
+    }
     if (el && port->reader) {
-        ESP_LOGD(TAG, "ACQ OUT, SET, port:%p-%d, el:%p-%s, PLD[in:%p, self:%p, nxt:%p]", port, port->attr.type, el,
-                 OBJ_GET_TAG(el), *load, port->self_payload, ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in->payload);
-        if (*load) {
+        if ((*load)->buf_length < wanted_size) {
             ret = esp_gmf_payload_realloc_aligned_buf(*load, port->attr.buf_addr_aligned, wanted_size);
             ESP_GMF_RET_ON_ERROR(TAG, ret, return ESP_GMF_IO_FAIL, "ACQ OUT, SET NEXT, reallocate payload buffer failed, el:%s, p:%p, sz:%d, new_sz:%ld",
                                  OBJ_GET_TAG(el), port, port->data_length, wanted_size);
+        }
+        if (in_original_load) {
             if (ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in->payload) {
                 ESP_LOGD(TAG, "ACQ OUT, COPY DATA TO NEXT[%p], port:%p-%d, el:%p-%s",
                          ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in->payload, port, port->attr.type, el, OBJ_GET_TAG(el));
@@ -313,52 +329,24 @@ esp_gmf_err_io_t esp_gmf_port_acquire_out(esp_gmf_port_handle_t handle, esp_gmf_
                 next_in->ref_port = ref_in;
                 ref_in->ref_count++;
             }
-            ESP_LOGD(TAG, "ACQ OUT, SET NEXT, port:%p-%d, el:%p-%s, PLD[in:%p-done:%d, nxt:%p]", port, port->attr.type, el,
-                     OBJ_GET_TAG(el), *load, (*load)->is_done, ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in->payload);
         } else {
-            if (port->payload) {
-                *load = port->payload;
-            } else {
-                if (port->self_payload == NULL) {
-                    esp_gmf_payload_new(&port->self_payload);
-                    ESP_GMF_MEM_CHECK(TAG, port->self_payload, return ESP_GMF_IO_FAIL);
-                    ESP_LOGI(TAG, "ACQ OUT SET, new self payload:%p, p:%p, el:%p-%s", port->self_payload, port, el, OBJ_GET_TAG(el));
-                }
-                port->payload = port->self_payload;
-                *load = port->self_payload;
-            }
-            // Check whether the buffer length is sufficient for use; if not, reallocate it.
-            ret = esp_gmf_payload_realloc_aligned_buf(*load, port->attr.buf_addr_aligned, wanted_size);
-            ESP_GMF_RET_ON_ERROR(TAG, ret, return ESP_GMF_IO_FAIL, "ACQ OUT, SET, reallocate payload buffer failed, el:%s, p:%p, sz:%d, new_sz:%ld",
-                                 OBJ_GET_TAG(el), port, port->data_length, wanted_size);
-            ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in->payload = *load;
+            esp_gmf_port_t *next_in = ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in;
+            next_in->payload = *load;
         }
+        ESP_LOGD(TAG, "ACQ OUT, SET NEXT, port:%p-%d, el:%p-%s, PLD[in:%p-done:%d, nxt:%p]", port, port->attr.type, el,
+                 OBJ_GET_TAG(el), *load, (*load)->is_done, ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in->payload);
     } else {
-        ESP_LOGD(TAG, "ACQ OUT, self:%p, payload:%p,load:%p, port:%p, el:%p-%s", port->self_payload, port->payload, *load, port, el, OBJ_GET_TAG(el));
-        if (*load == NULL) {
-            if (port->payload) {
-                *load = port->payload;
-            } else {
-                if (port->self_payload == NULL) {
-                    esp_gmf_payload_new(&port->self_payload);
-                    ESP_GMF_MEM_CHECK(TAG, port->self_payload, return ESP_GMF_IO_FAIL);
-                    ESP_LOGI(TAG, "ACQ OUT, new self payload:%p, port:%p, el:%p-%s", port->self_payload, port, el, OBJ_GET_TAG(el));
-                }
-                port->payload = port->self_payload;
-                *load = port->self_payload;
-            }
-        } else {
-            port->payload = *load;
-        }
+        port->payload = *load;
         if (port->attr.type == ESP_GMF_PORT_TYPE_BYTE) {
-            // Check whether the buffer length is sufficient for use; if not, reallocate it.
-            ret = esp_gmf_payload_realloc_aligned_buf(*load, port->attr.buf_addr_aligned, wanted_size);
+            if ((*load)->buf_length < wanted_size) {
+                ret = esp_gmf_payload_realloc_aligned_buf(*load, port->attr.buf_addr_aligned, wanted_size);
+            }
             ESP_GMF_RET_ON_ERROR(TAG, ret, return ESP_GMF_IO_FAIL, "ACQ OUT, reallocate payload buffer failed, el:%s, p:%p, ld:%p, sz:%d, new_sz:%ld",
                                  OBJ_GET_TAG(el), port, *load, port->data_length, wanted_size);
         }
         ESP_LOGD(TAG, "ACQ OUT, port:%p-%d, el:%p-%s, PLD[p:%p, h:%p, b:%p, v:%d, l:%d]", port, port->attr.type, el, OBJ_GET_TAG(el),
                  port->payload, *load, (*load)->buf, (*load)->valid_size, (*load)->buf_length);
-        if (ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)) {
+        if (el && ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)) {
             if ((port->payload->needs_free) && ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in) {
                 ESP_GMF_ELEMENT_GET(((esp_gmf_node_t *)el)->next)->in->payload = port->payload;
             }

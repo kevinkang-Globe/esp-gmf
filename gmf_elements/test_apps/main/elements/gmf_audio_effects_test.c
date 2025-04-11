@@ -601,23 +601,23 @@ TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
     esp_gmf_db_handle_t db2 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_db_new_ringbuf(10, 1024, &db2));
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(esp_gmf_db_acquire_write, esp_gmf_db_release_write, esp_gmf_db_deinit, db2,
-                                         ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 300);
+                                         ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3000);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(esp_gmf_db_acquire_read, esp_gmf_db_release_read, esp_gmf_db_deinit, db2,
-                                       ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 300);
+                                       ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3000);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_connect_pipe(pipe1, "deinterleave", out_port, pipe3, "alc", in_port));
     esp_gmf_db_handle_t db3 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_db_new_ringbuf(10, 1024, &db3));
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(esp_gmf_db_acquire_write, esp_gmf_db_release_write, esp_gmf_db_deinit, db3,
-                                         ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 300);
+                                         ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3000);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(esp_gmf_db_acquire_read, esp_gmf_db_release_read, esp_gmf_db_deinit, db3,
-                                       ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 300);
+                                       ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3000);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_connect_pipe(pipe2, "alc", out_port, pipe4, "interleave", in_port));
     esp_gmf_db_handle_t db4 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_db_new_ringbuf(10, 1024, &db4));
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(esp_gmf_db_acquire_write, esp_gmf_db_release_write, esp_gmf_db_deinit, db4,
-                                         ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 300);
+                                         ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3000);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(esp_gmf_db_acquire_read, esp_gmf_db_release_read, esp_gmf_db_deinit, db4,
-                                       ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 300);
+                                       ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3000);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_connect_pipe(pipe3, "alc", out_port, pipe4, "interleave", in_port));
 
     esp_gmf_task_cfg_t cfg1 = DEFAULT_ESP_GMF_TASK_CONFIG();

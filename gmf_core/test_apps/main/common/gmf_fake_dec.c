@@ -81,14 +81,18 @@ static esp_gmf_job_err_t fake_dec_process(esp_gmf_audio_element_handle_t self, v
         ESP_LOGE(TAG, "Read data error, port:%p, ret:%d", in_port, ret);
         return ret == ESP_GMF_IO_ABORT ? ESP_GMF_JOB_ERR_OK : ESP_GMF_JOB_ERR_FAIL;
     }
-    if (cfg->is_pass) {
+    if (cfg->is_pass && (in_port->is_shared == 1)) {
         out_load = in_load;
     }
     ret = esp_gmf_port_acquire_out(out_port, &out_load, ESP_GMF_ELEMENT_GET(self)->out_attr.data_size, portMAX_DELAY);
+    if (ret < ESP_GMF_IO_OK) {
+        ESP_LOGE(TAG, "Out port get error, %p, ret:%d", out_port, ret);
+        return ret == ESP_GMF_IO_ABORT ? ESP_GMF_JOB_ERR_OK : ESP_GMF_JOB_ERR_FAIL;
+    }
     vTaskDelay(10 / portTICK_PERIOD_MS);
     ret = esp_gmf_port_release_out(out_port, out_load, portMAX_DELAY);
     if (ret < ESP_GMF_IO_OK) {
-        ESP_LOGE(TAG, "Out port get error, %p,ret:%d", out_port, ret);
+        ESP_LOGE(TAG, "Out port get error, %p, ret:%d", out_port, ret);
         return ret == ESP_GMF_IO_ABORT ? ESP_GMF_JOB_ERR_OK : ESP_GMF_JOB_ERR_FAIL;
     }
     ESP_LOGD(TAG, "[%p-%s]I:%p,b:%p,s:%d, done:%d; O:%p,b:%p,s:%d, done:%d", hd, OBJ_GET_TAG(hd), in_port, in_load->buf, in_load->valid_size, in_load->is_done,

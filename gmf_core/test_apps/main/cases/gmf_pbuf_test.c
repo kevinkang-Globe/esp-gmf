@@ -323,7 +323,7 @@ TEST_CASE("Read task and write task thread safe test", "ESP_GMF_PBUF")
     ESP_LOGI(TAG, "TEST Create GMF, %p", pbuf);
     TEST_ASSERT_NOT_NULL(pbuf);
     uint32_t start_cnt = esp_clk_rtc_time();
-    xTaskCreate(read_task, "read", 4096, pbuf, 5, NULL);
+    xTaskCreate(read_task, "read", 4096, pbuf, 3, NULL);
     xTaskCreate(write_task, "wr_to_file", 4096, pbuf, 3, NULL);
     while (1) {
         vTaskDelay(2 / portTICK_PERIOD_MS);

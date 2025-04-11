@@ -203,7 +203,6 @@ esp_gmf_err_io_t esp_gmf_pbuf_acquire_write(esp_gmf_pbuf_handle_t handle, esp_gm
     if (pbuf->_is_write_done) {
         return ESP_GMF_IO_OK;
     }
-
     pbuf_lock(pbuf->lock);
     if (pbuf->empty_head == NULL) {
         if (pbuf->capacity < pbuf->buf_cnt) {
@@ -251,7 +250,6 @@ esp_gmf_err_io_t esp_gmf_pbuf_release_write(esp_gmf_pbuf_handle_t handle, esp_gm
     esp_gmf_pbuf_t *pbuf = (esp_gmf_pbuf_t *)handle;
 
     pbuf_lock(pbuf->lock);
-
     if (pbuf->empty_head->block.buf == blk->buf) {
         pbuf->empty_head->block.buf_length = blk->buf_length;
         pbuf->empty_head->block.valid_size = blk->valid_size;

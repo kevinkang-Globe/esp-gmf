@@ -64,17 +64,9 @@ void *esp_gmf_oal_malloc_align(uint8_t align, size_t size)
 {
     void *data = NULL;
 #if CONFIG_SPIRAM_BOOT_INIT
-    if (align <= 1) {
-        data = heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    } else {
         data = heap_caps_aligned_alloc(align, size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    }
 #else
-    if (align <= 1) {
-        data = heap_caps_malloc(size, MALLOC_CAP_DEFAULT);
-    } else {
         data = heap_caps_aligned_alloc(align, size, MALLOC_CAP_DEFAULT);
-    }
 #endif  /* CONFIG_SPIRAM_BOOT_INIT */
     // ESP_LOGI("ESP_GMF_MEM", "malloc:%p, size:%d, called:0x%08x", data, size, (intptr_t)__builtin_return_address(0) - 2);
 #ifdef ENABLE_AUDIO_MEM_TRACE

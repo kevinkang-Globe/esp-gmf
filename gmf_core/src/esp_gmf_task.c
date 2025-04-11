@@ -247,7 +247,7 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
         bool is_empty = false;
         esp_gmf_job_stack_is_empty(tsk->start_stack, &is_empty);
         if ((tmp == NULL) && (is_empty == false)) {
-            esp_gmf_job_stack_pop(tsk->start_stack, (uint32_t *)&worker);
+            esp_gmf_job_stack_pop(tsk->start_stack, (uint32_t*)&worker);
         }
         ESP_LOGD(TAG, "Found next job[%p] to process", worker);
     }
@@ -287,9 +287,10 @@ static void esp_gmf_thread_fun(void *pv)
     }
 ESP_GMF_THREAD_EXIT:
     tsk->state = ESP_GMF_EVENT_STATE_NONE;
+    void *oal_thread = tsk->oal_thread;
     xSemaphoreGive(tsk->api_sync_sem);
     ESP_LOGD(TAG, "Thread destroyed! [%s,%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk);
-    esp_gmf_oal_thread_delete(tsk->oal_thread);
+    esp_gmf_oal_thread_delete(oal_thread);
 }
 
 static esp_gmf_err_t _task_new(void *cfg, esp_gmf_obj_handle_t *handle)
