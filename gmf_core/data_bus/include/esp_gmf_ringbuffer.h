@@ -84,6 +84,7 @@ esp_gmf_err_t esp_gmf_rb_reset(esp_gmf_rb_handle_t handle);
 /**
  * @brief  Copy valid data from ring buffer to the given buffer with specific handle
  *         When the ring buffer handle cannot provide enough size, it will block for the duration specified by block_ticks.
+ *         The actual valid size is stored in `blk->valid_size`
  *
  * @param[in]   handle         The Ringbuffer handle
  * @param[out]  blk            Pointer to the data block structure to be filled

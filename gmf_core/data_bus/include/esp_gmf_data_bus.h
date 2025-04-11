@@ -156,7 +156,8 @@ esp_gmf_err_t esp_gmf_db_read(esp_gmf_db_handle_t handle, void *buffer, int buf_
 esp_gmf_err_t esp_gmf_db_write(esp_gmf_db_handle_t handle, void *buffer, int buf_len, int block_ticks);
 
 /**
- * @brief  Acquire expected data on data bus,
+ * @brief  Acquire expected data on data bus
+ *         The actual valid size is stored in `blk->valid_size`
  *
  * @param[in]   handle       data bus handle
  * @param[out]  blk          Pointer to the data bus block structure

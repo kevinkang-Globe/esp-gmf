@@ -71,7 +71,9 @@ esp_gmf_err_t esp_gmf_payload_copy_data(esp_gmf_payload_t *src, esp_gmf_payload_
                  src, src->valid_size, dest, dest->buf_length);
         return ESP_GMF_ERR_OUT_OF_RANGE;
     }
-    memcpy(dest->buf, src->buf, src->valid_size);
+    if (src->valid_size > 0) {
+        memcpy(dest->buf, src->buf, src->valid_size);
+    }
     dest->valid_size = src->valid_size;
     dest->is_done = src->is_done;
     return ESP_GMF_ERR_OK;

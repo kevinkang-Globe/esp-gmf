@@ -77,6 +77,7 @@ esp_gmf_err_t esp_gmf_fifo_destroy(esp_gmf_fifo_handle_t handle);
  * @note  1. The `wanted_size` parameter is not used because the acquired block comes from the filled blocks.
  *        2. The obtained buffer address is internal and should not be freed externally.
  *        3. The obtained blocks must be released by `esp_gmf_fifo_release_read` in pairs.
+ *        4. The actual valid size is stored in `blk->valid_size`
  *
  * @param[in]   handle       FIFO handle
  * @param[out]  blk          Pointer to the data block structure to be filled

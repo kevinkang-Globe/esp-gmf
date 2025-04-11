@@ -106,7 +106,7 @@ static void write_task(void *param)
         int ret = esp_gmf_rb_acquire_read(rb, &blk, len, portMAX_DELAY);
         total_cnt += (esp_clk_rtc_time() - start_cnt);
 
-        ret = fwrite(blk.buf, 1, ret, f);
+        ret = fwrite(blk.buf, 1, blk.valid_size, f);
         esp_gmf_rb_release_read(rb, &blk, 0);
         if (blk.is_last) {
             break;

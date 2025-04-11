@@ -192,7 +192,7 @@ esp_gmf_err_io_t esp_gmf_fifo_acquire_read(esp_gmf_fifo_handle_t handle, esp_gmf
     blk->is_last = node->is_done;
     ESP_LOGD(TAG, "RD_ACQ-, hd:%p, b:%p, l:%d, valid:%d, n:%ld, e:%d, f:%d", handle, blk->buf, blk->buf_length, blk->valid_size, fifo->node_cnt,
              esp_gmf_fifo_node_get_cnt(fifo->empty_head), esp_gmf_fifo_node_get_cnt(fifo->fill_head));
-    return blk->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 esp_gmf_err_io_t esp_gmf_fifo_release_read(esp_gmf_fifo_handle_t handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
@@ -274,7 +274,7 @@ esp_gmf_err_io_t esp_gmf_fifo_acquire_write(esp_gmf_fifo_handle_t handle, esp_gm
     esp_gmf_oal_mutex_unlock(fifo->lock);
     ESP_LOGD(TAG, "WR_ACQ-, hd:%p, b:%p, l:%d, n:%ld, e:%d, f:%d", handle, blk->buf, blk->buf_length, fifo->node_cnt,
              esp_gmf_fifo_node_get_cnt(fifo->empty_head), esp_gmf_fifo_node_get_cnt(fifo->fill_head));
-    return blk->buf_length;
+    return ESP_GMF_IO_OK;
 }
 
 esp_gmf_err_io_t esp_gmf_fifo_release_write(esp_gmf_fifo_handle_t handle, esp_gmf_data_bus_block_t *blk, int block_ticks)

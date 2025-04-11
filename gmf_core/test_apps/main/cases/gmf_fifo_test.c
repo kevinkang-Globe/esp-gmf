@@ -106,7 +106,7 @@ static void write_task(void *param)
         total_cnt += (esp_clk_rtc_time() - start_cnt);
         file_size += blk.valid_size;
 
-        ret = fwrite(blk.buf, 1, ret, f);
+        ret = fwrite(blk.buf, 1, blk.valid_size, f);
         fflush(f);
         esp_gmf_fifo_release_read(fifo, &blk, 0);
         if (blk.is_last) {

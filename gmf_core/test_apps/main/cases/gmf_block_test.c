@@ -89,7 +89,7 @@ static void acquire_write_task(void *param)
         result = esp_gmf_block_acquire_write(bk, &blk_buf, wanted_size, portMAX_DELAY);
 
         total_cnt += (esp_clk_rtc_time() - start_cnt);
-        if (result > ESP_OK) {
+        if (result >= ESP_OK) {
             buf = blk_buf.buf;
         } else {
             ESP_LOGE(TAG, "Acquire write quit,ret:%d", result);

@@ -1031,9 +1031,9 @@ TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_connect_pipe(pipe, "copier", out_port, pipe2, "rate_cvt", in_port));
 
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(esp_gmf_db_acquire_write, esp_gmf_db_release_write, esp_gmf_db_deinit, db2,
-                                         ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3);
+                                         ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3000);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(esp_gmf_db_acquire_read, esp_gmf_db_release_read, esp_gmf_db_deinit, db2,
-                                       ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3);
+                                       ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 3000);
 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_connect_pipe(pipe, "copier", out_port, pipe3, "rate_cvt", in_port));
 
@@ -1042,7 +1042,7 @@ TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I
     cfg.cb = NULL;
     cfg.name = "P_file";
     cfg.thread.core = 0;
-    cfg.thread.prio = 9;
+    cfg.thread.prio = 8;
     esp_gmf_task_handle_t work_task = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task));
     TEST_ASSERT_NOT_NULL(work_task);
@@ -1057,7 +1057,8 @@ TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I
 
     cfg.name = "IIS";
     cfg.thread.core = 0;
-    cfg.thread.prio = 10;
+    cfg.thread.prio = 6;
+    cfg.thread.stack = 8192;
     esp_gmf_task_handle_t work_task2 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task2));
     TEST_ASSERT_NOT_NULL(work_task2);
@@ -1067,7 +1068,7 @@ TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I
 
     cfg.name = "O_file";
     cfg.thread.core = 1;
-    cfg.thread.prio = 10;
+    cfg.thread.prio = 3;
     esp_gmf_task_handle_t work_task3 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task3));
     TEST_ASSERT_NOT_NULL(work_task3);
@@ -1091,9 +1092,10 @@ TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe2));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe));
 
+    vTaskDelay(1000 / portTICK_RATE_MS);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task3));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task2));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task3));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe2));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe3));

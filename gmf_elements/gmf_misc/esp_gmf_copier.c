@@ -72,29 +72,32 @@ static esp_gmf_job_err_t esp_gmf_copier_process(esp_gmf_element_handle_t self, v
     esp_gmf_port_t *out = ESP_GMF_ELEMENT_GET(hd)->out;
     esp_gmf_payload_t *in_load = NULL;
     esp_gmf_payload_t *out_load = NULL;
-    int out_len = -1;
+    esp_gmf_err_io_t out_len = ESP_GMF_IO_OK;
     int idx = 0;
-    esp_gmf_err_io_t ret = esp_gmf_port_acquire_in(in, &in_load, in->data_length, ESP_GMF_MAX_DELAY);
-    ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, ret, out_len, {goto __copy_release;});
+    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in, &in_load, in->data_length, ESP_GMF_MAX_DELAY);
+    ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, { goto __copy_release;});
+    in->data_length = in_load->valid_size > 0 ? in_load->valid_size : in_load->buf_length;
     while (out) {
         out_load = NULL;
         if (out != ESP_GMF_ELEMENT_GET(hd)->out) {
-            ret = esp_gmf_port_acquire_out(out, &out_load, in_load->buf_length, 0);
-            ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, ret, out_len, {goto __copy_release;});
+            load_ret = esp_gmf_port_acquire_out(out, &out_load, in->data_length, 0);
+            ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, load_ret, out_len, { goto __copy_release;});
             esp_gmf_payload_copy_data(in_load, out_load);
         } else {
             out_load = in_load;
-            ret = esp_gmf_port_acquire_out(out, &out_load, in_load->buf_length, 0);
-            ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, ret, out_len, {goto __copy_release;});
+            load_ret = esp_gmf_port_acquire_out(out, &out_load, in->data_length, 0);
+            ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, load_ret, out_len, { goto __copy_release;});
+            out_load->is_done = in_load->is_done;
+            out_load->valid_size = in_load->valid_size;
         }
-        ret = esp_gmf_port_release_out(out, out_load, out->wait_ticks);
-        if (ret < ESP_GMF_IO_OK) {
-            if (ret == ESP_GMF_IO_FAIL) {
-                ESP_LOGE(TAG, "Failed to release out, idx: %d, ret: %d.", idx, ret);
-                out_len = ret;
+        load_ret = esp_gmf_port_release_out(out, out_load, out->wait_ticks);
+        if (load_ret < ESP_GMF_IO_OK) {
+            if (load_ret == ESP_GMF_IO_FAIL) {
+                ESP_LOGE(TAG, "Failed to release out, idx: %d, ret: %d.", idx, load_ret);
+                out_len = load_ret;
                 goto __copy_release;
             } else {
-                ESP_LOGW(TAG, "Something error on release out, idx: %d, ret: %d.", idx, ret);
+                ESP_LOGW(TAG, "Something error on release out, idx: %d, ret: %d.", idx, load_ret);
             }
         }
         ESP_LOGV(TAG, "OUT: %p, rd: %s, I: %p, b: %p, sz: %d, O: %p, b: %p, sz: %d, done: %d, t: %d", out, OBJ_GET_TAG(out->reader),
@@ -112,8 +115,8 @@ static esp_gmf_job_err_t esp_gmf_copier_process(esp_gmf_element_handle_t self, v
     }
 __copy_release:
     if (in_load != NULL) {
-        ret = esp_gmf_port_release_in(in, in_load, 0);
-        ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, ret, out_len, NULL);
+        load_ret = esp_gmf_port_release_in(in, in_load, 0);
+        ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, load_ret, out_len, NULL);
     }
     return out_len;
 }

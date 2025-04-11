@@ -203,13 +203,9 @@ read_err:
     if (total_read_size > 0) {
         xSemaphoreGive(rb->can_write);
     }
-    if (ret_val == ESP_GMF_IO_ABORT) {
-        total_read_size = ret_val;
-    }
-    ESP_LOGV(TAG, "ACQ_RD-:%p, ret:%d", rb, total_read_size > 0 ? total_read_size : ret_val);
-    blk->valid_size = total_read_size > 0 ? total_read_size : 0;
-
-    return total_read_size > 0 ? total_read_size : ret_val;
+    ESP_LOGV(TAG, "ACQ_RD-:%p, ret:%d", rb, ret_val);
+    blk->valid_size = total_read_size;
+    return ret_val;
 }
 
 esp_gmf_err_io_t esp_gmf_rb_release_read(esp_gmf_rb_handle_t handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
@@ -228,7 +224,7 @@ esp_gmf_err_io_t esp_gmf_rb_release_write(esp_gmf_rb_handle_t handle, esp_gmf_da
     struct esp_gmf_ringbuffer *rb = (struct esp_gmf_ringbuffer *)handle;
     uint32_t write_size;
     int total_write_size = 0;
-    int ret_val = ESP_GMF_IO_OK;
+    esp_gmf_err_io_t ret_val = ESP_GMF_IO_OK;
     if (rb == NULL || blk == NULL) {
         ESP_LOGE(TAG, "Invalid parameters on release write, rb:%p, blk:%p", rb, blk);
         return ESP_GMF_IO_FAIL;
@@ -294,15 +290,14 @@ esp_gmf_err_io_t esp_gmf_rb_release_write(esp_gmf_rb_handle_t handle, esp_gmf_da
 write_err:
     if (total_write_size > 0) {
         xSemaphoreGive(rb->can_read);
+        ret_val = ESP_GMF_IO_OK;
     }
-    ESP_LOGV(TAG, "RLS_WR-:%p, ret:%d, ws:%d, fil:%ld", rb, ret_val, total_write_size, rb->fill_cnt);
-    if (ret_val == ESP_GMF_IO_ABORT) {
-        total_write_size = ret_val;
-    }
+    ESP_LOGV(TAG, "RLS_WR-:%p, ret:%d, ws:%d, fill:%ld", rb, ret_val, total_write_size, rb->fill_cnt);
     if (blk->is_last) {
         esp_gmf_rb_done_write(rb);
+        ret_val = ESP_GMF_IO_OK;
     }
-    return total_write_size > 0 ? total_write_size : ret_val;
+    return ret_val;
 }
 
 esp_gmf_err_t esp_gmf_rb_abort(esp_gmf_rb_handle_t handle)
