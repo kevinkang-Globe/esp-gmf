@@ -15,7 +15,7 @@ jobs:
         with:
           components: |
             esp_audio_simple_player:./examples/esp_audio_simple_player
-            esp_gmf_core:./gmf_core
+            gmf_core:./gmf_core
             esp_gmf_audio:./gmf_elements/gmf_audio
             esp_gmf_io:./gmf_elements/gmf_io
             esp_gmf_misc:./gmf_elements/gmf_misc

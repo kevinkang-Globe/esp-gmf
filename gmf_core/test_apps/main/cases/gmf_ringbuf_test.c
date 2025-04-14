@@ -86,6 +86,10 @@ static void write_task(void *param)
     while (write_run) {
         start_cnt = esp_clk_rtc_time();
         int ret = esp_gmf_rb_acquire_read(rb, &blk, len, portMAX_DELAY);
+        if (ret != ESP_GMF_ERR_OK) {
+            ESP_LOGE(TAG, "Acquire read failed");
+            break;
+        }
         total_cnt += (esp_clk_rtc_time() - start_cnt);
 
         ret = fwrite(blk.buf, 1, blk.valid_size, f);

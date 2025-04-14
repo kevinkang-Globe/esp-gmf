@@ -5,6 +5,7 @@
  * See LICENSE file for details.
  */
 
+#include <sys/time.h>
 #include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -12,7 +13,6 @@
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_sys.h"
 #include "esp_memory_utils.h"
-#include "esp_timer.h"
 
 static const char *TAG = "ESP_GMF_OAL_SYS";
 
@@ -44,7 +44,10 @@ int esp_gmf_oal_sys_get_tick_by_time_ms(int ms)
 
 int64_t esp_gmf_oal_sys_get_time_ms(void)
 {
-    return esp_timer_get_time() / 1000;
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    int64_t milliseconds = t.tv_sec * 1000LL + t.tv_usec / 1000;
+    return milliseconds;
 }
 
 #if (CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID && CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS)
