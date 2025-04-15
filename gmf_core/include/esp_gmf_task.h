@@ -58,9 +58,9 @@ typedef struct _esp_gmf_task {
     /* Private */
     void                   *oal_thread;     /*!< Handle to the thread */
     void                   *lock;           /*!< Mutex lock for task synchronization */
+    void                   *event_group;    /*!< Event group for wait events */
     void                   *block_sem;      /*!< Semaphore for blocking tasks */
     void                   *wait_sem;       /*!< Semaphore for task waiting */
-    void                   *api_sync_sem;   /*!< Semaphore for API synchronization */
     int                     api_sync_time;  /*!< Timeout for synchronization */
 
     uint8_t                 _task_run : 1;  /*!< Internal flag for task execution */

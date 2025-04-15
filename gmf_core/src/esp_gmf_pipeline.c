@@ -13,6 +13,9 @@
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_node.h"
 
+#define PIPELINE_PRE_RUN_STATE  (1 << 0)
+#define PIPELINE_PRE_STOP_STATE (1 << 1)
+
 static const char *TAG = "ESP_GMF_PIPELINE";
 
 static inline void register_close_jobs_to_task(esp_gmf_pipeline_handle_t pipeline)
@@ -228,13 +231,13 @@ static esp_gmf_err_t pipeline_element_events(esp_gmf_event_pkt_t *evt, void *ctx
                 next_el = (esp_gmf_element_handle_t)esp_gmf_node_for_next((esp_gmf_node_t *)next_el);
             }
         }
-        if (el == pipeline->last_el) {
+        if (el == pipeline->last_el && pipeline->user_cb) {
             pipeline->user_cb(evt, pipeline->user_ctx);
         }
         ESP_LOGD(TAG, "ESP_GMF_EVT_TYPE_REPORT_INFO, [p:%p, el:%s-%p]", pipeline, OBJ_GET_TAG(el), el);
     } else if (evt->type == ESP_GMF_EVT_TYPE_CHANGE_STATE) {
         // Notify the ESP_GMF_EVENT_STATE_RUNNING event to user
-        if (el == pipeline->last_el) {
+        if (el == pipeline->last_el && pipeline->user_cb) {
             pipeline->user_cb(evt, pipeline->user_ctx);
         }
     } else {
@@ -410,21 +413,22 @@ esp_gmf_err_t esp_gmf_pipeline_connect_pipe(esp_gmf_pipeline_handle_t connector,
                                             esp_gmf_pipeline_handle_t connectee, const char *connectee_name, esp_gmf_port_handle_t connectee_port)
 {
     ESP_GMF_NULL_CHECK(TAG, connector, return ESP_GMF_ERR_INVALID_ARG);
-    ESP_GMF_NULL_CHECK(TAG, connector_port, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, connector_name, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, connectee, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, connectee_port, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, connectee_name, return ESP_GMF_ERR_INVALID_ARG);
+    esp_gmf_err_t ret;
+    if (connector_port) {
+        esp_gmf_element_handle_t connector_el = NULL;
+        ret = esp_gmf_pipeline_get_el_by_name(connector, connector_name, &connector_el);
+        ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "The connector[%s] is not found", connector_name);
 
-    esp_gmf_element_handle_t connector_el = NULL;
-    int ret = esp_gmf_pipeline_get_el_by_name(connector, connector_name, &connector_el);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "The connector[%s] is not found", connector_name);
+        ret = esp_gmf_element_register_out_port(connector_el, connector_port);
+        ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Register connector out port failed, [%s]", connectee_name);
+    }
     esp_gmf_element_handle_t connectee_el = NULL;
     ret = esp_gmf_pipeline_get_el_by_name(connectee, connectee_name, &connectee_el);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "The connectee[%s] is not found", connectee_name);
-
-    ret = esp_gmf_element_register_out_port(connector_el, connector_port);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Register connector out port failed, [%s]", connectee_name);
 
     ret = esp_gmf_element_register_in_port(connectee_el, connectee_port);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Register connectee in port failed, [%s]", connectee_name);
@@ -432,29 +436,67 @@ esp_gmf_err_t esp_gmf_pipeline_connect_pipe(esp_gmf_pipeline_handle_t connector,
     return esp_gmf_pipeline_reg_event_recipient(connector, connectee);
 }
 
-esp_gmf_err_t esp_gmf_pipeline_set_prev_stop_cb(esp_gmf_pipeline_handle_t pipeline, esp_gmf_pipeline_prev_stop prev_stop, void *ctx)
+esp_gmf_err_t esp_gmf_pipeline_set_prev_run_cb(esp_gmf_pipeline_handle_t pipeline, esp_gmf_pipeline_prev_act prev_run, void *ctx)
 {
     ESP_GMF_NULL_CHECK(TAG, pipeline, return ESP_GMF_ERR_INVALID_ARG);
-    ESP_LOGD(TAG, "Set previous stop, %p, cb:%p, ctx:%p", pipeline, prev_stop, ctx);
+    ESP_LOGD(TAG, "Set prev run:%p pipeline:%p", prev_run, pipeline);
+    pipeline->prev_run = prev_run;
+    pipeline->prev_run_ctx = ctx;
+    return ESP_GMF_ERR_OK;
+}
+
+esp_gmf_err_t esp_gmf_pipeline_set_prev_stop_cb(esp_gmf_pipeline_handle_t pipeline, esp_gmf_pipeline_prev_act prev_stop, void *ctx)
+{
+    ESP_GMF_NULL_CHECK(TAG, pipeline, return ESP_GMF_ERR_INVALID_ARG);
+    ESP_LOGD(TAG, "Set prev stop:%p pipeline:%p", prev_stop, pipeline);
     pipeline->prev_stop = prev_stop;
     pipeline->prev_stop_ctx = ctx;
+    return ESP_GMF_ERR_OK;
+}
+
+esp_gmf_err_t esp_gmf_pipeline_prev_run(esp_gmf_pipeline_handle_t pipeline)
+{
+    ESP_GMF_NULL_CHECK(TAG, pipeline, return ESP_GMF_ERR_INVALID_ARG);
+    if (pipeline->prev_run == NULL) {
+        return ESP_GMF_ERR_OK;
+    }
+    if (pipeline->prev_state & PIPELINE_PRE_RUN_STATE) {
+        return ESP_GMF_ERR_OK;
+    }
+    pipeline->prev_run(pipeline->prev_run_ctx);
+    pipeline->prev_state |= PIPELINE_PRE_RUN_STATE;
+    return ESP_GMF_ERR_OK;
+}
+
+esp_gmf_err_t esp_gmf_pipeline_prev_stop(esp_gmf_pipeline_handle_t pipeline)
+{
+    ESP_GMF_NULL_CHECK(TAG, pipeline, return ESP_GMF_ERR_INVALID_ARG);
+    if (pipeline->prev_stop == NULL) {
+        return ESP_GMF_ERR_OK;
+    }
+    if (pipeline->prev_state & PIPELINE_PRE_STOP_STATE) {
+        return ESP_GMF_ERR_OK;
+    }
+    pipeline->prev_stop(pipeline->prev_stop_ctx);
+    pipeline->prev_state |= PIPELINE_PRE_STOP_STATE;
     return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_pipeline_run(esp_gmf_pipeline_handle_t pipeline)
 {
     ESP_GMF_NULL_CHECK(TAG, pipeline, return ESP_GMF_ERR_INVALID_ARG);
+    esp_gmf_err_t ret = esp_gmf_pipeline_prev_run(pipeline);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Fail to prev run for %p", pipeline);
     return esp_gmf_task_run(pipeline->thread);
 }
 
 esp_gmf_err_t esp_gmf_pipeline_stop(esp_gmf_pipeline_handle_t pipeline)
 {
     ESP_GMF_NULL_CHECK(TAG, pipeline, return ESP_GMF_ERR_INVALID_ARG);
-    int ret = ESP_GMF_ERR_OK;
+    esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     ESP_LOGD(TAG, "Pipeline going to stop, %p", pipeline);
-    if (pipeline->prev_stop) {
-        pipeline->prev_stop(pipeline->prev_stop_ctx);
-    }
+    ret = esp_gmf_pipeline_prev_stop(pipeline);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Fail to prev stop for %p", pipeline);
     ret = esp_gmf_task_stop(pipeline->thread);
     return ret;
 }
@@ -515,12 +557,20 @@ esp_gmf_err_t esp_gmf_pipeline_get_linked_pipeline(esp_gmf_pipeline_handle_t con
     ESP_GMF_NULL_CHECK(TAG, connector, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, link, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, connectee, return ESP_GMF_ERR_INVALID_ARG);
-    esp_gmf_event_item_t *item = *link ? (esp_gmf_event_item_t *)*link : connector->evt_conveyor;
+
+    esp_gmf_event_item_t *item;
+    if (*link == NULL) {
+        item = connector->evt_conveyor;
+    } else {
+        item = (esp_gmf_event_item_t *)*link;
+        item = item->next;
+    }
     if (item) {
         *connectee = (esp_gmf_pipeline_handle_t)item->ctx;
-        *link = item->next;
+        *link = item;
         return ESP_GMF_ERR_OK;
     }
+    *connectee = NULL;
     return ESP_GMF_ERR_NOT_FOUND;
 }
 

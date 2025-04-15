@@ -27,9 +27,9 @@ extern "C" {
 typedef struct esp_gmf_pipeline *esp_gmf_pipeline_handle_t;
 
 /**
- * @brief  Function pointer type for pipeline previous stop callback
+ * @brief  Function pointer type for pipeline previous action callback
  */
-typedef esp_gmf_err_t (*esp_gmf_pipeline_prev_stop)(void *handle);  /*!<  */
+typedef esp_gmf_err_t (*esp_gmf_pipeline_prev_act)(void *handle);  /*!<  */
 
 /**
  * @brief  Structure representing a pipeline in GMF
@@ -39,15 +39,17 @@ typedef struct esp_gmf_pipeline {
     esp_gmf_element_handle_t    last_el;        /*!< Handle of the last element in the pipeline */
     esp_gmf_io_handle_t         in;             /*!< Handle of the input I/O port */
     esp_gmf_io_handle_t         out;            /*!< Handle of the output I/O port */
-
     esp_gmf_event_item_t       *evt_conveyor;   /*!< Event conveyor list */
     esp_gmf_event_cb            evt_acceptor;   /*!< Event acceptor callback function */
     esp_gmf_event_cb            user_cb;        /*!< User callback function */
     void                       *user_ctx;       /*!< User context */
     esp_gmf_event_state_t       state;          /*!< Current state of the pipeline */
     esp_gmf_task_handle_t       thread;         /*!< Handle of the task associated with the pipeline */
-    esp_gmf_pipeline_prev_stop  prev_stop;      /*!< A pointer to the previous stop callback */
-    void                       *prev_stop_ctx;  /*!< The previous stop callback context */
+    esp_gmf_pipeline_prev_act   prev_run;       /*!< A pointer to the previous run callback */
+    esp_gmf_pipeline_prev_act   prev_stop;      /*!< A pointer to the previous stop callback */
+    void                       *prev_run_ctx;   /*!< The previous run context */
+    void                       *prev_stop_ctx;  /*!< The previous stop context */
+    uint8_t                     prev_state;     /*!< The previous action state */
     void                       *lock;           /*!< Lock for thread synchronization */
 } esp_gmf_pipeline_t;
 
@@ -212,22 +214,65 @@ esp_gmf_err_t esp_gmf_pipeline_connect_pipe(esp_gmf_pipeline_handle_t connector,
                                             esp_gmf_pipeline_handle_t connectee, const char *connectee_name, esp_gmf_port_handle_t connectee_port);
 
 /**
- * @brief  Set the callback function to be called at `esp_gmf_pipeline_stop` is executed.
- *         If `prev_stop_cb` is NULL, no previous stop function will be invoked.
+ * @brief  Set action callback before do `esp_gmf_pipeline_run`
+ *         If `prev_run` is NULL, no previous run function will be invoked
  *
- * @param[in]  pipeline      Handle to the GMF pipeline
- * @param[in]  prev_stop_cb  Callback function to execute before stopping the pipeline
- * @param[in]  ctx           Context to be passed to the previous stop function
+ * @param[in]  pipeline  Handle to the GMF pipeline
+ * @param[in]  prev_run  Callback function to execute before run the pipeline
+ * @param[in]  ctx       Context to be passed to the previous action function
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid pipeline or callback argument
+ */
+esp_gmf_err_t esp_gmf_pipeline_set_prev_run_cb(esp_gmf_pipeline_handle_t pipeline, esp_gmf_pipeline_prev_act prev_run, void *ctx);
+
+/**
+ * @brief  Set action callback before do `esp_gmf_pipeline_stop`
+ *         If `prev_stop` is NULL, no previous stop function will be invoked
+ *
+ * @param[in]  pipeline   Handle to the GMF pipeline
+ * @param[in]  prev_stop  Callback function to execute before stop the pipeline
+ * @param[in]  ctx        Context to be passed to the previous action function
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid pipeline or callback argument
+ */
+esp_gmf_err_t esp_gmf_pipeline_set_prev_stop_cb(esp_gmf_pipeline_handle_t pipeline, esp_gmf_pipeline_prev_act prev_stop, void *ctx);
+
+/**
+ * @brief  Manually trigger the previous run action for a pipeline
+ *
+ * @note  Typically used to perform setup operations before dependency pipelines run
+ *
+ * @param[in]  pipeline   Handle to the GMF pipeline
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid pipeline
+ */
+esp_gmf_err_t esp_gmf_pipeline_prev_run(esp_gmf_pipeline_handle_t pipeline);
+
+/**
+ * @brief  Manually trigger the previous stop action for a pipeline
+ *
+ * @note  Typically used to perform cleanup operations before dependency pipelines stop
+ *
+ * @param[in]  pipeline   Handle to the GMF pipeline
  *
  * @return
  *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid pipeline or callback argument
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid pipeline
  */
-esp_gmf_err_t esp_gmf_pipeline_set_prev_stop_cb(esp_gmf_pipeline_handle_t pipeline, esp_gmf_pipeline_prev_stop prev_stop_cb, void *ctx);
+esp_gmf_err_t esp_gmf_pipeline_prev_stop(esp_gmf_pipeline_handle_t pipeline);
 
 /**
  * @brief  Run the specific pipeline using `esp_gmf_task_run`, which blocks by default for `DEFAULT_TASK_OPT_MAX_TIME_MS`
  *         To change the waiting time, use `esp_gmf_task_set_timeout`
+ *
+ * @note  This API will automatically trigger the `prev_run` action if configured and not manually triggered yet
+ *
  *
  * @param[in]  pipeline  GMF pipeline handle
  *
@@ -243,7 +288,8 @@ esp_gmf_err_t esp_gmf_pipeline_run(esp_gmf_pipeline_handle_t pipeline);
 /**
  * @brief  Stop a running pipeline using `esp_gmf_task_stop`, which blocks by default for `DEFAULT_TASK_OPT_MAX_TIME_MS`
  *         To change the waiting time, use `esp_gmf_task_set_timeout`
- *         The previous stop called before the task stop if the previous stop callback is valid
+ *
+ * @note  This API will automatically trigger the `prev_stop` action if configured and not manually triggered yet
  *
  * @param[in]  pipeline  GMF pipeline handle
  *

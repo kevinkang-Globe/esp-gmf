@@ -27,6 +27,7 @@ typedef struct {
  * @brief  Structure representing sound-related information for a GMF element
  */
 typedef struct {
+    uint32_t  format_id;     /*!< Audio format FourCC representation refer to `esp_fourcc.h` for more details */
     int       sample_rates;  /*!< Sample rate */
     int       bitrate;       /*!< Bits per second */
     uint16_t  channels : 8;  /*!< Number of channels */
@@ -37,11 +38,11 @@ typedef struct {
  * @brief  Structure representing sound-related information for a GMF element
  */
 typedef struct {
-    uint32_t  codec;    /*!< Video codec type */
-    uint16_t  height;   /*!< Height of the picture */
-    uint16_t  width;    /*!< Width of the picture */
-    uint16_t  fps;      /*!< Frame per sample */
-    uint32_t  bitrate;  /*!< Bits per second */
+    uint32_t  format_id;  /*!< Video format FourCC representation refer to `esp_fourcc.h` for more details */
+    uint16_t  height;     /*!< Height of the picture */
+    uint16_t  width;      /*!< Width of the picture */
+    uint16_t  fps;        /*!< Frame per sample */
+    uint32_t  bitrate;    /*!< Bits per second */
 } esp_gmf_info_video_t;
 
 /**

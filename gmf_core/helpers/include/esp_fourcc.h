@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #define ESP_FOURCC_VERSION ("v1.0.0")
 
 /**
