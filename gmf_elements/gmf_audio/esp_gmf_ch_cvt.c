@@ -239,6 +239,17 @@ static esp_gmf_err_t _load_channel_cvt_caps_func(esp_gmf_cap_t **caps)
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_channel_cvt_methods_func(esp_gmf_method_t **method)
+{
+    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_args_desc_t *set_args = NULL;
+    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_CH_CVT_SET_DEST_CH_ARG_CH, ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_CH_CVT_SET_DEST_CH, __set_dest_ch, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_CH_CVT_SET_DEST_CH);
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_ch_cvt_set_dest_channel(esp_gmf_audio_element_handle_t handle, uint8_t dest_ch)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -289,7 +300,6 @@ esp_gmf_err_t esp_gmf_ch_cvt_cast(esp_ae_ch_cvt_cfg_t *config, esp_gmf_obj_handl
 {
     ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     esp_ae_ch_cvt_cfg_t *new_cfg = NULL;
     dupl_esp_ae_ch_cvt_cfg(config, &new_cfg);
     ESP_GMF_CHECK(TAG, new_cfg, {return ESP_GMF_ERR_MEMORY_LACK;}, "Failed to duplicate channel conversion configuration");
@@ -297,17 +307,12 @@ esp_gmf_err_t esp_gmf_ch_cvt_cast(esp_ae_ch_cvt_cfg_t *config, esp_gmf_obj_handl
     free_esp_ae_ch_cvt_cfg(OBJ_GET_CFG(handle));
     esp_gmf_obj_set_config(handle, new_cfg, sizeof(*config));
     esp_gmf_audio_element_t *ch_cvt_el = (esp_gmf_audio_element_t *)handle;
-    esp_gmf_args_desc_t *set_args = NULL;
-
-    ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_CH_CVT_SET_DEST_CH_ARG_CH, ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_element_register_method(ch_cvt_el, ESP_GMF_METHOD_CH_CVT_SET_DEST_CH, __set_dest_ch, set_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
 
     ch_cvt_el->base.ops.open = esp_gmf_ch_cvt_open;
     ch_cvt_el->base.ops.process = esp_gmf_ch_cvt_process;
     ch_cvt_el->base.ops.close = esp_gmf_ch_cvt_close;
     ch_cvt_el->base.ops.event_receiver = ch_cvt_received_event_handler;
     ch_cvt_el->base.ops.load_caps = _load_channel_cvt_caps_func;
+    ch_cvt_el->base.ops.load_methods = _load_channel_cvt_methods_func;
     return ESP_GMF_ERR_OK;
 }

@@ -256,6 +256,27 @@ static esp_gmf_err_t _load_alc_caps_func(esp_gmf_cap_t **caps)
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_alc_methods_func(esp_gmf_method_t **method)
+{
+    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_args_desc_t *set_args = NULL;
+    esp_gmf_args_desc_t *get_args = NULL;
+    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_ALC_SET_GAIN_ARG_IDX,
+                                                 ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append index argument");
+    ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_ALC_SET_GAIN_ARG_GAIN, ESP_GMF_ARGS_TYPE_INT8,
+                                   sizeof(int8_t), sizeof(uint8_t));
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append gain argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_ALC_SET_GAIN, __alc_set_gain, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_ALC_SET_GAIN);
+
+    ret = esp_gmf_args_desc_copy(set_args, &get_args);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_ALC_GET_GAIN, __alc_get_gain, get_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_ALC_GET_GAIN);
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_alc_set_gain(esp_gmf_audio_element_handle_t handle, uint8_t idx, int8_t gain)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -331,27 +352,12 @@ esp_gmf_err_t esp_gmf_alc_cast(esp_ae_alc_cfg_t *config, esp_gmf_obj_handle_t ha
     esp_gmf_oal_free(OBJ_GET_CFG(handle));
     esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
     esp_gmf_audio_element_t *alc_el = (esp_gmf_audio_element_t *)handle;
-    esp_gmf_args_desc_t *set_args = NULL;
-    esp_gmf_args_desc_t *get_args = NULL;
-
-    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_ALC_SET_GAIN_ARG_IDX,
-                                                 ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_ALC_SET_GAIN_ARG_GAIN, ESP_GMF_ARGS_TYPE_INT8,
-                                   sizeof(int8_t), sizeof(uint8_t));
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_element_register_method(alc_el, ESP_GMF_METHOD_ALC_SET_GAIN, __alc_set_gain, set_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
-
-    ret = esp_gmf_args_desc_copy(set_args, &get_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
-    ret = esp_gmf_element_register_method(alc_el, ESP_GMF_METHOD_ALC_GET_GAIN, __alc_get_gain, get_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
 
     alc_el->base.ops.open = esp_gmf_alc_open;
     alc_el->base.ops.process = esp_gmf_alc_process;
     alc_el->base.ops.close = esp_gmf_alc_close;
     alc_el->base.ops.event_receiver = alc_received_event_handler;
     alc_el->base.ops.load_caps = _load_alc_caps_func;
+    alc_el->base.ops.load_methods = _load_alc_methods_func;
     return ESP_GMF_ERR_OK;
 }

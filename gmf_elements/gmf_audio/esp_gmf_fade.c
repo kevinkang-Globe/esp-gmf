@@ -249,6 +249,26 @@ static esp_gmf_err_t _load_fade_caps_func(esp_gmf_cap_t **caps)
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_fade_methods_func(esp_gmf_method_t **method)
+{
+    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_args_desc_t *set_args = NULL;
+    esp_gmf_args_desc_t *get_args = NULL;
+    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_FADE_SET_MODE_ARG_MODE, ESP_GMF_ARGS_TYPE_INT32, sizeof(int32_t), 0);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append MODE argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_FADE_SET_MODE, __fade_set_mode, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_FADE_SET_MODE);
+
+    ret = esp_gmf_args_desc_copy(set_args, &get_args);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_FADE_GET_MODE, __fade_get_mode, get_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_FADE_GET_MODE);
+
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_FADE_RESET, __fade_reset, NULL);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_FADE_RESET);
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_fade_set_mode(esp_gmf_audio_element_handle_t handle, esp_ae_fade_mode_t mode)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -326,7 +346,6 @@ esp_gmf_err_t esp_gmf_fade_cast(esp_ae_fade_cfg_t *config, esp_gmf_obj_handle_t 
 {
     ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     esp_ae_fade_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {return ESP_GMF_ERR_MEMORY_LACK;}, "fade configuration", sizeof(*config));
     memcpy(cfg, config, sizeof(*config));
@@ -334,26 +353,12 @@ esp_gmf_err_t esp_gmf_fade_cast(esp_ae_fade_cfg_t *config, esp_gmf_obj_handle_t 
     esp_gmf_oal_free(OBJ_GET_CFG(handle));
     esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
     esp_gmf_audio_element_t *fade_el = (esp_gmf_audio_element_t *)handle;
-    esp_gmf_args_desc_t *set_args = NULL;
-    esp_gmf_args_desc_t *get_args = NULL;
-
-    ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_FADE_SET_MODE_ARG_MODE, ESP_GMF_ARGS_TYPE_INT32, sizeof(int32_t), 0);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_element_register_method(fade_el, ESP_GMF_METHOD_FADE_SET_MODE, __fade_set_mode, set_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
-
-    ret = esp_gmf_args_desc_copy(set_args, &get_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
-    ret = esp_gmf_element_register_method(fade_el, ESP_GMF_METHOD_FADE_GET_MODE, __fade_get_mode, get_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
-
-    ret = esp_gmf_element_register_method(fade_el, ESP_GMF_METHOD_FADE_RESET, __fade_reset, NULL);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
 
     fade_el->base.ops.open = esp_gmf_fade_open;
     fade_el->base.ops.process = esp_gmf_fade_process;
     fade_el->base.ops.close = esp_gmf_fade_close;
     fade_el->base.ops.event_receiver = fade_received_event_handler;
     fade_el->base.ops.load_caps = _load_fade_caps_func;
+    fade_el->base.ops.load_methods = _load_fade_methods_func;
     return ESP_GMF_ERR_OK;
 }

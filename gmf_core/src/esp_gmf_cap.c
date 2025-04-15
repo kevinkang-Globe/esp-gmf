@@ -67,6 +67,22 @@ esp_gmf_err_t esp_gmf_cap_iterate_attr(esp_gmf_cap_t *caps, uint32_t attr_index,
     return ESP_GMF_ERR_NOT_SUPPORT;
 }
 
+esp_gmf_err_t esp_gmf_cap_fetch_node(esp_gmf_cap_t *caps, uint64_t eight_cc, esp_gmf_cap_t **out_caps)
+{
+    ESP_GMF_NULL_CHECK(TAG, caps, return ESP_GMF_ERR_INVALID_ARG);
+    ESP_GMF_NULL_CHECK(TAG, out_caps, return ESP_GMF_ERR_INVALID_ARG);
+    esp_gmf_cap_t *current = caps;
+    *out_caps = NULL;
+    while (current != NULL) {
+        if (current->cap_eightcc == eight_cc) {
+            *out_caps = current;
+            return ESP_GMF_ERR_OK;
+        }
+        current = current->next;
+    }
+    return ESP_GMF_ERR_NOT_FOUND;
+}
+
 esp_gmf_err_t esp_gmf_cap_find_attr(esp_gmf_cap_t *caps, uint32_t cc, esp_gmf_cap_attr_t *out_attr)
 {
     ESP_GMF_NULL_CHECK(TAG, caps, return ESP_GMF_ERR_INVALID_ARG);

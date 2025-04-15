@@ -226,6 +226,18 @@ static esp_gmf_err_t _load_bit_cvt_caps_func(esp_gmf_cap_t **caps)
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_bit_cvt_methods_func(esp_gmf_method_t **method)
+{
+    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_args_desc_t *set_args = NULL;
+    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS_ARG_BITS,
+                                   ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS, __set_dest_bits, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS);
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_bit_cvt_set_dest_bits(esp_gmf_audio_element_handle_t handle, uint8_t dest_bits)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -277,7 +289,6 @@ esp_gmf_err_t esp_gmf_bit_cvt_cast(esp_ae_bit_cvt_cfg_t *config, esp_gmf_obj_han
 {
     ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     esp_ae_bit_cvt_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
     ESP_GMF_MEM_VERIFY(TAG, cfg, {return ESP_GMF_ERR_MEMORY_LACK;}, "bit conversion configuration", sizeof(*config));
     memcpy(cfg, config, sizeof(*config));
@@ -285,18 +296,12 @@ esp_gmf_err_t esp_gmf_bit_cvt_cast(esp_ae_bit_cvt_cfg_t *config, esp_gmf_obj_han
     esp_gmf_oal_free(OBJ_GET_CFG(handle));
     esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
     esp_gmf_audio_element_t *bit_cvt_el = (esp_gmf_audio_element_t *)handle;
-    esp_gmf_args_desc_t *set_args = NULL;
-
-    ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS_ARG_BITS,
-                                   ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_element_register_method(bit_cvt_el, ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS, __set_dest_bits, set_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
 
     bit_cvt_el->base.ops.open = esp_gmf_bit_cvt_open;
     bit_cvt_el->base.ops.process = esp_gmf_bit_cvt_process;
     bit_cvt_el->base.ops.close = esp_gmf_bit_cvt_close;
     bit_cvt_el->base.ops.event_receiver = bit_cvt_received_event_handler;
     bit_cvt_el->base.ops.load_caps = _load_bit_cvt_caps_func;
+    bit_cvt_el->base.ops.load_methods = _load_bit_cvt_methods_func;
     return ESP_GMF_ERR_OK;
 }

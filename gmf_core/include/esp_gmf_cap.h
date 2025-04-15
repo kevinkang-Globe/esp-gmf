@@ -187,18 +187,18 @@ esp_gmf_err_t esp_gmf_cap_append(esp_gmf_cap_t **caps, esp_gmf_cap_t *cap_value)
 esp_gmf_err_t esp_gmf_cap_destroy(esp_gmf_cap_t *caps);
 
 /**
- * @brief  Fetch a capability from a given capability list using a 8-character code
+ * @brief  Fetch a capability node from a capability list using an 8-character code
  *
- * @param[in]   caps      Pointer to the capability list to search
- * @param[in]   cc        Character code of the capability to find
- * @param[out]  out_caps  Pointer to store the found capability
+ * @param[in]   caps      Pointer to the head of the capability list to search
+ * @param[in]   eight_cc  8-character code representing the capability to find (as uint64_t)
+ * @param[out]  out_caps  Pointer to the variable that will receive the found capability node
  *
  * @return
- *       - ESP_GMF_ERR_OK           The capability is found
- *       - ESP_GMF_ERR_INVALID_ARG  The argument is invalid
- *       - ESP_GMF_ERR_NOT_FOUND    The capability is not found
+ *       - ESP_GMF_ERR_OK           The capability was found successfully
+ *       - ESP_GMF_ERR_INVALID_ARG  One or more arguments are invalid (e.g., NULL pointers)
+ *       - ESP_GMF_ERR_NOT_FOUND    No matching capability was found; `*out_caps` will be set to NULL
  */
-esp_gmf_err_t esp_gmf_cap_fetch_node(esp_gmf_cap_t *caps, uint64_t cc, esp_gmf_cap_t *out_caps);
+esp_gmf_err_t esp_gmf_cap_fetch_node(esp_gmf_cap_t *caps, uint64_t eight_cc, esp_gmf_cap_t **out_caps);
 
 /**
  * @brief  Iterate over capability attributes by index
