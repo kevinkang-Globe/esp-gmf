@@ -611,3 +611,132 @@ TEST_CASE("Un-Shared port, Same payload, [FILE->dec->FILE]", "ELEMENT_PORT")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
 }
+
+#define TEST_LENGTH (3 * 1024)
+static uint8_t *test_buffer = NULL;
+
+static esp_gmf_err_io_t _acquire_read(esp_gmf_io_handle_t handle, void *payload, uint32_t wanted_size, int block_ticks)
+{
+    esp_gmf_payload_t *pload = (esp_gmf_payload_t *)payload;
+    pload->buf = test_buffer;
+    pload->buf_length = TEST_LENGTH;
+    pload->valid_size = wanted_size > TEST_LENGTH ? TEST_LENGTH : wanted_size;
+    printf("acquire_read %d\n", pload->valid_size);
+    // memset(pload->buf, 1, pload->valid_size);
+    return ESP_GMF_IO_OK;
+}
+
+static esp_gmf_err_io_t _release_read(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
+{
+    return ESP_GMF_IO_OK;
+}
+
+static esp_gmf_err_io_t _acquire_write(esp_gmf_io_handle_t handle, void *payload, uint32_t wanted_size, int block_ticks)
+{
+    esp_gmf_payload_t *pload = (esp_gmf_payload_t *)payload;
+    pload->valid_size = wanted_size;
+    return ESP_GMF_IO_OK;
+}
+static esp_gmf_err_io_t _acquire_write_fail(esp_gmf_io_handle_t handle, void *payload, uint32_t wanted_size, int block_ticks)
+{
+    esp_gmf_payload_t *pload = (esp_gmf_payload_t *)payload;
+    pload->valid_size = wanted_size > TEST_LENGTH ? TEST_LENGTH : wanted_size;
+    if(wanted_size > TEST_LENGTH) {
+        pload->valid_size = TEST_LENGTH;
+        return ESP_GMF_IO_FAIL;
+    }
+    pload->valid_size = wanted_size;
+    return ESP_GMF_IO_OK;
+}
+
+static esp_gmf_err_io_t _release_write(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
+{
+    return ESP_GMF_IO_OK;
+}
+
+TEST_CASE("Un-shared port, [port callback -> dec -> port callback]", "[ELEMENT_POOL]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("FAKE_DEC", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
+
+    ESP_GMF_MEM_SHOW(TAG);
+    esp_gmf_port_handle_t in_port = NULL;
+    esp_gmf_port_handle_t out_port = NULL;
+    esp_gmf_obj_handle_t obj_hd = {NULL};
+
+    test_buffer = (uint8_t *)malloc(TEST_LENGTH);
+    TEST_ASSERT_NOT_EQUAL(NULL, test_buffer);
+    // New obj
+    fake_dec_cfg_t fake_dec_cfg = DEFAULT_FAKE_DEC_CONFIG();
+    fake_dec_cfg.cb = NULL;
+    fake_dec_cfg.name = "dec1";
+    esp_gmf_element_handle_t fake_dec = NULL;
+    fake_dec_init(&fake_dec_cfg, &fake_dec);
+    obj_hd = fake_dec;
+    fake_dec_cast(&fake_dec_cfg, obj_hd);
+    TEST_ASSERT_NOT_NULL(fake_dec);
+    // Print obj tag
+    ESP_LOGE(TAG, "%s-%d,obj_hd:%p", (OBJ_GET_TAG(obj_hd)), __LINE__, obj_hd);
+    // Create in/out port
+    in_port = NEW_ESP_GMF_PORT_IN_BLOCK(_acquire_read, _release_read, NULL, NULL, TEST_LENGTH, 100);
+    out_port = NEW_ESP_GMF_PORT_OUT_BLOCK(_acquire_write, _release_write, NULL, NULL, TEST_LENGTH, 100);
+    // Register in/out port
+    esp_gmf_element_register_in_port(obj_hd, in_port);
+    esp_gmf_element_register_out_port(obj_hd, out_port);
+    // Open obj
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_process_open(obj_hd, NULL));
+    // Run obj
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_process_running(obj_hd, NULL));
+    // Close obj
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_process_close(obj_hd, NULL));
+    // Delete obj: port will be deleted when obj handle pool is destroyed
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_obj_delete(obj_hd));
+    free(test_buffer);
+}
+
+TEST_CASE("Shared port, [port callback -> dec -> port callback]", "[ELEMENT_POOL]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("FAKE_DEC", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
+
+    ESP_GMF_MEM_SHOW(TAG);
+    esp_gmf_port_handle_t in_port = NULL;
+    esp_gmf_port_handle_t out_port = NULL;
+    esp_gmf_obj_handle_t obj_hd = {NULL};
+
+    test_buffer = (uint8_t *)malloc(TEST_LENGTH);
+    TEST_ASSERT_NOT_EQUAL(NULL, test_buffer);
+    // New obj
+    fake_dec_cfg_t fake_dec_cfg = DEFAULT_FAKE_DEC_CONFIG();
+    fake_dec_cfg.cb = NULL;
+    fake_dec_cfg.name = "dec1";
+    fake_dec_cfg.is_shared = true;
+    fake_dec_cfg.is_pass = true;
+
+    esp_gmf_element_handle_t fake_dec = NULL;
+    fake_dec_init(&fake_dec_cfg, &fake_dec);
+    obj_hd = fake_dec;
+    fake_dec_cast(&fake_dec_cfg, obj_hd);
+    TEST_ASSERT_NOT_NULL(fake_dec);
+    // Print obj tag
+    ESP_LOGE(TAG, "%s-%d,obj_hd:%p", (OBJ_GET_TAG(obj_hd)), __LINE__, obj_hd);
+    // Create in/out port
+    in_port = NEW_ESP_GMF_PORT_IN_BLOCK(_acquire_read, _release_read, NULL, NULL, TEST_LENGTH, 100);
+    out_port = NEW_ESP_GMF_PORT_OUT_BLOCK(_acquire_write_fail, _release_write, NULL, NULL, TEST_LENGTH, 100);
+    // Register in/out port
+    esp_gmf_element_register_in_port(obj_hd, in_port);
+    esp_gmf_element_register_out_port(obj_hd, out_port);
+    // Open obj
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_process_open(obj_hd, NULL));
+    // Run obj
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_FAIL, esp_gmf_element_process_running(obj_hd, NULL));
+    // Close obj
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_process_close(obj_hd, NULL));
+    // Delete obj: port will be deleted when obj handle pool is destroyed
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_obj_delete(obj_hd));
+    free(test_buffer);
+}

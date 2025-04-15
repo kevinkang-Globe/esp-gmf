@@ -85,29 +85,28 @@ esp_gmf_err_t esp_gmf_payload_realloc_aligned_buf(esp_gmf_payload_t *instance, u
         ESP_LOGE(TAG, "Invalid parameters on %s, h:%p, l:%ld", __func__, instance, new_length);
         return ESP_GMF_ERR_INVALID_ARG;
     }
-    if (instance->buf_length < new_length) {
-        uint8_t *buf = instance->buf;
-        uint32_t len = instance->buf_length;
-        if (instance->buf) {
-            ESP_LOGD(TAG, "Free payload:%p, buf:%p-%d, needs_free:%d", instance, instance->buf, instance->buf_length, instance->needs_free);
-            instance->buf_length = 0;
-            esp_gmf_oal_free(instance->buf);
-            instance->buf = NULL;
-        } else {
-            instance->needs_free = 1;
-        }
-        instance->buf = esp_gmf_oal_malloc_align(align, new_length);
-        ESP_GMF_NULL_CHECK(TAG, instance->buf, {instance->needs_free = 0; return ESP_GMF_ERR_MEMORY_LACK;});
-        instance->buf_length = new_length;
-        // Do not set instance->needs_free, `buf` may allocate by others.
-        ESP_LOGD(TAG, "Realloc payload, h:%p, buf:%p-%ld, new_buf:%p-%ld, called:0x%08x", instance, buf, len, instance->buf, new_length, (intptr_t)__builtin_return_address(0) - 2);
+    // `buf` allocates by others
+    if (instance->buf && (instance->needs_free == 0)) {
+        ESP_LOGW(TAG, "Does not support reallocation of payload buffer that were allocated externally, p:%p, buf:%p, l:%d, new_l:%ld", instance, instance->buf, instance->buf_length, new_length);
+        return ESP_GMF_ERR_NOT_SUPPORT;
     }
+    uint8_t *buf = esp_gmf_oal_malloc_align(align, new_length);
+    ESP_GMF_NULL_CHECK(TAG, buf, { return ESP_GMF_ERR_MEMORY_LACK;});
+    if (instance->buf) {
+        // There was no operation of memcpy valid size. Because this function is to expand the buffer size.
+        ESP_LOGD(TAG, "Free payload:%p, buf:%p-%d, needs_free:%d", instance, instance->buf, instance->buf_length, instance->needs_free);
+        esp_gmf_oal_free(instance->buf);
+    }
+    instance->needs_free = 1;
+    instance->buf = buf;
+    instance->buf_length = new_length;
+    ESP_LOGD(TAG, "Realloc payload, h:%p, new_buf:%p-%ld, called:0x%08x", instance, instance->buf, new_length, (intptr_t)__builtin_return_address(0) - 2);
     return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_payload_realloc_buf(esp_gmf_payload_t *instance, uint32_t new_length)
 {
-    return esp_gmf_payload_realloc_aligned_buf(instance, 0, new_length);
+    return esp_gmf_payload_realloc_aligned_buf(instance, 1, new_length);
 }
 
 esp_gmf_err_t esp_gmf_payload_set_done(esp_gmf_payload_t *instance)

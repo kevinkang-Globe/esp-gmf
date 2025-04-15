@@ -82,7 +82,7 @@ esp_gmf_err_t esp_gmf_payload_copy_data(esp_gmf_payload_t *src, esp_gmf_payload_
 
 /**
  * @brief  Reallocate the buffer of a payload instance to the specified length
- *         Check if the given payload buffer length is sufficient; if not, allocate a new buffer with the specified length
+ *         Unlike `realloc`，the original valid data in the buffer was not copied to the new buffer
  *
  * @param[in]  instance    Payload instance to reallocate the buffer for
  * @param[in]  new_length  New length for the payload buffer
@@ -97,6 +97,7 @@ esp_gmf_err_t esp_gmf_payload_realloc_buf(esp_gmf_payload_t *instance, uint32_t 
 /**
  * @brief  Reallocate the buffer of a payload instance to the specified length with specified byte alignment
  *         Behavior same as `esp_gmf_payload_realloc_buf` with an additional alignment request
+ *         Unlike `realloc`，the original valid data in the buffer was not copied to the new buffer
  *
  * @param[in]  instance    Payload instance to reallocate the buffer for
  * @param[in]  align       Byte alignment for the new payload buffer
