@@ -1,26 +1,7 @@
 /*
- * Espressif Modified MIT License
+ * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO., LTD
  *
- * Copyright (c) 2025 Espressif Systems (Shanghai) Co., LTD
- *
- * Permission is hereby granted for use **exclusively** with Espressif Systems products.
- * This includes the right to use, copy, modify, merge, publish, distribute, and sublicense
- * the Software, subject to the following conditions:
- *
- * 1. This Software **must be used in conjunction with Espressif Systems products**.
- * 2. The above copyright notice and this permission notice shall be included in all copies
- *    or substantial portions of the Software.
- * 3. Redistribution of the Software in source or binary form **for use with non-Espressif products**
- *    is strictly prohibited.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
- * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
- * PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
- * FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
- * SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "unity.h"
