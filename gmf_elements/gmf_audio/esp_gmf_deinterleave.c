@@ -8,6 +8,7 @@
 #include <string.h>
 #include "esp_log.h"
 #include "esp_gmf_oal_mem.h"
+#include "esp_gmf_oal_mutex.h"
 #include "esp_gmf_audio_element.h"
 #include "esp_gmf_node.h"
 #include "esp_gmf_deinterleave.h"
@@ -20,16 +21,19 @@
 #define ESP_GMF_PROCESS_SAMPLE (256)
 
 /**
- * @brief Audio deinterleave context in GMF
+ * @brief  Audio deinterleave context in GMF
  */
 typedef struct {
-    esp_gmf_audio_element_t parent;           /*!< The GMF deinterleave handle */
-    uint8_t                 bytes_per_sample; /*!< Bytes number of per sampling point */
-    esp_gmf_payload_t      *in_load;          /*!< The input payload */
-    esp_gmf_payload_t     **out_load;         /*!< The array of output payload */
-    uint8_t               **out_arr;          /*!< The array of output buffer pointer */
-    uint8_t                 channel;          /*!< The audio channel */
-    uint8_t                 bits_per_sample;  /*!< Bits number of per sampling point */
+    esp_gmf_audio_element_t parent;            /*!< The GMF deinterleave handle */
+    uint8_t                 bytes_per_sample;  /*!< Bytes number of per sampling point */
+    esp_gmf_payload_t      *in_load;           /*!< The input payload */
+    esp_gmf_payload_t     **out_load;          /*!< The array of output payload */
+    uint8_t               **out_arr;           /*!< The array of output buffer pointer */
+    uint8_t                 channel;           /*!< The audio channel */
+    uint8_t                 bits_per_sample;   /*!< Bits number of per sampling point */
+    bool                    need_reopen;       /*!< Whether need to reopen.
+                                                True: Execute the close function first, then execute the open function
+                                                False: Do nothing */
 } esp_gmf_deinterleave_t;
 
 static const char *TAG = "ESP_GMF_DEINTLV";
@@ -49,30 +53,9 @@ static inline void free_esp_ae_deinterleave_cfg(esp_gmf_deinterleave_cfg *config
     }
 }
 
-static inline void deinterleave_change_src_info(esp_gmf_audio_element_handle_t self, uint32_t src_rate, uint8_t src_ch, uint8_t src_bits)
-{
-    esp_gmf_deinterleave_cfg *deinterleave_info = (esp_gmf_deinterleave_cfg *)OBJ_GET_CFG(self);
-    deinterleave_info->sample_rate = src_rate;
-    deinterleave_info->channel = src_ch;
-    deinterleave_info->bits_per_sample = src_bits;
-}
-
 static esp_gmf_err_t esp_gmf_deinterleave_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    *handle = NULL;
-    esp_gmf_deinterleave_cfg *deinterleave_cfg = (esp_gmf_deinterleave_cfg *)cfg;
-    esp_gmf_obj_handle_t new_obj = NULL;
-    esp_gmf_err_t ret = esp_gmf_deinterleave_init(deinterleave_cfg, &new_obj);
-    if (ret != ESP_GMF_ERR_OK) {
-        return ret;
-    }
-    ret = esp_gmf_deinterleave_cast(deinterleave_cfg, new_obj);
-    if (ret != ESP_GMF_ERR_OK) {
-        esp_gmf_obj_delete(new_obj);
-        return ret;
-    }
-    *handle = (void *)new_obj;
-    return ret;
+    return esp_gmf_deinterleave_init(cfg, handle);
 }
 
 static esp_gmf_job_err_t esp_gmf_deinterleave_open(esp_gmf_audio_element_handle_t self, void *para)
@@ -90,31 +73,61 @@ static esp_gmf_job_err_t esp_gmf_deinterleave_open(esp_gmf_audio_element_handle_
     GMF_AUDIO_UPDATE_SND_INFO(self, deinterleave_info->sample_rate, deinterleave_info->bits_per_sample, 1);
     deinterleave->channel = deinterleave_info->channel;
     deinterleave->bits_per_sample = deinterleave_info->bits_per_sample;
+    deinterleave->need_reopen = false;
     ESP_LOGD(TAG, "Open, %p", self);
+    return ESP_GMF_ERR_OK;
+}
+
+static esp_gmf_job_err_t esp_gmf_deinterleave_close(esp_gmf_audio_element_handle_t self, void *para)
+{
+    esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
+    ESP_LOGD(TAG, "Closed, %p", self);
+    if (deinterleave->out_arr != NULL) {
+        esp_gmf_oal_free(deinterleave->out_arr);
+        deinterleave->out_arr = NULL;
+    }
+    if (deinterleave->out_load != NULL) {
+        esp_gmf_oal_free(deinterleave->out_load);
+        deinterleave->out_load = NULL;
+    }
     return ESP_GMF_ERR_OK;
 }
 
 static esp_gmf_job_err_t esp_gmf_deinterleave_process(esp_gmf_audio_element_handle_t self, void *para)
 {
     esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
-    int out_len = -1;
+    esp_gmf_job_err_t out_len = ESP_GMF_JOB_ERR_OK;
     int i = 0;
+    if (deinterleave->need_reopen) {
+        esp_gmf_deinterleave_close(self, NULL);
+        out_len = esp_gmf_deinterleave_open(self, NULL);
+        if (out_len != ESP_GMF_JOB_ERR_OK) {
+            ESP_LOGE(TAG, "deinterleave reopen failed");
+            return out_len;
+        }
+    }
     esp_gmf_port_handle_t in_port = ESP_GMF_ELEMENT_GET(self)->in;
     esp_gmf_port_handle_t out = ESP_GMF_ELEMENT_GET(self)->out;
     esp_gmf_port_handle_t out_port = out;
-    esp_gmf_deinterleave_cfg *deinterleave_info = (esp_gmf_deinterleave_cfg *)OBJ_GET_CFG(self);
     deinterleave->in_load = NULL;
-    memset(deinterleave->out_load, 0, sizeof(esp_gmf_payload_t *) * deinterleave_info->channel);
-    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &deinterleave->in_load, ESP_GMF_ELEMENT_GET(deinterleave)->in_attr.data_size, ESP_GMF_MAX_DELAY);
-    ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __deintlv_release;});
+    memset(deinterleave->out_load, 0, sizeof(esp_gmf_payload_t *) * deinterleave->channel);
+    int samples_num = ESP_GMF_ELEMENT_GET(deinterleave)->in_attr.data_size / (deinterleave->bytes_per_sample * deinterleave->channel);
+    int bytes = samples_num * deinterleave->bytes_per_sample * deinterleave->channel;
+    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &deinterleave->in_load, bytes, ESP_GMF_MAX_DELAY);
+    samples_num = deinterleave->in_load->valid_size / (deinterleave->bytes_per_sample * deinterleave->channel);
+    bytes = samples_num * deinterleave->bytes_per_sample;
+    if (((bytes * deinterleave->channel) != deinterleave->in_load->valid_size) || (load_ret < ESP_GMF_IO_OK)) {
+        ESP_LOGE(TAG, "Invalid in load size %d, ret %d", deinterleave->in_load->valid_size, load_ret);
+        out_len = ESP_GMF_JOB_ERR_FAIL;
+        goto __deintlv_release;
+    }
     ESP_LOGV(TAG, "IN: load: %p, buf: %p, valid size: %d, buf length: %d, done: %d",
              deinterleave->in_load, deinterleave->in_load->buf, deinterleave->in_load->valid_size,
              deinterleave->in_load->buf_length, deinterleave->in_load->is_done);
-    int samples_num = deinterleave->in_load->valid_size / (deinterleave->bytes_per_sample * deinterleave_info->channel);
     // Not do deinterleave anymore if one channel failed
     while (out_port != NULL) {
         load_ret = esp_gmf_port_acquire_out(out_port, &(deinterleave->out_load[i]),
-                                            samples_num ? samples_num * deinterleave->bytes_per_sample : deinterleave->in_load->buf_length, ESP_GMF_MAX_DELAY);
+                                            samples_num ? bytes : deinterleave->in_load->buf_length, ESP_GMF_MAX_DELAY);
         ESP_GMF_PORT_CHECK(TAG, load_ret, out_len, {out_len = ESP_GMF_JOB_ERR_FAIL; goto __deintlv_release;}, "Failed to acquire out, idx:%d, ret: %d", i, load_ret);
         deinterleave->out_arr[i] = deinterleave->out_load[i]->buf;
         out_port = out_port->next;
@@ -122,7 +135,7 @@ static esp_gmf_job_err_t esp_gmf_deinterleave_process(esp_gmf_audio_element_hand
     }
     if (samples_num > 0) {
         esp_ae_err_t proc_ret = esp_ae_deintlv_process(deinterleave->channel, deinterleave->bits_per_sample, samples_num,
-                                                  deinterleave->in_load->buf, (void **)deinterleave->out_arr);
+                                                       deinterleave->in_load->buf, (void **)deinterleave->out_arr);
         ESP_GMF_RET_ON_ERROR(TAG, proc_ret, {out_len = ESP_GMF_JOB_ERR_FAIL; goto __deintlv_release;}, "Deinterleave process error, ret: %d", proc_ret);
     }
     out_port = out;
@@ -134,7 +147,6 @@ static esp_gmf_job_err_t esp_gmf_deinterleave_process(esp_gmf_audio_element_hand
         ESP_LOGV(TAG, "OUT: idx: %d load: %p, buf: %p, valid size: %d, buf length: %d, done: %d",
                  i, deinterleave->out_load[i], deinterleave->out_load[i]->buf, deinterleave->out_load[i]->valid_size,
                  deinterleave->out_load[i]->buf_length, deinterleave->out_load[i]->is_done);
-        out_len = deinterleave->out_load[i]->valid_size;
         out_port = out_port->next;
         i++;
     }
@@ -158,42 +170,33 @@ __deintlv_release:
     return out_len;
 }
 
-static esp_gmf_job_err_t esp_gmf_deinterleave_close(esp_gmf_audio_element_handle_t self, void *para)
-{
-    esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
-    ESP_LOGD(TAG, "Closed, %p", self);
-    if (deinterleave->out_arr != NULL) {
-        esp_gmf_oal_free(deinterleave->out_arr);
-        deinterleave->out_arr = NULL;
-    }
-    if (deinterleave->out_load != NULL) {
-        esp_gmf_oal_free(deinterleave->out_load);
-        deinterleave->out_load = NULL;
-    }
-    return ESP_GMF_ERR_OK;
-}
-
 static esp_gmf_err_t deinterleave_received_event_handler(esp_gmf_event_pkt_t *evt, void *ctx)
 {
-    ESP_GMF_NULL_CHECK(TAG, evt, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, ctx, {return ESP_GMF_ERR_INVALID_ARG;});
+    ESP_GMF_NULL_CHECK(TAG, evt, {return ESP_GMF_ERR_INVALID_ARG;});
+    if ((evt->type != ESP_GMF_EVT_TYPE_REPORT_INFO)
+        || (evt->sub != ESP_GMF_INFO_SOUND)
+        || (evt->payload == NULL)) {
+        return ESP_GMF_ERR_OK;
+    }
     esp_gmf_element_handle_t self = (esp_gmf_element_handle_t)ctx;
     esp_gmf_element_handle_t el = evt->from;
     esp_gmf_event_state_t state = ESP_GMF_EVENT_STATE_NONE;
     esp_gmf_element_get_state(self, &state);
-    esp_gmf_element_handle_t prev = NULL;
-    esp_gmf_element_get_prev_el(self, &prev);
-    if ((state == ESP_GMF_EVENT_STATE_NONE) && (prev == el)) {
-        if (evt->sub == ESP_GMF_INFO_SOUND) {
-            esp_gmf_info_sound_t info = {0};
-            memcpy(&info, evt->payload, evt->payload_size);
-            deinterleave_change_src_info(self, info.sample_rates, info.channels, info.bits);
-            ESP_LOGD(TAG, "RECV element info, from: %s-%p, next: %p, self: %s-%p, type: %x, state: %s, rate: %d, ch: %d, bits: %d",
-                     OBJ_GET_TAG(el), el, esp_gmf_node_for_next((esp_gmf_node_t *)el), OBJ_GET_TAG(self), self, evt->type,
-                     esp_gmf_event_get_state_str(state), info.sample_rates, info.channels, info.bits);
-            // Change the state to ESP_GMF_EVENT_STATE_INITIALIZED, then add to working list.
-            esp_gmf_element_set_state(self, ESP_GMF_EVENT_STATE_INITIALIZED);
-        }
+    esp_gmf_info_sound_t *info = (esp_gmf_info_sound_t *)evt->payload;
+    ESP_GMF_NULL_CHECK(TAG, info, { return ESP_GMF_ERR_FAIL;});
+    esp_gmf_deinterleave_cfg *config = (esp_gmf_deinterleave_cfg *)OBJ_GET_CFG(self);
+    ESP_GMF_NULL_CHECK(TAG, config, { return ESP_GMF_ERR_FAIL;});
+    esp_gmf_deinterleave_t *deinterleave = (esp_gmf_deinterleave_t *)self;
+    deinterleave->need_reopen = (config->sample_rate != info->sample_rates) || (info->channels != config->channel) || (config->bits_per_sample != info->bits);
+    config->sample_rate = info->sample_rates;
+    config->channel = info->channels;
+    config->bits_per_sample = info->bits;
+    ESP_LOGD(TAG, "RECV element info, from: %s-%p, next: %p, self: %s-%p, type: %x, state: %s, rate: %d, ch: %d, bits: %d",
+             OBJ_GET_TAG(el), el, esp_gmf_node_for_next((esp_gmf_node_t *)el), OBJ_GET_TAG(self), self, evt->type,
+             esp_gmf_event_get_state_str(state), info->sample_rates, info->channels, info->bits);
+    if (state == ESP_GMF_EVENT_STATE_NONE) {
+        esp_gmf_element_set_state(self, ESP_GMF_EVENT_STATE_INITIALIZED);
     }
     return ESP_GMF_ERR_OK;
 }
@@ -248,30 +251,15 @@ esp_gmf_err_t esp_gmf_deinterleave_init(esp_gmf_deinterleave_cfg *config, esp_gm
     el_cfg.dependency = true;
     ret = esp_gmf_audio_el_init(deinterleave, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto DEINTLV_INIT_FAIL, "Failed to initialize deinterleave element");
+    ESP_GMF_ELEMENT_GET(deinterleave)->ops.open = esp_gmf_deinterleave_open;
+    ESP_GMF_ELEMENT_GET(deinterleave)->ops.process = esp_gmf_deinterleave_process;
+    ESP_GMF_ELEMENT_GET(deinterleave)->ops.close = esp_gmf_deinterleave_close;
+    ESP_GMF_ELEMENT_GET(deinterleave)->ops.event_receiver = deinterleave_received_event_handler;
+    ESP_GMF_ELEMENT_GET(deinterleave)->ops.load_caps = _load_deinterleave_caps_func;
     *handle = obj;
     ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), obj);
     return ESP_GMF_ERR_OK;
 DEINTLV_INIT_FAIL:
-    esp_gmf_obj_delete(obj);
+    esp_gmf_deinterleave_destroy(obj);
     return ret;
-}
-
-esp_gmf_err_t esp_gmf_deinterleave_cast(esp_gmf_deinterleave_cfg *config, esp_gmf_obj_handle_t handle)
-{
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_deinterleave_cfg *cfg = NULL;
-    dupl_esp_ae_deinterleave_cfg(config, &cfg);
-    ESP_GMF_CHECK(TAG, cfg, {return ESP_GMF_ERR_MEMORY_LACK;}, "Failed to duplicate deinterleave configuration");
-    // Free memory before overwriting
-    free_esp_ae_deinterleave_cfg(OBJ_GET_CFG(handle));
-    esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
-    esp_gmf_audio_element_t *deinterleave_el = (esp_gmf_audio_element_t *)handle;
-
-    deinterleave_el->base.ops.open = esp_gmf_deinterleave_open;
-    deinterleave_el->base.ops.process = esp_gmf_deinterleave_process;
-    deinterleave_el->base.ops.close = esp_gmf_deinterleave_close;
-    deinterleave_el->base.ops.event_receiver = deinterleave_received_event_handler;
-    deinterleave_el->base.ops.load_caps = _load_deinterleave_caps_func;
-    return ESP_GMF_ERR_OK;
 }

@@ -883,9 +883,9 @@ TEST_CASE("Copier, 2 pipeline test, One pipeline play file to I2S, another save 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_db_new_ringbuf(20, 1024, &db));
     TEST_ASSERT_NOT_NULL(db);
     esp_gmf_port_handle_t out_port = NEW_ESP_GMF_PORT_OUT_BYTE(esp_gmf_db_acquire_write, esp_gmf_db_release_write, esp_gmf_db_deinit, db,
-                                                               ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 10);
+                                                               ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 100);
     esp_gmf_port_handle_t in_port = NEW_ESP_GMF_PORT_IN_BYTE(esp_gmf_db_acquire_read, esp_gmf_db_release_read, esp_gmf_db_deinit, db,
-                                                             ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 10);
+                                                             ESP_GMF_PORT_PAYLOAD_LEN_DEFAULT, 100);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_connect_pipe(pipe, "copier", out_port, pipe2, "rate_cvt", in_port));
 
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
@@ -903,7 +903,7 @@ TEST_CASE("Copier, 2 pipeline test, One pipeline play file to I2S, another save 
 
     cfg.name = "S_file";
     cfg.thread.core = 1;
-    cfg.thread.prio = 5;
+    cfg.thread.prio = 6;
     esp_gmf_task_handle_t work_task2 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task2));
     TEST_ASSERT_NOT_NULL(work_task2);

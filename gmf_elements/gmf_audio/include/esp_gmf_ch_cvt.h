@@ -37,19 +37,6 @@ extern "C" {
 esp_gmf_err_t esp_gmf_ch_cvt_init(esp_ae_ch_cvt_cfg_t *config, esp_gmf_obj_handle_t *handle);
 
 /**
- * @brief  Casts the GMF channel conversion with the provided configuration
- *
- * @param[in]   config  Pointer to the channel conversion configuration
- * @param[out]  handle  Channel conversion handle to be casted
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_ch_cvt_cast(esp_ae_ch_cvt_cfg_t *config, esp_gmf_obj_handle_t handle);
-
-/**
  * @brief  Set dest channel in the channel conversion handle
  *         Note: If the state of channel conversion is not in 'ESP_GMF_EVENT_STATE_NONE' or 'ESP_GMF_EVENT_STATE_INITIALIZED',
  *         the setting will return fail.

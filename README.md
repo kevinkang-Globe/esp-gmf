@@ -16,10 +16,10 @@ Each ESP-GMF functional module exists as a component, currently including [GMF-C
 | Component Name | Function | Dependent Components |
 | :------------: | :------------: | :------------ |
 | [gmf_core](./gmf_core) | Core framework for GMF | None |
-| [esp_gmf_audio](./gmf_elements/gmf_audio) | Elements for audio encoding, decoding,<br>and sound effects processing | - `esp_gmf_core`<br>- `esp_audio_effects`<br>- `esp_audio_codec` |
+| [esp_gmf_audio](./gmf_elements/gmf_audio) | Elements for audio encoding, decoding,<br>and sound effects processing | - `gmf_core`<br>- `esp_audio_effects`<br>- `esp_audio_codec` |
 | [esp_gmf_misc](./gmf_elements/gmf_misc) | Utility elements | None |
-| esp_gmf_image | Elements for image encoding, decoding,<br>and image effects processing | - `esp_gmf_core`<br>- `esp_new_jpeg` |
-| [esp_gmf_io](./gmf_elements/gmf_io) | Input/output for files, flash, and HTTP | - `esp_gmf_core`<br>- `esp_codec_dev` |
+| esp_gmf_image | Elements for image encoding, decoding,<br>and image effects processing | - `gmf_core`<br>- `esp_new_jpeg` |
+| [esp_gmf_io](./gmf_elements/gmf_io) | Input/output for files, flash, and HTTP | - `gmf_core`<br>- `esp_codec_dev` |
 
 When developing a project, it is recommended to use the elements and IOs components from the official GMF-Elements repository. You can also create your own elements and IO components to extend its application scenarios.
 

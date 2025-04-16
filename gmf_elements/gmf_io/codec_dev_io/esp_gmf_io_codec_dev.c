@@ -23,22 +23,7 @@ static const char *TAG = "ESP_GMF_CODEC_DEV";
 
 static esp_gmf_err_t esp_gmf_io_codec_dev_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    ESP_GMF_NULL_CHECK(TAG, cfg, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, io, {return ESP_GMF_ERR_INVALID_ARG;});
-    *io = NULL;
-    esp_gmf_obj_handle_t new_io = NULL;
-    codec_dev_io_cfg_t *config = (codec_dev_io_cfg_t *)cfg;
-    esp_gmf_err_t ret = esp_gmf_io_codec_dev_init(config, &new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        return ret;
-    }
-    ret = esp_gmf_io_codec_dev_cast(config, new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        esp_gmf_obj_delete(new_io);
-        return ret;
-    }
-    *io = new_io;
-    return ret;
+    return esp_gmf_io_codec_dev_init(cfg, io);
 }
 
 static esp_gmf_err_t _codec_dev_open(esp_gmf_io_handle_t io)
@@ -152,19 +137,6 @@ esp_gmf_err_t esp_gmf_io_codec_dev_init(codec_dev_io_cfg_t *config, esp_gmf_io_h
     esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
     ret = esp_gmf_obj_set_tag(obj, (config->name == NULL ? "codec_dev" : config->name));
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto _codec_dev_fail, "Failed to set obj tag");
-    *io = obj;
-    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), codec_dev_io);
-    return ESP_GMF_ERR_OK;
-_codec_dev_fail:
-    esp_gmf_obj_delete(obj);
-    return ret;
-}
-
-esp_gmf_err_t esp_gmf_io_codec_dev_cast(codec_dev_io_cfg_t *config, esp_gmf_io_handle_t obj)
-{
-    ESP_GMF_NULL_CHECK(TAG, obj, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
-    codec_dev_io_stream_t *codec_dev_io = (codec_dev_io_stream_t *)obj;
     codec_dev_io->base.close = _codec_dev_close;
     codec_dev_io->base.open = _codec_dev_open;
     codec_dev_io->base.seek = _codec_dev_seek;
@@ -177,7 +149,13 @@ esp_gmf_err_t esp_gmf_io_codec_dev_cast(codec_dev_io_cfg_t *config, esp_gmf_io_h
         codec_dev_io->base.release_read = _codec_dev_release_read;
     } else {
         ESP_LOGE(TAG, "Does not set read or write function");
-        return ESP_GMF_ERR_NOT_SUPPORT;
+        ret = ESP_GMF_ERR_NOT_SUPPORT;
+        goto _codec_dev_fail;
     }
+    *io = obj;
+    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), codec_dev_io);
     return ESP_GMF_ERR_OK;
+_codec_dev_fail:
+    esp_gmf_obj_delete(obj);
+    return ret;
 }

@@ -98,20 +98,6 @@ typedef struct {
 esp_gmf_err_t esp_gmf_io_http_init(http_io_cfg_t *config, esp_gmf_io_handle_t *io);
 
 /**
- * @brief  Cast or update the configuration of an HTTP stream I/O element
- *
- * @param[in]  config  Pointer to an `http_io_cfg_t` structure containing the new configuration
- *                     settings for the HTTP I/O element
- * @param[in]  obj     Handle to the existing HTTP stream I/O element
- *
- * @return
- *       - ESP_GMF_ERR_OK           Configuration update successful
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument(s)
- *       - ESP_GMF_ERR_MEMORY_LACK  Insufficient memory for configuration update
- */
-esp_gmf_err_t esp_gmf_io_http_cast(http_io_cfg_t *config, esp_gmf_io_handle_t obj);
-
-/**
  * @brief  Reset http information.
  *
  *         This function can be used in event_handler of http_stream.

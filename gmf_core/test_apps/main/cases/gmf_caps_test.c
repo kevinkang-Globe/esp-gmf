@@ -434,7 +434,6 @@ TEST_CASE("GMF Element CAPS test", "ESP_GMF_CAPS")
     fake_cfg.cb = element_event;
     esp_gmf_element_handle_t fake_dec_el = NULL;
     fake_dec_init(&fake_cfg, &fake_dec_el);
-    fake_dec_cast(&fake_cfg, fake_dec_el);
 
     const esp_gmf_cap_t *caps = NULL;
     esp_gmf_element_get_caps(fake_dec_el, &caps);

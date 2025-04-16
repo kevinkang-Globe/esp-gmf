@@ -60,7 +60,7 @@ extern "C" {
 #define ESP_GMF_METHOD_FADE_GET_MODE          "get_mode"
 #define ESP_GMF_METHOD_FADE_GET_MODE_ARG_MODE "mode"
 
-#define ESP_GMF_METHOD_FADE_RESET "reset_weight"
+#define ESP_GMF_METHOD_FADE_RESET_WEIGHT "reset_weight"
 
 // MIXER method
 #define ESP_GMF_METHOD_MIXER_SET_MODE          "set_mode"

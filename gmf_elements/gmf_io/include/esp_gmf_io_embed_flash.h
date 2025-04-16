@@ -48,19 +48,6 @@ typedef struct embed_item_info {
 esp_gmf_err_t esp_gmf_io_embed_flash_init(embed_flash_io_cfg_t *config, esp_gmf_io_handle_t *io);
 
 /**
- * @brief  Casts the embed flash stream I/O with the provided configuration.
- *
- * @param[in]   config  Pointer to the embed flash IO configuration
- * @param[out]  io      Embed flash IO handle to be casted
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_io_embed_flash_cast(embed_flash_io_cfg_t *config, esp_gmf_io_handle_t io);
-
-/**
  * @brief  Set the embed flash context
  *         This function mainly provides information about embed flash data
  *

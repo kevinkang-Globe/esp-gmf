@@ -34,19 +34,6 @@ extern "C" {
 esp_gmf_err_t esp_gmf_alc_init(esp_ae_alc_cfg_t *config, esp_gmf_obj_handle_t *handle);
 
 /**
- * @brief  Cast to GMF ALC using ALC configuration
- *
- * @param[in]   config  Pointer to the ALC configuration
- * @param[out]  handle  ALC handle to be casted
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_alc_cast(esp_ae_alc_cfg_t *config, esp_gmf_obj_handle_t handle);
-
-/**
  * @brief  Set specific channel gain of the ALC handle.
  *         Positive gain indicates an increase in volume,
  *         negative gain indicates a decrease in volume.

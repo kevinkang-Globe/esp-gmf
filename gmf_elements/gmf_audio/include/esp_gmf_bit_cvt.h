@@ -35,19 +35,6 @@ extern "C" {
 esp_gmf_err_t esp_gmf_bit_cvt_init(esp_ae_bit_cvt_cfg_t *config, esp_gmf_obj_handle_t *handle);
 
 /**
- * @brief  Casts the GMF bit conversion with the provided configuration
- *
- * @param[in]   config  Pointer to the bit conversion configuration
- * @param[out]  handle  Bit conversion handle to be casted
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_bit_cvt_cast(esp_ae_bit_cvt_cfg_t *config, esp_gmf_obj_handle_t handle);
-
-/**
  * @brief  Set destination bits for the bit conversion handle
  *         Note: Only allow set on state `ESP_GMF_EVENT_STATE_NONE` and `ESP_GMF_EVENT_STATE_INITIALIZED`
  *

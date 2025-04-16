@@ -164,7 +164,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     alc_cfg.channel = 2;
     esp_gmf_element_handle_t alc_hd = NULL;
     esp_gmf_alc_init(&alc_cfg, &alc_hd);
-    esp_gmf_alc_cast(&alc_cfg, alc_hd);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(alc_hd, in_port);
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
@@ -187,7 +186,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_ae_bit_cvt_cfg_t bit_cvt_cfg = DEFAULT_ESP_GMF_BIT_CVT_CONFIG();
     esp_gmf_element_handle_t bit_hd = NULL;
     esp_gmf_bit_cvt_init(&bit_cvt_cfg, &bit_hd);
-    esp_gmf_bit_cvt_cast(&bit_cvt_cfg, bit_hd);
     uint8_t dest_bits = 24;
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(bit_hd, in_port);
@@ -205,7 +203,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_ae_ch_cvt_cfg_t ch_cvt_cfg = DEFAULT_ESP_GMF_CH_CVT_CONFIG();
     esp_gmf_element_handle_t ch_hd = NULL;
     esp_gmf_ch_cvt_init(&ch_cvt_cfg, &ch_hd);
-    esp_gmf_ch_cvt_cast(&ch_cvt_cfg, ch_hd);
     uint8_t dest_ch = 3;
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(ch_hd, in_port);
@@ -223,7 +220,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_ae_eq_cfg_t eq_cfg = DEFAULT_ESP_GMF_EQ_CONFIG();
     esp_gmf_element_handle_t eq_hd = NULL;
     esp_gmf_eq_init(&eq_cfg, &eq_hd);
-    esp_gmf_eq_cast(OBJ_GET_CFG(eq_hd), eq_hd);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(eq_hd, in_port);
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
@@ -253,7 +249,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_ae_fade_cfg_t fade_cfg = DEFAULT_ESP_GMF_FADE_CONFIG();
     esp_gmf_element_handle_t fade_hd = NULL;
     esp_gmf_fade_init(&fade_cfg, &fade_hd);
-    esp_gmf_fade_cast(&fade_cfg, fade_hd);
 
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(fade_hd, in_port);
@@ -267,7 +262,7 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_ae_fade_mode_t out_mode = 0;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_fade_get_mode(fade_hd, &out_mode));
     TEST_ASSERT_EQUAL(mode, out_mode);
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_fade_reset(fade_hd));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_fade_reset_weight(fade_hd));
     esp_gmf_element_process_running(fade_hd, NULL);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_fade_get_mode(fade_hd, &out_mode));
     TEST_ASSERT_EQUAL(ESP_AE_FADE_MODE_FADE_IN, out_mode);
@@ -281,7 +276,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     uint8_t mix_bits = 24;
     esp_gmf_element_handle_t mixer_hd = NULL;
     esp_gmf_mixer_init(&mixer_cfg, &mixer_hd);
-    esp_gmf_mixer_cast(OBJ_GET_CFG(mixer_hd), mixer_hd);
 
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(mixer_hd, in_port);
@@ -303,7 +297,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_ae_rate_cvt_cfg_t rate_cvt_cfg = DEFAULT_ESP_GMF_RATE_CVT_CONFIG();
     esp_gmf_element_handle_t rate_hd = NULL;
     esp_gmf_rate_cvt_init(&rate_cvt_cfg, &rate_hd);
-    esp_gmf_rate_cvt_cast(&rate_cvt_cfg, rate_hd);
     uint32_t rate = 24000;
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(rate_hd, in_port);
@@ -321,7 +314,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_ae_sonic_cfg_t sonic_cfg = DEFAULT_ESP_GMF_SONIC_CONFIG();
     esp_gmf_element_handle_t sonic_hd = NULL;
     esp_gmf_sonic_init(&sonic_cfg, &sonic_hd);
-    esp_gmf_sonic_cast(&sonic_cfg, sonic_hd);
 
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(sonic_hd, in_port);
@@ -350,7 +342,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_audio_simple_dec_cfg_t es_dec_cfg = DEFAULT_ESP_GMF_AUDIO_DEC_CONFIG();
     esp_gmf_element_handle_t es_hd = NULL;
     esp_gmf_audio_dec_init(&es_dec_cfg, &es_hd);
-    esp_gmf_audio_dec_cast(&es_dec_cfg, es_hd);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(es_hd, in_port);
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
@@ -369,7 +360,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     es_enc_cfg.cfg_sz = sizeof(esp_aac_enc_config_t);
     esp_gmf_element_handle_t enc_handle = NULL;
     esp_gmf_audio_enc_init(&es_enc_cfg, &enc_handle);
-    esp_gmf_audio_enc_cast(&es_enc_cfg, enc_handle);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(enc_handle, in_port);
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
@@ -383,7 +373,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_gmf_deinterleave_cfg deinterleave_cfg = DEFAULT_ESP_GMF_DEINTERLEAVE_CONFIG();
     esp_gmf_element_handle_t deinterleave_hd = NULL;
     esp_gmf_deinterleave_init(&deinterleave_cfg, &deinterleave_hd);
-    esp_gmf_deinterleave_cast(&deinterleave_cfg, deinterleave_hd);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(deinterleave_hd, in_port);
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
@@ -397,7 +386,6 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_gmf_interleave_cfg interleave_cfg = DEFAULT_ESP_GMF_INTERLEAVE_CONFIG();
     esp_gmf_element_handle_t interleave_hd = NULL;
     esp_gmf_interleave_init(&interleave_cfg, &interleave_hd);
-    esp_gmf_interleave_cast(&interleave_cfg, interleave_hd);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
     esp_gmf_element_register_in_port(interleave_hd, in_port);
     out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);

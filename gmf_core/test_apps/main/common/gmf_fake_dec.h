@@ -37,7 +37,6 @@ typedef struct {
 }
 
 esp_err_t fake_dec_init(fake_dec_cfg_t *config, esp_gmf_obj_handle_t *handle);
-esp_err_t fake_dec_cast(fake_dec_cfg_t *config, esp_gmf_obj_handle_t handle);
 
 #ifdef __cplusplus
 }

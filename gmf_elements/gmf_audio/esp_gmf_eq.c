@@ -8,34 +8,27 @@
 #include <string.h>
 #include "esp_log.h"
 #include "esp_gmf_oal_mem.h"
+#include "esp_gmf_oal_mutex.h"
 #include "esp_gmf_audio_element.h"
 #include "esp_gmf_node.h"
 #include "esp_gmf_eq.h"
 #include "esp_gmf_args_desc.h"
 #include "gmf_audio_common.h"
-#include "esp_gmf_audio_method_def.h"
+#include "esp_gmf_audio_methods_def.h"
 #include "esp_gmf_cap.h"
 #include "esp_gmf_caps_def.h"
 
 /**
- * @brief  Information temporarily stored after the user calls the eq set interface
+ * @brief  Audio equalizer context in GMF
  */
 typedef struct {
-    int8_t                  is_para_changed;   /*!< The flag of whether eq parameter is changed */
-    int8_t                  is_filter_enabled; /*!< The flag of whether eq filter is enabled */
-    int8_t                  filter_last_state; /*!< The last state of eq filter is enabled */
-    esp_ae_eq_filter_para_t para;              /*!< The parameter of eq filter */
-} esp_gmf_eq_set_info_t;
-
-/**
- * @brief Audio equalizer context in GMF
- */
-typedef struct {
-    esp_gmf_audio_element_t  parent;           /*!< The GMF eq handle */
-    esp_ae_eq_handle_t       eq_hd;            /*!< The audio effects eq handle */
-    uint8_t                  bytes_per_sample; /*!< Bytes number of per sampling point */
-    int8_t                   filter_num;       /*!< The filter number of equalizer */
-    esp_gmf_eq_set_info_t   *set_info;         /*!< Changed information of eq */
+    esp_gmf_audio_element_t parent;             /*!< The GMF eq handle */
+    esp_ae_eq_handle_t      eq_hd;              /*!< The audio effects eq handle */
+    uint8_t                 bytes_per_sample;   /*!< Bytes number of per sampling point */
+    bool                   *is_filter_enabled;  /*!< The flag of whether eq filter is enabled */
+    bool                    need_reopen;        /*!< Whether need to reopen.
+                                                 True: Execute the close function first, then execute the open function
+                                                 False: Do nothing */
 } esp_gmf_eq_t;
 
 static const char *TAG = "ESP_GMF_EQ";
@@ -79,35 +72,6 @@ static inline void free_esp_ae_eq_cfg(esp_ae_eq_cfg_t *config)
     }
 }
 
-static inline esp_gmf_job_err_t eq_update_apply_setting(esp_gmf_eq_t *eq)
-{
-    esp_ae_err_t ret = ESP_AE_ERR_OK;
-    for (int32_t i = 0; i < eq->filter_num; i++) {
-        if (eq->set_info[i].filter_last_state != eq->set_info[i].is_filter_enabled) {
-            if (eq->set_info[i].is_filter_enabled == true) {
-                ret = esp_ae_eq_enable_filter(eq->eq_hd, i);
-                if (ret != ESP_AE_ERR_OK) {
-                    return ESP_GMF_JOB_ERR_FAIL;
-                }
-            } else {
-                ret = esp_ae_eq_disable_filter(eq->eq_hd, i);
-                if (ret != ESP_AE_ERR_OK) {
-                    return ESP_GMF_JOB_ERR_FAIL;
-                }
-            }
-            eq->set_info[i].filter_last_state = eq->set_info[i].is_filter_enabled;
-        }
-        if (eq->set_info[i].is_para_changed == true) {
-            eq->set_info[i].is_para_changed = false;
-            ret = esp_ae_eq_set_filter_para(eq->eq_hd, i, &(eq->set_info[i].para));
-            if (ret != ESP_AE_ERR_OK) {
-                return ESP_GMF_JOB_ERR_FAIL;
-            }
-        }
-    }
-    return ESP_GMF_JOB_ERR_OK;
-}
-
 static inline void eq_change_src_info(esp_gmf_audio_element_handle_t self, uint32_t src_rate, uint8_t src_ch, uint8_t src_bits)
 {
     esp_ae_eq_cfg_t *eq_info = (esp_ae_eq_cfg_t *)OBJ_GET_CFG(self);
@@ -122,14 +86,8 @@ static esp_gmf_err_t __eq_set_para(esp_gmf_audio_element_handle_t handle, esp_gm
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, arg_desc, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, buf, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)handle;
-    ESP_GMF_NULL_CHECK(TAG, eq->set_info, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_args_desc_t *filter_desc = arg_desc;
     uint8_t idx = (uint8_t)(*buf);
-    filter_desc = filter_desc->next;
-    memcpy(&(eq->set_info[idx].para), buf + filter_desc->offset, filter_desc->size);
-    eq->set_info[idx].is_para_changed = true;
-    return ESP_GMF_ERR_OK;
+    return esp_gmf_eq_set_para(handle, idx, (esp_ae_eq_filter_para_t *)(buf + arg_desc->next->offset));
 }
 
 static esp_gmf_err_t __eq_get_para(esp_gmf_audio_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
@@ -138,16 +96,9 @@ static esp_gmf_err_t __eq_get_para(esp_gmf_audio_element_handle_t handle, esp_gm
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, arg_desc, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, buf, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)handle;
-    esp_gmf_args_desc_t *filter_desc = arg_desc;
     uint8_t idx = (uint8_t)(*buf);
-    filter_desc = filter_desc->next;
-    esp_ae_eq_filter_para_t *para = (esp_ae_eq_filter_para_t *)(buf + filter_desc->offset);
-    esp_ae_err_t ret = esp_ae_eq_get_filter_para(eq->eq_hd, idx, para);
-    if (ret != ESP_AE_ERR_OK) {
-        return ESP_GMF_ERR_FAIL;
-    }
-    return ESP_GMF_ERR_OK;
+    esp_ae_eq_filter_para_t *para = (esp_ae_eq_filter_para_t *)(buf + arg_desc->next->offset);
+    return esp_gmf_eq_get_para(handle, idx, para);
 }
 
 static esp_gmf_err_t __eq_enable_filter(esp_gmf_audio_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
@@ -156,32 +107,16 @@ static esp_gmf_err_t __eq_enable_filter(esp_gmf_audio_element_handle_t handle, e
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, arg_desc, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, buf, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)handle;
-    ESP_GMF_NULL_CHECK(TAG, eq->set_info, {return ESP_GMF_ERR_INVALID_ARG;});
     esp_gmf_args_desc_t *filter_desc = arg_desc;
     uint8_t idx = (uint8_t)(*buf);
     filter_desc = filter_desc->next;
     uint8_t is_enable = (uint8_t)(*(buf + filter_desc->offset));
-    eq->set_info[idx].is_filter_enabled = is_enable;
-    return ESP_GMF_ERR_OK;
+    return esp_gmf_eq_enable_filter(handle, idx,is_enable);
 }
 
 static esp_gmf_err_t esp_gmf_eq_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    *handle = NULL;
-    esp_ae_eq_cfg_t *eq_cfg = (esp_ae_eq_cfg_t *)cfg;
-    esp_gmf_obj_handle_t new_obj = NULL;
-    esp_gmf_err_t ret = esp_gmf_eq_init(eq_cfg, &new_obj);
-    if (ret != ESP_GMF_ERR_OK) {
-        return ret;
-    }
-    ret = esp_gmf_eq_cast(eq_cfg, new_obj);
-    if (ret != ESP_GMF_ERR_OK) {
-        esp_gmf_obj_delete(new_obj);
-        return ret;
-    }
-    *handle = (void *)new_obj;
-    return ret;
+    return esp_gmf_eq_init(cfg, handle);
 }
 
 static esp_gmf_job_err_t esp_gmf_eq_open(esp_gmf_audio_element_handle_t self, void *para)
@@ -192,39 +127,65 @@ static esp_gmf_job_err_t esp_gmf_eq_open(esp_gmf_audio_element_handle_t self, vo
     eq->bytes_per_sample = (eq_info->bits_per_sample >> 3) * eq_info->channel;
     esp_ae_eq_open(eq_info, &eq->eq_hd);
     ESP_GMF_CHECK(TAG, eq->eq_hd, {return ESP_GMF_JOB_ERR_FAIL;}, "Failed to create eq handle");
-    eq->filter_num = eq_info->filter_num;
     GMF_AUDIO_UPDATE_SND_INFO(self, eq_info->sample_rate, eq_info->bits_per_sample, eq_info->channel);
-    eq->set_info = esp_gmf_oal_calloc(1, eq_info->filter_num * sizeof(esp_gmf_eq_set_info_t));
-    ESP_GMF_MEM_VERIFY(TAG, eq->set_info, {return ESP_GMF_JOB_ERR_FAIL;},
-                       "set information", eq_info->filter_num * sizeof(esp_gmf_eq_set_info_t));
-    esp_ae_eq_filter_para_t *para_tmp = eq_info->para;
     for (int i = 0; i < eq_info->filter_num; i++) {
-        memcpy(&(eq->set_info[i].para), para_tmp, sizeof(esp_ae_eq_filter_para_t));
-        para_tmp++;
+        if (eq->is_filter_enabled[i]) {
+            esp_ae_eq_enable_filter(eq->eq_hd, i);
+        } else {
+            esp_ae_eq_disable_filter(eq->eq_hd, i);
+        }
     }
+    eq->need_reopen = false;
     ESP_LOGD(TAG, "Open, %p", eq);
+    return ESP_GMF_ERR_OK;
+}
+
+static esp_gmf_job_err_t esp_gmf_eq_close(esp_gmf_audio_element_handle_t self, void *para)
+{
+    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)self;
+    ESP_LOGD(TAG, "Closed, %p", self);
+    if (eq->eq_hd != NULL) {
+        esp_ae_eq_close(eq->eq_hd);
+        eq->eq_hd = NULL;
+    }
     return ESP_GMF_ERR_OK;
 }
 
 static esp_gmf_job_err_t esp_gmf_eq_process(esp_gmf_audio_element_handle_t self, void *para)
 {
     esp_gmf_eq_t *eq = (esp_gmf_eq_t *)self;
-    int out_len = -1;
-    ESP_GMF_RET_ON_NOT_OK(TAG, eq_update_apply_setting(eq), {return ESP_GMF_JOB_ERR_FAIL;}, "Failed to apply eq setting");
+    esp_gmf_job_err_t out_len = ESP_GMF_JOB_ERR_OK;
+    if (eq->need_reopen) {
+        esp_gmf_eq_close(self, NULL);
+        out_len = esp_gmf_eq_open(self, NULL);
+        if (out_len != ESP_GMF_JOB_ERR_OK) {
+            ESP_LOGE(TAG, "ALC reopen failed");
+            return out_len;
+        }
+    }
     esp_gmf_port_handle_t in_port = ESP_GMF_ELEMENT_GET(self)->in;
     esp_gmf_port_handle_t out_port = ESP_GMF_ELEMENT_GET(self)->out;
     esp_gmf_payload_t *in_load = NULL;
     esp_gmf_payload_t *out_load = NULL;
-    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, ESP_GMF_ELEMENT_GET(eq)->in_attr.data_size, ESP_GMF_MAX_DELAY);
-    ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, {goto __eq_release;});
-    int samples_num = in_load->valid_size / (eq->bytes_per_sample);
+    int samples_num = ESP_GMF_ELEMENT_GET(eq)->in_attr.data_size / (eq->bytes_per_sample);
+    int bytes = samples_num * eq->bytes_per_sample;
+    esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in_port, &in_load, bytes, ESP_GMF_MAX_DELAY);
+    samples_num = in_load->valid_size / (eq->bytes_per_sample);
+    bytes = samples_num * eq->bytes_per_sample;
+    if ((bytes != in_load->valid_size) || (load_ret < ESP_GMF_IO_OK)) {
+        ESP_LOGE(TAG, "Invalid in load size %d, ret %d", in_load->valid_size, load_ret);
+        out_len = ESP_GMF_JOB_ERR_FAIL;
+        goto __eq_release;
+    }
     if (in_port->is_shared == 1) {
         out_load = in_load;
     }
-    load_ret = esp_gmf_port_acquire_out(out_port, &out_load, samples_num ? samples_num * eq->bytes_per_sample : in_load->buf_length, ESP_GMF_MAX_DELAY);
-    ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, load_ret, out_len, {goto __eq_release;});
+    load_ret = esp_gmf_port_acquire_out(out_port, &out_load, samples_num ? bytes : in_load->buf_length, ESP_GMF_MAX_DELAY);
+    ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, load_ret, out_len, { goto __eq_release;});
     if (samples_num > 0) {
+        esp_gmf_oal_mutex_lock(((esp_gmf_audio_element_t *)self)->lock);
         esp_ae_err_t ret = esp_ae_eq_process(eq->eq_hd, samples_num, in_load->buf, out_load->buf);
+        esp_gmf_oal_mutex_unlock(((esp_gmf_audio_element_t *)self)->lock);
         ESP_GMF_RET_ON_ERROR(TAG, ret, {out_len = ESP_GMF_JOB_ERR_FAIL; goto __eq_release;}, "Equalize process error %d", ret);
     }
     ESP_LOGV(TAG, "Samples: %d, IN-PLD: %p-%p-%d-%d-%d, OUT-PLD: %p-%p-%d-%d-%d",
@@ -232,9 +193,8 @@ static esp_gmf_job_err_t esp_gmf_eq_process(esp_gmf_audio_element_handle_t self,
              out_load, out_load->buf, out_load->valid_size, out_load->buf_length, out_load->is_done);
     out_load->valid_size = samples_num * eq->bytes_per_sample;
     out_load->is_done = in_load->is_done;
-    out_len = out_load->valid_size;
-    if (out_len > 0) {
-        esp_gmf_audio_el_update_file_pos((esp_gmf_element_handle_t)self, out_len);
+    if (out_load->valid_size > 0) {
+        esp_gmf_audio_el_update_file_pos((esp_gmf_element_handle_t)self, out_load->valid_size);
     }
     if (in_load->is_done) {
         out_len = ESP_GMF_JOB_ERR_DONE;
@@ -252,42 +212,32 @@ __eq_release:
     return out_len;
 }
 
-static esp_gmf_job_err_t esp_gmf_eq_close(esp_gmf_audio_element_handle_t self, void *para)
-{
-    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)self;
-    ESP_LOGD(TAG, "Closed, %p", self);
-    if (eq->eq_hd != NULL) {
-        esp_ae_eq_close(eq->eq_hd);
-        eq->eq_hd = NULL;
-    }
-    if (eq->set_info != NULL) {
-        esp_gmf_oal_free(eq->set_info);
-        eq->set_info = NULL;
-    }
-    return ESP_GMF_ERR_OK;
-}
-
 static esp_gmf_err_t eq_received_event_handler(esp_gmf_event_pkt_t *evt, void *ctx)
 {
-    ESP_GMF_NULL_CHECK(TAG, evt, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, ctx, {return ESP_GMF_ERR_INVALID_ARG;});
+    ESP_GMF_NULL_CHECK(TAG, evt, {return ESP_GMF_ERR_INVALID_ARG;});
+    if ((evt->type != ESP_GMF_EVT_TYPE_REPORT_INFO)
+        || (evt->sub != ESP_GMF_INFO_SOUND)
+        || (evt->payload == NULL)) {
+        return ESP_GMF_ERR_OK;
+    }
     esp_gmf_element_handle_t self = (esp_gmf_element_handle_t)ctx;
     esp_gmf_element_handle_t el = evt->from;
     esp_gmf_event_state_t state = ESP_GMF_EVENT_STATE_NONE;
     esp_gmf_element_get_state(self, &state);
-    esp_gmf_element_handle_t prev = NULL;
-    esp_gmf_element_get_prev_el(self, &prev);
-    if ((state == ESP_GMF_EVENT_STATE_NONE) || (prev == el)) {
-        if (evt->sub == ESP_GMF_INFO_SOUND) {
-            esp_gmf_info_sound_t info = {0};
-            memcpy(&info, evt->payload, evt->payload_size);
-            eq_change_src_info(self, info.sample_rates, info.channels, info.bits);
-            ESP_LOGD(TAG, "RECV element info, from: %s-%p, next: %p, self: %s-%p, type: %x, state: %s, rate: %d, ch: %d, bits: %d",
-                     OBJ_GET_TAG(el), el, esp_gmf_node_for_next((esp_gmf_node_t *)el), OBJ_GET_TAG(self), self, evt->type,
-                     esp_gmf_event_get_state_str(state), info.sample_rates, info.channels, info.bits);
-            // Change the state to ESP_GMF_EVENT_STATE_INITIALIZED, then add to working list.
-            esp_gmf_element_set_state(self, ESP_GMF_EVENT_STATE_INITIALIZED);
-        }
+    esp_gmf_info_sound_t *info = (esp_gmf_info_sound_t *)evt->payload;
+    esp_ae_eq_cfg_t *config = (esp_ae_eq_cfg_t *)OBJ_GET_CFG(self);
+    ESP_GMF_NULL_CHECK(TAG, config, { return ESP_GMF_ERR_FAIL;});
+    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)self;
+    eq->need_reopen = (config->sample_rate != info->sample_rates) || (info->channels != config->channel) || (config->bits_per_sample != info->bits);
+    config->sample_rate = info->sample_rates;
+    config->channel = info->channels;
+    config->bits_per_sample = info->bits;
+    ESP_LOGD(TAG, "RECV element info, from: %s-%p, next: %p, self: %s-%p, type: %x, state: %s, rate: %d, ch: %d, bits: %d",
+             OBJ_GET_TAG(el), el, esp_gmf_node_for_next((esp_gmf_node_t *)el), OBJ_GET_TAG(self), self, evt->type,
+             esp_gmf_event_get_state_str(state), info->sample_rates, info->channels, info->bits);
+    if (state == ESP_GMF_EVENT_STATE_NONE) {
+        esp_gmf_element_set_state(self, ESP_GMF_EVENT_STATE_INITIALIZED);
     }
     return ESP_GMF_ERR_OK;
 }
@@ -297,6 +247,9 @@ static esp_gmf_err_t esp_gmf_eq_destroy(esp_gmf_audio_element_handle_t self)
     esp_gmf_eq_t *eq = (esp_gmf_eq_t *)self;
     ESP_LOGD(TAG, "Destroyed, %p", self);
     free_esp_ae_eq_cfg(OBJ_GET_CFG(self));
+    if(eq->is_filter_enabled){
+        esp_gmf_oal_free(eq->is_filter_enabled);
+    }
     esp_gmf_audio_el_deinit(self);
     esp_gmf_oal_free(eq);
     return ESP_GMF_ERR_OK;
@@ -364,45 +317,65 @@ static esp_gmf_err_t _load_eq_methods_func(esp_gmf_element_handle_t handle)
 
 esp_gmf_err_t esp_gmf_eq_set_para(esp_gmf_audio_element_handle_t handle, uint8_t idx, esp_ae_eq_filter_para_t *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    const esp_gmf_method_t *method_head = NULL;
-    const esp_gmf_method_t *method = NULL;
-    esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
-    esp_gmf_method_found(method_head, ESP_GMF_METHOD_EQ_SET_PARA, &method);
-    uint8_t buf[28] = {0};
-    esp_gmf_args_set_value(method->args_desc, ESP_GMF_METHOD_EQ_SET_PARA_ARG_IDX, buf, (uint8_t *)&idx, sizeof(idx));
-    memcpy(buf + sizeof(idx), para, sizeof(esp_ae_eq_filter_para_t));
-    return esp_gmf_element_exe_method((esp_gmf_element_handle_t)handle, ESP_GMF_METHOD_EQ_SET_PARA, buf, sizeof(buf));
+    ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
+    ESP_GMF_NULL_CHECK(TAG, para, { return ESP_GMF_ERR_INVALID_ARG;});
+    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)handle;
+    if (eq->eq_hd) {
+        esp_gmf_oal_mutex_lock(((esp_gmf_audio_element_t *)handle)->lock);
+        esp_ae_err_t ret = esp_ae_eq_set_filter_para(eq->eq_hd, idx, para);
+        esp_gmf_oal_mutex_unlock(((esp_gmf_audio_element_t *)handle)->lock);
+        ESP_GMF_RET_ON_ERROR(TAG, ret, return ESP_GMF_JOB_ERR_FAIL;, "Equalize set error %d", ret);
+    }
+    esp_ae_eq_cfg_t *cfg = (esp_ae_eq_cfg_t *)OBJ_GET_CFG(handle);
+    if (cfg && cfg->para) {
+        if (idx >= cfg->filter_num) {
+            ESP_LOGE(TAG, "Invalid idx %d", idx);
+            return ESP_GMF_ERR_FAIL;
+        }
+        memcpy(&cfg->para[idx], para, sizeof(esp_ae_eq_filter_para_t));
+        return ESP_GMF_ERR_OK;
+    }
+    ESP_LOGE(TAG, "Failed to set EQ para, no para allocated");
+    return ESP_GMF_ERR_FAIL;
 }
 
 esp_gmf_err_t esp_gmf_eq_get_para(esp_gmf_audio_element_handle_t handle, uint8_t idx, esp_ae_eq_filter_para_t *para)
 {
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    const esp_gmf_method_t *method_head = NULL;
-    const esp_gmf_method_t *method = NULL;
-    esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
-    esp_gmf_method_found(method_head, ESP_GMF_METHOD_EQ_GET_PARA, &method);
-    uint8_t buf[28] = {0};
-    esp_gmf_args_set_value(method->args_desc, ESP_GMF_METHOD_EQ_GET_PARA_ARG_IDX, buf, (uint8_t *)&idx, sizeof(idx));
-    esp_gmf_err_t ret = esp_gmf_element_exe_method((esp_gmf_element_handle_t)handle, ESP_GMF_METHOD_EQ_GET_PARA, buf, sizeof(buf));
-    if (ret != ESP_GMF_ERR_OK) {
-        return ESP_GMF_ERR_FAIL;
+    ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
+    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)handle;
+    if (eq->eq_hd) {
+        esp_ae_err_t ret = esp_ae_eq_get_filter_para(eq->eq_hd, idx, para);
+        ESP_GMF_RET_ON_ERROR(TAG, ret, return ESP_GMF_JOB_ERR_FAIL;, "Equalize set error %d", ret);
+    } else {
+        esp_ae_eq_cfg_t *cfg = (esp_ae_eq_cfg_t *)OBJ_GET_CFG(handle);
+        if (cfg && cfg->para) {
+            if (idx >= cfg->filter_num) {
+                ESP_LOGE(TAG, "Invalid idx %d", idx);
+                return ESP_GMF_ERR_FAIL;
+            }
+            memcpy(para, &cfg->para[idx], sizeof(esp_ae_eq_filter_para_t));
+        }
     }
-    memcpy(para, buf + sizeof(idx), sizeof(esp_ae_eq_filter_para_t));
-    return ret;
+    return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_eq_enable_filter(esp_gmf_audio_element_handle_t handle, uint8_t idx, bool is_enable)
 {
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    const esp_gmf_method_t *method_head = NULL;
-    const esp_gmf_method_t *method = NULL;
-    esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
-    esp_gmf_method_found(method_head, ESP_GMF_METHOD_EQ_ENABLE_FILTER, &method);
-    uint8_t buf[4] = {0};
-    esp_gmf_args_set_value(method->args_desc, ESP_GMF_METHOD_EQ_ENABLE_FILTER_ARG_IDX, buf, (uint8_t *)&idx, sizeof(idx));
-    esp_gmf_args_set_value(method->args_desc, ESP_GMF_METHOD_EQ_ENABLE_FILTER_ARG_PARA, buf, (uint8_t *)&is_enable, sizeof(is_enable));
-    return esp_gmf_element_exe_method((esp_gmf_element_handle_t)handle, ESP_GMF_METHOD_EQ_ENABLE_FILTER, buf, sizeof(buf));
+    ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
+    esp_gmf_eq_t *eq = (esp_gmf_eq_t *)handle;
+    if (eq->eq_hd) {
+        esp_gmf_oal_mutex_lock(((esp_gmf_audio_element_t *)handle)->lock);
+        esp_ae_err_t ret = 0;
+        if (is_enable) {
+            ret = esp_ae_eq_enable_filter(eq->eq_hd, idx);
+        } else {
+            ret = esp_ae_eq_disable_filter(eq->eq_hd, idx);
+        }
+        esp_gmf_oal_mutex_unlock(((esp_gmf_audio_element_t *)handle)->lock);
+        ESP_GMF_RET_ON_ERROR(TAG, ret, return ESP_GMF_JOB_ERR_FAIL;, "Equalize set error %d", ret);
+    }
+    eq->is_filter_enabled[idx] = is_enable;
+    return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t *handle)
@@ -415,13 +388,14 @@ esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t *han
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)eq;
     obj->new_obj = esp_gmf_eq_new;
     obj->del_obj = esp_gmf_eq_destroy;
-    esp_ae_eq_filter_para_t *tmp = NULL;
     if (config) {
         esp_ae_eq_cfg_t *new_config = NULL;
         if (config->para == NULL) {
-            config->para = (esp_ae_eq_filter_para_t*)esp_gmf_default_eq_paras;
+            config->para = (esp_ae_eq_filter_para_t *)esp_gmf_default_eq_paras;
             config->filter_num = sizeof(esp_gmf_default_eq_paras) / sizeof(esp_ae_eq_filter_para_t);
         }
+        eq->is_filter_enabled = esp_gmf_oal_calloc(config->filter_num, sizeof(bool));
+        ESP_GMF_MEM_VERIFY(TAG, eq->is_filter_enabled, ret = ESP_GMF_ERR_MEMORY_LACK; goto EQ_INI_FAIL, "Rellocation failed", config->filter_num);
         dupl_esp_ae_eq_cfg(config, &new_config);
         ESP_GMF_CHECK(TAG, new_config, {ret = ESP_GMF_ERR_MEMORY_LACK; goto EQ_INI_FAIL;}, "Failed to allocate eq configuration");
         esp_gmf_obj_set_config(obj, new_config, sizeof(esp_ae_eq_cfg_t));
@@ -438,35 +412,14 @@ esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t *han
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto EQ_INI_FAIL, "Failed to initialize eq element");
     *handle = obj;
     ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), obj);
-    if (tmp) {
-        esp_gmf_oal_free(tmp);
-    }
+    ESP_GMF_ELEMENT_GET(eq)->ops.open = esp_gmf_eq_open;
+    ESP_GMF_ELEMENT_GET(eq)->ops.process = esp_gmf_eq_process;
+    ESP_GMF_ELEMENT_GET(eq)->ops.close = esp_gmf_eq_close;
+    ESP_GMF_ELEMENT_GET(eq)->ops.event_receiver = eq_received_event_handler;
+    ESP_GMF_ELEMENT_GET(eq)->ops.load_caps = _load_eq_caps_func;
+    ESP_GMF_ELEMENT_GET(eq)->ops.load_methods = _load_eq_methods_func;
     return ESP_GMF_ERR_OK;
 EQ_INI_FAIL:
-    if (tmp) {
-        esp_gmf_oal_free(tmp);
-    }
-    esp_gmf_obj_delete(obj);
+    esp_gmf_eq_destroy(obj);
     return ret;
-}
-
-esp_gmf_err_t esp_gmf_eq_cast(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t handle)
-{
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_ae_eq_cfg_t *cfg = NULL;
-    dupl_esp_ae_eq_cfg(config, &cfg);
-    ESP_GMF_CHECK(TAG, cfg, {return ESP_GMF_ERR_MEMORY_LACK;}, "Failed to duplicate eq configuration");
-    // Free memory before overwriting
-    free_esp_ae_eq_cfg(OBJ_GET_CFG(handle));
-    esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
-    esp_gmf_audio_element_t *eq_el = (esp_gmf_audio_element_t *)handle;
-
-    eq_el->base.ops.open = esp_gmf_eq_open;
-    eq_el->base.ops.process = esp_gmf_eq_process;
-    eq_el->base.ops.close = esp_gmf_eq_close;
-    eq_el->base.ops.event_receiver = eq_received_event_handler;
-    eq_el->base.ops.load_caps = _load_eq_caps_func;
-    eq_el->base.ops.load_methods = _load_eq_methods_func;
-    return ESP_GMF_ERR_OK;
 }

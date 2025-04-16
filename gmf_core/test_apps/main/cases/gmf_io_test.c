@@ -20,7 +20,6 @@ TEST_CASE("GMF IO read and write", "ESP_GMF_IO")
     cfg.dir = ESP_GMF_IO_DIR_READER;
     esp_gmf_io_handle_t reader = NULL;
     fake_io_init(&cfg, &reader);
-    fake_io_cast(&cfg, reader);
     TEST_ASSERT_NOT_NULL(reader);
     ESP_GMF_MEM_SHOW(TAG);
 
@@ -41,7 +40,6 @@ TEST_CASE("GMF IO read and write", "ESP_GMF_IO")
     esp_gmf_io_handle_t writer = NULL;
     fake_io_init(&cfg, &writer);
     TEST_ASSERT_NOT_NULL(writer);
-    fake_io_cast(&cfg, writer);
 
     esp_gmf_io_set_uri(writer, "test1.mp3");
     char *wr_uri = NULL;

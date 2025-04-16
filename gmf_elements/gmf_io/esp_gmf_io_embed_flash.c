@@ -25,20 +25,7 @@ static const char *const TAG = "ESP_GMF_EMBED_FLASH";
 
 static esp_gmf_err_t _embed_flash_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    *io = NULL;
-    esp_gmf_obj_handle_t new_io = NULL;
-    embed_flash_io_cfg_t *config = (embed_flash_io_cfg_t *)cfg;
-    esp_gmf_err_t ret = esp_gmf_io_embed_flash_init(config, &new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        return ret;
-    }
-    ret = esp_gmf_io_embed_flash_cast(config, new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        esp_gmf_obj_delete(new_io);
-        return ret;
-    }
-    *io = new_io;
-    return ret;
+    return esp_gmf_io_embed_flash_init(cfg, io);
 }
 
 static esp_gmf_err_t _embed_flash_open(esp_gmf_io_handle_t io)
@@ -154,18 +141,6 @@ esp_gmf_err_t esp_gmf_io_embed_flash_init(embed_flash_io_cfg_t *config, esp_gmf_
     esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
     ret = esp_gmf_obj_set_tag(obj, (config->name == NULL ? "embed_flash" : config->name));
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto _embed_fail, "Failed to set obj tag");
-    *io = obj;
-    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), embed_flash);
-    return ESP_GMF_ERR_OK;
-_embed_fail:
-    esp_gmf_obj_delete(obj);
-    return ret;
-}
-
-esp_gmf_err_t esp_gmf_io_embed_flash_cast(embed_flash_io_cfg_t *config, esp_gmf_io_handle_t obj)
-{
-    ESP_GMF_NULL_CHECK(TAG, obj, {return ESP_ERR_INVALID_ARG;});
-    embed_flash_io_t *embed_flash = (embed_flash_io_t *)obj;
     embed_flash->base.open = _embed_flash_open;
     embed_flash->base.close = _embed_flash_close;
     embed_flash->base.seek = NULL;
@@ -175,9 +150,15 @@ esp_gmf_err_t esp_gmf_io_embed_flash_cast(embed_flash_io_cfg_t *config, esp_gmf_
         embed_flash->base.release_read = _embed_flash_release_read;
     } else {
         ESP_LOGE(TAG, "Does not support this operation, %d", embed_flash->base.dir);
-        return ESP_GMF_ERR_NOT_SUPPORT;
+        ret = ESP_GMF_ERR_NOT_SUPPORT;
+        goto _embed_fail;
     }
+    *io = obj;
+    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), embed_flash);
     return ESP_GMF_ERR_OK;
+_embed_fail:
+    esp_gmf_obj_delete(obj);
+    return ret;
 }
 
 esp_gmf_err_t esp_gmf_io_embed_flash_set_context(esp_gmf_io_handle_t io, const embed_item_info_t *context, int max_num)

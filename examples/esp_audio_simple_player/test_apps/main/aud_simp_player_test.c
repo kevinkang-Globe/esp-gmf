@@ -256,7 +256,6 @@ TEST_CASE("Play, Advance API run and stop", "Simple_Player")
     alc_cfg.channel = 2;
     esp_gmf_element_handle_t alc_hd = NULL;
     esp_gmf_alc_init(&alc_cfg, &alc_hd);
-    esp_gmf_alc_cast(&alc_cfg, alc_hd);
     esp_audio_simple_player_register_el(handle, alc_hd);
 
 

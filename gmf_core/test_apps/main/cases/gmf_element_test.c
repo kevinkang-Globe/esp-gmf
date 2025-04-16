@@ -37,7 +37,6 @@ TEST_CASE("Register and unregister port for GMF ELEMENT", "ESP_GMF_ELEMENT")
     cfg.dir = ESP_GMF_IO_DIR_READER;
     esp_gmf_io_handle_t reader = NULL;
     fake_io_init(&cfg, &reader);
-    fake_io_cast(&cfg, reader);
     TEST_ASSERT_NOT_NULL(reader);
     esp_gmf_io_set_uri(reader, "test.mp3");
     ESP_GMF_MEM_SHOW(TAG);
@@ -45,7 +44,6 @@ TEST_CASE("Register and unregister port for GMF ELEMENT", "ESP_GMF_ELEMENT")
     esp_gmf_io_handle_t writer = NULL;
     cfg.dir = ESP_GMF_IO_DIR_WRITER;
     fake_io_init(&cfg, &writer);
-    fake_io_cast(&cfg, writer);
     TEST_ASSERT_NOT_NULL(writer);
 
     fake_dec_cfg_t fake_cfg = DEFAULT_FAKE_DEC_CONFIG();

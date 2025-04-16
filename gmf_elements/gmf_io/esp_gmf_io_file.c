@@ -48,20 +48,7 @@ static char *get_mount_path(char *uri)
 
 static esp_gmf_err_t _file_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    *io = NULL;
-    esp_gmf_obj_handle_t new_io = NULL;
-    file_io_cfg_t *config = (file_io_cfg_t *)cfg;
-    esp_gmf_err_t ret = esp_gmf_io_file_init(config, &new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        return ret;
-    }
-    ret = esp_gmf_io_file_cast(config, new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        esp_gmf_obj_delete(new_io);
-        return ret;
-    }
-    *io = new_io;
-    return ret;
+    return esp_gmf_io_file_init(cfg, io);
 }
 
 static esp_gmf_err_t _file_open(esp_gmf_io_handle_t io)
@@ -240,19 +227,6 @@ esp_gmf_err_t esp_gmf_io_file_init(file_io_cfg_t *config, esp_gmf_io_handle_t *i
     esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
     ret = esp_gmf_obj_set_tag(obj, (config->name == NULL ? "file" : config->name));
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto _file_fail, "Failed to set obj tag");
-    *io = obj;
-    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), file_io);
-    return ESP_GMF_ERR_OK;
-_file_fail:
-    esp_gmf_obj_delete(obj);
-    return ret;
-}
-
-esp_gmf_err_t esp_gmf_io_file_cast(file_io_cfg_t *config, esp_gmf_io_handle_t obj)
-{
-    ESP_GMF_NULL_CHECK(TAG, obj, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
-    file_io_stream_t *file_io = (file_io_stream_t *)obj;
     file_io->base.close = _file_close;
     file_io->base.open = _file_open;
     file_io->base.seek = _file_seek;
@@ -266,7 +240,13 @@ esp_gmf_err_t esp_gmf_io_file_cast(file_io_cfg_t *config, esp_gmf_io_handle_t ob
         file_io->base.release_read = _file_release_read;
     } else {
         ESP_LOGW(TAG, "Does not set read or write function");
-        return ESP_GMF_ERR_NOT_SUPPORT;
+        ret = ESP_GMF_ERR_NOT_SUPPORT;
+        goto _file_fail;
     }
+    *io = obj;
+    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), file_io);
     return ESP_GMF_ERR_OK;
+_file_fail:
+    esp_gmf_obj_delete(obj);
+    return ret;
 }

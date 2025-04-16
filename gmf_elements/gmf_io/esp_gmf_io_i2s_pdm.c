@@ -36,20 +36,7 @@ bool _i2s_pdm_tx_done_callback(i2s_chan_handle_t handle, i2s_event_data_t *event
 
 static esp_gmf_err_t _i2s_pdm_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    *io = NULL;
-    esp_gmf_obj_handle_t new_io = NULL;
-    i2s_pdm_io_cfg_t *config = (i2s_pdm_io_cfg_t *)cfg;
-    esp_gmf_err_t ret = esp_gmf_io_i2s_pdm_init(config, &new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        return ret;
-    }
-    ret = esp_gmf_io_i2s_pdm_cast(config, new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        esp_gmf_obj_delete(new_io);
-        return ret;
-    }
-    *io = new_io;
-    return ret;
+    return esp_gmf_io_i2s_pdm_init(cfg, io);
 }
 
 static esp_gmf_err_t _i2s_pdm_open(esp_gmf_io_handle_t io)
@@ -195,22 +182,9 @@ esp_gmf_err_t esp_gmf_io_i2s_pdm_init(i2s_pdm_io_cfg_t *config, esp_gmf_io_handl
     esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
     ret = esp_gmf_obj_set_tag(obj, (config->name == NULL ? "i2s_pdm" : config->name));
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto _i2s_pdm_fail, "Failed to set obj tag");
-    *io = obj;
-    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), i2s_pdm_io);
-    return ESP_GMF_ERR_OK;
-_i2s_pdm_fail:
-    esp_gmf_obj_delete(obj);
-    return ret;
-}
-
-esp_gmf_err_t esp_gmf_io_i2s_pdm_cast(i2s_pdm_io_cfg_t *config, esp_gmf_io_handle_t obj)
-{
-    ESP_GMF_NULL_CHECK(TAG, obj, {return ESP_ERR_INVALID_ARG;});
-    i2s_pdm_io_stream_t *i2s_pdm_io = (i2s_pdm_io_stream_t *)obj;
     i2s_pdm_io->base.close = _i2s_pdm_close;
     i2s_pdm_io->base.open = _i2s_pdm_open;
     i2s_pdm_io->base.seek = _i2s_pdm_seek;
-    i2s_pdm_io_cfg_t *cfg = (i2s_pdm_io_cfg_t *)config;
     esp_gmf_io_init(obj, NULL);
     if (cfg->dir == ESP_GMF_IO_DIR_WRITER) {
         i2s_pdm_io->base.acquire_write = _i2s_pdm_acquire_write;
@@ -220,7 +194,13 @@ esp_gmf_err_t esp_gmf_io_i2s_pdm_cast(i2s_pdm_io_cfg_t *config, esp_gmf_io_handl
         i2s_pdm_io->base.release_read = _i2s_pdm_release_read;
     } else {
         ESP_LOGW(TAG, "Does not set read or write function");
-        return ESP_GMF_ERR_NOT_SUPPORT;
+        ret = ESP_GMF_ERR_NOT_SUPPORT;
+        goto _i2s_pdm_fail;
     }
+    *io = obj;
+    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(obj), i2s_pdm_io);
     return ESP_GMF_ERR_OK;
+_i2s_pdm_fail:
+    esp_gmf_obj_delete(obj);
+    return ret;
 }

@@ -37,19 +37,6 @@ extern "C" {
 esp_gmf_err_t esp_gmf_fade_init(esp_ae_fade_cfg_t *config, esp_gmf_obj_handle_t *handle);
 
 /**
- * @brief  Initializes the GMF fade with the provided configuration
- *
- * @param[in]   config  Pointer to the fade configuration
- * @param[out]  handle  Pointer to the fade handle to be initialized
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_fade_cast(esp_ae_fade_cfg_t *config, esp_gmf_obj_handle_t handle);
-
-/**
  * @brief  Set the fade process mode
  *
  * @param[in]  handle  The fade handle
@@ -86,7 +73,7 @@ esp_gmf_err_t esp_gmf_fade_get_mode(esp_gmf_audio_element_handle_t handle, esp_a
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_fade_reset(esp_gmf_audio_element_handle_t handle);
+esp_gmf_err_t esp_gmf_fade_reset_weight(esp_gmf_audio_element_handle_t handle);
 
 #ifdef __cplusplus
 }
