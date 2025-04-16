@@ -467,6 +467,13 @@ esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, esp_gm
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, mthd, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    if ((el->method == NULL) && el->ops.load_methods) {
+        int ret = el->ops.load_methods(&el->method);
+        if (ret != ESP_GMF_ERR_OK) {
+            ESP_LOGE(TAG, "Load method failed, ret:%x, [%p-%s]\r\n", ret, el, OBJ_GET_TAG(el));
+            return ret;
+        }
+    }
     *mthd = el->method;
     return ESP_GMF_ERR_OK;
 }

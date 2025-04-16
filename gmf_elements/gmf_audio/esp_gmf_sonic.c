@@ -288,6 +288,36 @@ static esp_gmf_err_t _load_sonic_caps_func(esp_gmf_cap_t **caps)
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _load_sonic_methods_func(esp_gmf_method_t **method)
+{
+    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_args_desc_t *set_args = NULL;
+    esp_gmf_args_desc_t *get_args = NULL;
+    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_SONIC_SET_SPEED_ARG_SPEED,
+                                                 ESP_GMF_ARGS_TYPE_FLOAT, sizeof(float), 0);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_SONIC_SET_SPEED, __sonic_set_speed, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_SET_SPEED);
+
+    ret = esp_gmf_args_desc_copy(set_args, &get_args);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_SONIC_GET_SPEED, __sonic_get_speed, get_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_GET_SPEED);
+
+    set_args = NULL;
+    get_args = NULL;
+    ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_SONIC_SET_PITCH_ARG_PITCH, ESP_GMF_ARGS_TYPE_FLOAT, sizeof(float), 0);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_SONIC_SET_PITCH, __sonic_set_pitch, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_SET_PITCH);
+
+    ret = esp_gmf_args_desc_copy(set_args, &get_args);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
+    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_SONIC_GET_PITCH, __sonic_get_pitch, get_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_GET_PITCH);
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_audio_element_handle_t handle, float speed)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -389,36 +419,12 @@ esp_gmf_err_t esp_gmf_sonic_cast(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_
     esp_gmf_oal_free(OBJ_GET_CFG(handle));
     esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
     esp_gmf_audio_element_t *sonic_el = (esp_gmf_audio_element_t *)handle;
-    esp_gmf_args_desc_t *set_args = NULL;
-    esp_gmf_args_desc_t *get_args = NULL;
-
-    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_SONIC_SET_SPEED_ARG_SPEED,
-                                                 ESP_GMF_ARGS_TYPE_FLOAT, sizeof(float), 0);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_element_register_method(sonic_el, ESP_GMF_METHOD_SONIC_SET_SPEED, __sonic_set_speed, set_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
-
-    ret = esp_gmf_args_desc_copy(set_args, &get_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
-    ret = esp_gmf_element_register_method(sonic_el, ESP_GMF_METHOD_SONIC_GET_SPEED, __sonic_get_speed, get_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
-
-    set_args = NULL;
-    get_args = NULL;
-    ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_SONIC_SET_PITCH_ARG_PITCH, ESP_GMF_ARGS_TYPE_FLOAT, sizeof(float), 0);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_element_register_method(sonic_el, ESP_GMF_METHOD_SONIC_SET_PITCH, __sonic_set_pitch, set_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
-
-    ret = esp_gmf_args_desc_copy(set_args, &get_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
-    ret = esp_gmf_element_register_method(sonic_el, ESP_GMF_METHOD_SONIC_GET_PITCH, __sonic_get_pitch, get_args);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to register method");
 
     sonic_el->base.ops.open = esp_gmf_sonic_open;
     sonic_el->base.ops.process = esp_gmf_sonic_process;
     sonic_el->base.ops.close = esp_gmf_sonic_close;
     sonic_el->base.ops.event_receiver = sonic_received_event_handler;
     sonic_el->base.ops.load_caps = _load_sonic_caps_func;
+    sonic_el->base.ops.load_methods = _load_sonic_methods_func;
     return ESP_GMF_ERR_OK;
 }

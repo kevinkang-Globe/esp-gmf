@@ -95,14 +95,19 @@ typedef struct {
 typedef esp_gmf_err_t (*esp_gmf_load_caps_func)(esp_gmf_cap_t **caps);
 
 /**
+ * @brief  Function pointer type for load element method
+ */
+typedef esp_gmf_err_t (*esp_gmf_load_method_func)(esp_gmf_method_t **method);
+/**
  * @brief  Structure defining the operations of an element
  */
 typedef struct {
-    esp_gmf_job_func        open;            /*!< Function to open the element */
-    esp_gmf_job_func        process;         /*!< Function to process the element */
-    esp_gmf_job_func        close;           /*!< Function to close the element */
-    esp_gmf_load_caps_func  load_caps;       /*!< Function to load element capability description */
-    esp_gmf_event_cb        event_receiver;  /*!< Event receiver function */
+    esp_gmf_job_func          open;            /*!< Function to open the element */
+    esp_gmf_job_func          process;         /*!< Function to process the element */
+    esp_gmf_job_func          close;           /*!< Function to close the element */
+    esp_gmf_load_caps_func    load_caps;       /*!< Function to load element capability description */
+    esp_gmf_load_method_func  load_methods;    /*!< Function to load element methods */
+    esp_gmf_event_cb          event_receiver;  /*!< Event receiver function */
 } esp_gmf_element_ops_t;
 
 /**
