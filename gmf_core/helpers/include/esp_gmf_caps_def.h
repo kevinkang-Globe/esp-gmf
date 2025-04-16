@@ -59,6 +59,12 @@ static inline void gmf_eightcc_to_str(uint64_t eightcc, char out[9])
 #define ESP_GMF_CAPS_AUDIO_FADE                 STR_2_EIGHTCC("AUDFADE")
 #define ESP_GMF_CAPS_AUDIO_DEINTERLEAVE         STR_2_EIGHTCC("AUDDITLV")
 #define ESP_GMF_CAPS_AUDIO_INTERLEAVE           STR_2_EIGHTCC("AUDINTLV")
+#define ESP_GMF_CAPS_AUDIO_AEC                  STR_2_EIGHTCC("AUDAEC")
+#define ESP_GMF_CAPS_AUDIO_NS                   STR_2_EIGHTCC("AUDNS")
+#define ESP_GMF_CAPS_AUDIO_AGC                  STR_2_EIGHTCC("AUDAGC")
+#define ESP_GMF_CAPS_AUDIO_VAD                  STR_2_EIGHTCC("AUDVAD")
+#define ESP_GMF_CAPS_AUDIO_WWE                  STR_2_EIGHTCC("AUDWWE")
+#define ESP_GMF_CAPS_AUDIO_VCMD                 STR_2_EIGHTCC("AUDVCMD")
 
 
 /***************************************************************************/
