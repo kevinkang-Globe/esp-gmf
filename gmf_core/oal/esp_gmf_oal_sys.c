@@ -19,6 +19,10 @@ static const char *TAG = "ESP_GMF_OAL_SYS";
 #define ARRAY_SIZE_OFFSET               8     // Increase this if esp_gmf_oal_sys_get_real_time_stats returns ESP_GMF_ERR_NOT_ENOUGH
 #define AUDIO_SYS_TASKS_ELAPSED_TIME_MS 1000  // Period of stats measurement
 
+#ifndef configRUN_TIME_COUNTER_TYPE
+#define configRUN_TIME_COUNTER_TYPE uint32_t
+#endif
+
 const char *task_state[] = {
     "Running",
     "Ready",
@@ -50,8 +54,8 @@ esp_gmf_err_t esp_gmf_oal_sys_get_real_time_stats(int elapsed_time_ms)
 #if (CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID && CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS)
     TaskStatus_t *start_array = NULL, *end_array = NULL;
     UBaseType_t start_array_size, end_array_size;
-    uint64_t start_run_time, end_run_time;
-    uint64_t task_elapsed_time;
+    configRUN_TIME_COUNTER_TYPE start_run_time, end_run_time;
+    configRUN_TIME_COUNTER_TYPE task_elapsed_time;
     float percentage_time;
     esp_gmf_err_t ret;
 
