@@ -228,20 +228,23 @@ static esp_gmf_err_t esp_gmf_alc_destroy(esp_gmf_audio_element_handle_t self)
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t _load_alc_caps_func(esp_gmf_cap_t **caps)
+static esp_gmf_err_t _load_alc_caps_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t **caps = NULL;
     esp_gmf_cap_t dec_caps = {0};
     dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_ALC;
     dec_caps.attr_fun = NULL;
     int ret = esp_gmf_cap_append(caps, &dec_caps);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->caps = *caps;
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t _load_alc_methods_func(esp_gmf_method_t **method)
+static esp_gmf_err_t _load_alc_methods_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_method_t **method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_args_desc_t *get_args = NULL;
     esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_ALC_SET_GAIN_ARG_IDX,
@@ -257,14 +260,17 @@ static esp_gmf_err_t _load_alc_methods_func(esp_gmf_method_t **method)
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
     ret = esp_gmf_method_append(method, ESP_GMF_METHOD_ALC_GET_GAIN, __alc_get_gain, get_args);
     ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_ALC_GET_GAIN);
+
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->method = *method;
     return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_alc_set_gain(esp_gmf_audio_element_handle_t handle, uint8_t idx, int8_t gain)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_ALC_SET_GAIN, &method);
     uint8_t buf[2] = {0};
@@ -277,8 +283,8 @@ esp_gmf_err_t esp_gmf_alc_get_gain(esp_gmf_audio_element_handle_t handle, uint8_
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, gain, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_ALC_GET_GAIN, &method);
     uint8_t buf[2] = {0};

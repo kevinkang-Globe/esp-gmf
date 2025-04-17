@@ -322,20 +322,23 @@ static esp_gmf_err_t __get_filter(esp_gmf_element_handle_t handle, esp_gmf_args_
     return ESP_OK;
 }
 
-static esp_gmf_err_t _load_caps_func(esp_gmf_cap_t **caps)
+static esp_gmf_err_t _load_caps_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t **caps = NULL;
     esp_gmf_cap_t dec_caps = {0};
     dec_caps.cap_eightcc = STR_2_EIGHTCC("FAKEDEC");
     dec_caps.attr_fun = audio_attr_iter_fun;
     int ret = esp_gmf_cap_append(caps, &dec_caps);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->caps = *caps;
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t _load_methods_func(esp_gmf_method_t **method)
+static esp_gmf_err_t _load_methods_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_method_t **method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_args_desc_t *pointer_args = NULL;
     esp_gmf_args_desc_t *get_args = NULL;
@@ -420,6 +423,8 @@ static esp_gmf_err_t _load_methods_func(esp_gmf_method_t **method)
     ret = esp_gmf_method_append(method, "set_filter", __set_filter, set_args);
     ret = esp_gmf_method_append(method, "get_filter", __get_filter, get_args);
 
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->method = *method;
     return ESP_GMF_ERR_OK;
 }
 

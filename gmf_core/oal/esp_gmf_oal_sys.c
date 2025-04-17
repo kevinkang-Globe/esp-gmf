@@ -5,7 +5,6 @@
  * See LICENSE file for details.
  */
 
-#include <sys/time.h>
 #include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -13,11 +12,11 @@
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_sys.h"
 #include "esp_memory_utils.h"
+#include "esp_timer.h"
 
 static const char *TAG = "ESP_GMF_OAL_SYS";
 
 #define ARRAY_SIZE_OFFSET               8     // Increase this if esp_gmf_oal_sys_get_real_time_stats returns ESP_GMF_ERR_NOT_ENOUGH
-#define AUDIO_SYS_TASKS_ELAPSED_TIME_MS 1000  // Period of stats measurement
 
 #ifndef configRUN_TIME_COUNTER_TYPE
 #define configRUN_TIME_COUNTER_TYPE uint32_t
@@ -29,10 +28,12 @@ const char *task_state[] = {
     "Blocked",
     "Suspended",
     "Deleted",
-    "invalid state"};
+    "Invalid state"
+};
 
-/** @brief
- * "Extr": Allocated task stack from psram, "Intr": Allocated task stack from internal
+/** @brief  Task stack location
+ *       - "Extr": Allocated task stack from psram
+ *       - "Intr": Allocated task stack from internal
  */
 const char *task_stack[] = {"Extr", "Intr"};
 
@@ -43,101 +44,144 @@ int esp_gmf_oal_sys_get_tick_by_time_ms(int ms)
 
 int64_t esp_gmf_oal_sys_get_time_ms(void)
 {
-    struct timeval tmp;
-    gettimeofday(&tmp, NULL);
-    int64_t milliseconds = tmp.tv_sec * 1000LL + tmp.tv_usec / 1000;
-    return milliseconds;
+    return esp_timer_get_time() / 1000;
 }
 
-esp_gmf_err_t esp_gmf_oal_sys_get_real_time_stats(int elapsed_time_ms)
-{
 #if (CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID && CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS)
-    TaskStatus_t *start_array = NULL, *end_array = NULL;
-    UBaseType_t start_array_size, end_array_size;
-    configRUN_TIME_COUNTER_TYPE start_run_time, end_run_time;
-    configRUN_TIME_COUNTER_TYPE task_elapsed_time;
-    float percentage_time;
-    esp_gmf_err_t ret;
+static TaskStatus_t *matched_status;
 
-    //// Allocate array to store current task states
-    start_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
-    start_array = esp_gmf_oal_malloc(sizeof(TaskStatus_t) * start_array_size);
-    ESP_GMF_MEM_CHECK(TAG, start_array, {
-        ret = ESP_GMF_ERR_MEMORY_LACK;
-        goto exit;
-    });
-    // Get current task states
-    start_array_size = uxTaskGetSystemState(start_array, start_array_size, &start_run_time);
-    if (start_array_size == 0) {
-        ESP_LOGE(TAG, "Insufficient array size for uxTaskGetSystemState. Trying increasing ARRAY_SIZE_OFFSET");
-        ret = ESP_GMF_ERR_NOT_ENOUGH;
-        goto exit;
+static esp_gmf_err_t esp_gmf_get_cur_task_status(TaskStatus_t **status, UBaseType_t *num, configRUN_TIME_COUNTER_TYPE *cur_time)
+{
+    // Reserve some space for task created during get state running
+    *num = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
+    TaskStatus_t *task_status = esp_gmf_oal_malloc(sizeof(TaskStatus_t) * (*num));
+    if (task_status == NULL) {
+        return ESP_GMF_ERR_MEMORY_LACK;
     }
+    *num = uxTaskGetSystemState(task_status, *num, cur_time);
+    if (*num == 0) {
+        ESP_LOGE(TAG, "Insufficient array size for uxTaskGetSystemState. Trying increasing ARRAY_SIZE_OFFSET");
+        esp_gmf_oal_free(task_status);
+        return ESP_GMF_ERR_NOT_ENOUGH;
+    }
+    *status = task_status;
+    return ESP_GMF_ERR_OK;
+}
 
+static int compare_tasks(const void *a, const void *b)
+{
+    const TaskStatus_t *task_a = &matched_status[*(uint8_t *)a];
+    const TaskStatus_t *task_b = &matched_status[*(uint8_t *)b];
+
+    if (task_a->xCoreID != task_b->xCoreID) {
+        return task_a->xCoreID - task_b->xCoreID;
+    }
+    return (task_b->ulRunTimeCounter > task_a->ulRunTimeCounter) ? 1 : -1;
+}
+
+esp_gmf_err_t esp_gmf_oal_sys_get_real_time_stats(int elapsed_time_ms, bool markdown)
+{
+    TaskStatus_t *start_array = NULL, *end_array = NULL;
+    uint8_t *matched_arr = NULL;
+    UBaseType_t start_array_size = 0, end_array_size = 0;
+    configRUN_TIME_COUNTER_TYPE start_run_time, end_run_time;
+
+    esp_gmf_err_t ret = esp_gmf_get_cur_task_status(&start_array, &start_array_size, &start_run_time);
+    ESP_GMF_MEM_CHECK(TAG, start_array, { goto exit; });
+
+    // Delay some time to get cpu usage
     vTaskDelay(pdMS_TO_TICKS(elapsed_time_ms));
 
-    // Allocate array to store tasks states post delay
-    end_array_size = uxTaskGetNumberOfTasks() + ARRAY_SIZE_OFFSET;
-    end_array = esp_gmf_oal_malloc(sizeof(TaskStatus_t) * end_array_size);
-    ESP_GMF_MEM_CHECK(TAG, end_array, {
-        ret = ESP_GMF_ERR_MEMORY_LACK;
-        goto exit;
-    });
-
-    // Get post delay task states
-    end_array_size = uxTaskGetSystemState(end_array, end_array_size, &end_run_time);
-    if (end_array_size == 0) {
-        ESP_LOGE(TAG, "Insufficient array size for uxTaskGetSystemState. Trying increasing ARRAY_SIZE_OFFSET");
-        ret = ESP_GMF_ERR_FAIL;
-        goto exit;
-    }
-
-    // Calculate total_elapsed_time in units of run time stats clock period.
-    uint32_t total_elapsed_time = (end_run_time - start_run_time);
-    if (total_elapsed_time == 0) {
-        ESP_LOGE(TAG, "Delay duration too short. Trying increasing AUDIO_SYS_TASKS_ELAPSED_TIME_MS");
-        ret = ESP_GMF_ERR_FAIL;
-        goto exit;
-    }
-
-    ESP_LOGI(TAG, "| Task              | Run Time    | Per | Prio | HWM       | State   | CoreId   | Stack ");
+    ret = esp_gmf_get_cur_task_status(&end_array, &end_array_size, &end_run_time);
+    ESP_GMF_MEM_CHECK(TAG, end_array, { goto exit; });
 
     // Match each task in start_array to those in the end_array
+    int min_count = start_array_size < end_array_size ? start_array_size : end_array_size;
+    matched_arr = malloc(min_count * sizeof(uint8_t));
+    ESP_GMF_MEM_CHECK(TAG, matched_arr, { goto exit; });
+
+    uint8_t matched_count = 0;
     for (int i = 0; i < start_array_size; i++) {
         for (int j = 0; j < end_array_size; j++) {
-            if (start_array[i].xHandle == end_array[j].xHandle) {
+            if (start_array[i].xHandle != end_array[j].xHandle) {
+                continue;
+            }
+            matched_arr[matched_count++] = j;
+            start_array[i].xHandle = NULL;
+            end_array[j].xHandle = NULL;
+            end_array[j].ulRunTimeCounter -= start_array[i].ulRunTimeCounter;
+            break;
+        }
+    }
 
-                task_elapsed_time = end_array[j].ulRunTimeCounter - start_array[i].ulRunTimeCounter;
-                percentage_time = (task_elapsed_time * 100UL) / ((float)total_elapsed_time * portNUM_PROCESSORS);
-                bool is_task_inter = esp_ptr_internal((const void *)(pxTaskGetStackStart(start_array[i].xHandle)));
-                ESP_LOGI(TAG, "| %-17s | %-11d |%.2f%%  | %-4u | %-9u | %-7s | %-8x | %s",
-                         start_array[i].pcTaskName, (int)task_elapsed_time, percentage_time, start_array[i].uxCurrentPriority,
-                         (int)start_array[i].usStackHighWaterMark, task_state[(start_array[i].eCurrentState)],
-                         start_array[i].xCoreID, task_stack[(int)(is_task_inter)]);
+    // Sort tasks by core ID and CPU usage
+    matched_status = end_array;
+    qsort(matched_arr, matched_count, sizeof(uint8_t), compare_tasks);
+    if (markdown) {
+        printf("|       Task        |  Core ID |  Run Time   |  CPU    | Priority | Stack HWM |   State    | Stack |\n");
+        printf("|-------------------|----------|-------------|---------|----------|-----------|------------|-------|\n");
+    } else {
+        ESP_LOGI("", "┌───────────────────┬──────────┬─────────────┬─────────┬──────────┬───────────┬────────────┬───────┐");
+        ESP_LOGI("", "│ Task              │ Core ID  │ Run Time    │ CPU     │ Priority │ Stack HWM │ State      │ Stack │");
+    }
+    BaseType_t current_core = -1;
+    // Calculate total_elapsed_time in units of run time stats clock period.
+    int total_elapsed_time = (int)(end_run_time - start_run_time) * portNUM_PROCESSORS;
+    for (int i = 0; i < matched_count; i++) {
+        TaskStatus_t *cur = &matched_status[matched_arr[i]];
+        float percentage_time = ((float)cur->ulRunTimeCounter * 100UL) / total_elapsed_time;
 
-                // Mark that task have been matched by overwriting their handles
-                start_array[i].xHandle = NULL;
-                end_array[j].xHandle = NULL;
-                break;
+        if (current_core != cur->xCoreID && markdown == false) {
+            current_core = cur->xCoreID;
+            ESP_LOGI("", "├───────────────────┼──────────┼─────────────┼─────────┼──────────┼───────────┼────────────┼───────┤");
+        }
+        if (markdown) {
+            printf("| %-17s | %-8x | %-11d | %6.2f%% | %-8u | %-9u | %-10s | %-5s |\n",
+                cur->pcTaskName,
+                cur->xCoreID,
+                (int)cur->ulRunTimeCounter,
+                percentage_time,
+                cur->uxCurrentPriority,
+                (int)cur->usStackHighWaterMark,
+                task_state[(cur->eCurrentState)],
+                task_stack[esp_ptr_internal(pxTaskGetStackStart(cur->xHandle))]);
+        } else {
+            ESP_LOGI("", "│ %-17s │ %-8x │ %-11d │ %6.2f%% │ %-8u │ %-9u │ %-10s │ %-5s │",
+                cur->pcTaskName,
+                cur->xCoreID,
+                (int)cur->ulRunTimeCounter,
+                percentage_time,
+                cur->uxCurrentPriority,
+                (int)cur->usStackHighWaterMark,
+                task_state[(cur->eCurrentState)],
+                task_stack[esp_ptr_internal(pxTaskGetStackStart(cur->xHandle))]);
+        }
+    }
+    if (markdown == false) {
+        ESP_LOGI("", "└───────────────────┴──────────┴─────────────┴─────────┴──────────┴───────────┴────────────┴───────┘");
+    }
+    if (matched_count != start_array_size) {
+        ESP_LOGI("", "Deleted Tasks:");
+        for (int i = 0; i < start_array_size; i++) {
+            if (start_array[i].xHandle != NULL) {
+                ESP_LOGI(TAG, "    %s", start_array[i].pcTaskName);
             }
         }
     }
-
-    // Print unmatched tasks
-    for (int i = 0; i < start_array_size; i++) {
-        if (start_array[i].xHandle != NULL) {
-            ESP_LOGI(TAG, "| %s | Deleted", start_array[i].pcTaskName);
+    if (matched_count != end_array_size) {
+        ESP_LOGI("", "Created Tasks:");
+        for (int i = 0; i < end_array_size; i++) {
+            if (end_array[i].xHandle != NULL) {
+                ESP_LOGI("", "    %s", end_array[i].pcTaskName);
+            }
         }
     }
-    for (int i = 0; i < end_array_size; i++) {
-        if (end_array[i].xHandle != NULL) {
-            ESP_LOGI(TAG, "| %s | Created", end_array[i].pcTaskName);
-        }
-    }
-    printf("\n");
     ret = ESP_GMF_ERR_OK;
 
 exit:  // Common return path
+    if (matched_arr) {
+        esp_gmf_oal_free(matched_arr);
+    }
     if (start_array) {
         esp_gmf_oal_free(start_array);
         start_array = NULL;
@@ -147,8 +191,14 @@ exit:  // Common return path
         end_array = NULL;
     }
     return ret;
+}
+
 #else
+
+esp_gmf_err_t esp_gmf_oal_sys_get_real_time_stats(int elapsed_time_ms, bool markdown)
+{
     ESP_LOGW(TAG, "Please enable `CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID` and `CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS` in menuconfig");
     return ESP_GMF_ERR_FAIL;
-#endif  /* (CONFIG_FREERTOS_VTASKLIST_INCLUDE_COREID && CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS) */
 }
+
+#endif

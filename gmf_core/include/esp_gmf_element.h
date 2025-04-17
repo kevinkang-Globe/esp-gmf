@@ -75,12 +75,12 @@ typedef struct {
 /**
  * @brief  Function pointer type for load element capability
  */
-typedef esp_gmf_err_t (*esp_gmf_load_caps_func)(esp_gmf_cap_t **caps);
+typedef esp_gmf_err_t (*esp_gmf_load_caps_func)(esp_gmf_element_handle_t handle);
 
 /**
  * @brief  Function pointer type for load element method
  */
-typedef esp_gmf_err_t (*esp_gmf_load_method_func)(esp_gmf_method_t **method);
+typedef esp_gmf_err_t (*esp_gmf_load_method_func)(esp_gmf_element_handle_t handle);
 /**
  * @brief  Structure defining the operations of an element
  */
@@ -466,14 +466,14 @@ esp_gmf_err_t esp_gmf_element_exe_method(esp_gmf_element_handle_t handle, const 
 /**
  * @brief  Retrieve the method structure associated with a given ESP-GMF element
  *
- * @param[in]   handle  Pointer to the ESP-GMF element handle whose method structure is to be retrieved
- * @param[out]  mthd    Pointer to a pointer where the address of the method structure will be stored upon successful retrieval
+ * @param[in]   handle   Pointer to the ESP-GMF element handle whose method structure is to be retrieved
+ * @param[out]  methods  Pointer to a pointer where the address of the method structure will be stored upon successful retrieval
  *
  * @return
  *       - ESP_GMF_OK               Method structure retrieved successfully
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument, such as a NULL handle or output pointer
  */
-esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, esp_gmf_method_t **mthd);
+esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, const esp_gmf_method_t **methods);
 
 /**
  * @brief  Retrieve the capability structure associated with a given ESP-GMF element
@@ -489,7 +489,7 @@ esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, esp_gm
  *       - ESP_GMF_OK               Capability structure successfully retrieved
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument, such as a NULL handle or output pointer
  */
-esp_gmf_err_t esp_gmf_element_get_caps(esp_gmf_element_handle_t handle, esp_gmf_cap_t **caps);
+esp_gmf_err_t esp_gmf_element_get_caps(esp_gmf_element_handle_t handle, const esp_gmf_cap_t **caps);
 
 #ifdef __cplusplus
 }

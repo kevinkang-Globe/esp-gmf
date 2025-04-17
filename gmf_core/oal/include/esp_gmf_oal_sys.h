@@ -50,7 +50,8 @@ int64_t esp_gmf_oal_sys_get_time_ms(void);
  *        - To minimize inaccuracies caused by delays, this function should be called from a high-priority task
  *        - In dual-core mode, each core will account for up to 50% of the total runtime
  *
- * @param[in]  elapsed_time_ms  Time period for the CPU usage measurement in milliseconds.
+ * @param[in]  elapsed_time_ms  Time period for the CPU usage measurement in milliseconds
+ * @param[in]  markdown         Whether print use markdown format
  *
  * @return
  *       - ESP_GMF_ERR_OK           On success
@@ -58,7 +59,7 @@ int64_t esp_gmf_oal_sys_get_time_ms(void);
  *       - ESP_GMF_ERR_NOT_ENOUGH   More memory is needed for uxTaskGetSystemState
  *       - ESP_GMF_ERR_FAIL         On failure
  */
-esp_gmf_err_t esp_gmf_oal_sys_get_real_time_stats(int elapsed_time_ms);
+esp_gmf_err_t esp_gmf_oal_sys_get_real_time_stats(int elapsed_time_ms, bool markdown);
 
 #ifdef __cplusplus
 }

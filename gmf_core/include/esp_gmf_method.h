@@ -150,12 +150,12 @@ static inline void esp_gmf_method_show(esp_gmf_method_t *head)
  *       - ESP_GMF_ERR_OK         The method was found successfully
  *       - ESP_GMF_ERR_NOT_FOUND  The method with the specified name was not found
  */
-static inline esp_gmf_err_t esp_gmf_method_found(esp_gmf_method_t *head, const char *wanted_name, esp_gmf_method_t **wanted_method)
+static inline esp_gmf_err_t esp_gmf_method_found(const esp_gmf_method_t *head, const char *wanted_name, const esp_gmf_method_t **wanted_method)
 {
     if ((head == NULL) || (wanted_method == NULL)) {
         return ESP_GMF_ERR_INVALID_ARG;
     }
-    esp_gmf_method_t *current = head;
+    const esp_gmf_method_t *current = head;
     while (current != NULL) {
         ESP_LOGD("GMF_Method", "name:%s, want:%s", current->name, wanted_name);
         if (strncasecmp(current->name, wanted_name, strlen(current->name)) == 0) {

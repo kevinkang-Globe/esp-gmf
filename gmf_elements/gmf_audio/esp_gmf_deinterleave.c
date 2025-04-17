@@ -208,14 +208,17 @@ static esp_gmf_err_t esp_gmf_deinterleave_destroy(esp_gmf_audio_element_handle_t
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t _load_deinterleave_caps_func(esp_gmf_cap_t **caps)
+static esp_gmf_err_t _load_deinterleave_caps_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t **caps = NULL;
     esp_gmf_cap_t dec_caps = {0};
     dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_DEINTERLEAVE;
     dec_caps.attr_fun = NULL;
     int ret = esp_gmf_cap_append(caps, &dec_caps);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->caps = *caps;
     return ESP_GMF_ERR_OK;
 }
 

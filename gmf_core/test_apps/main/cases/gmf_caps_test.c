@@ -436,7 +436,7 @@ TEST_CASE("GMF Element CAPS test", "ESP_GMF_CAPS")
     fake_dec_init(&fake_cfg, &fake_dec_el);
     fake_dec_cast(&fake_cfg, fake_dec_el);
 
-    esp_gmf_cap_t *caps = NULL;
+    const esp_gmf_cap_t *caps = NULL;
     esp_gmf_element_get_caps(fake_dec_el, &caps);
     printf("caps:%p\r\n", caps);
     ESP_LOGI(TAG, "--- STEPWISE PROPERTY TEST ---");
