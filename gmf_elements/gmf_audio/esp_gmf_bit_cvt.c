@@ -200,30 +200,30 @@ static esp_gmf_err_t esp_gmf_bit_cvt_destroy(esp_gmf_audio_element_handle_t self
 
 static esp_gmf_err_t _load_bit_cvt_caps_func(esp_gmf_element_handle_t handle)
 {
-    esp_gmf_cap_t **caps = NULL;
+    esp_gmf_cap_t *caps = NULL;
     esp_gmf_cap_t dec_caps = {0};
     dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_BIT_CONVERT;
     dec_caps.attr_fun = NULL;
-    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    int ret = esp_gmf_cap_append(&caps, &dec_caps);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
 
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    el->caps = *caps;
+    el->caps = caps;
     return ESP_GMF_ERR_OK;
 }
 
 static esp_gmf_err_t _load_bit_cvt_methods_func(esp_gmf_element_handle_t handle)
 {
-    esp_gmf_method_t **method = NULL;
+    esp_gmf_method_t *method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS_ARG_BITS,
                                    ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS, __set_dest_bits, set_args);
+    ret = esp_gmf_method_append(&method, ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS, __set_dest_bits, set_args);
     ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_BIT_CVT_SET_DEST_BITS);
 
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    el->method = *method;
+    el->method = method;
     return ESP_GMF_ERR_OK;
 }
 
