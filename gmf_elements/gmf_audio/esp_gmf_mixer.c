@@ -319,21 +319,21 @@ static esp_gmf_err_t esp_gmf_mixer_destroy(esp_gmf_audio_element_handle_t self)
 
 static esp_gmf_err_t _load_mixer_caps_func(esp_gmf_element_handle_t handle)
 {
-    esp_gmf_cap_t **caps = NULL;
+    esp_gmf_cap_t *caps = NULL;
     esp_gmf_cap_t dec_caps = {0};
     dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_MIXER;
     dec_caps.attr_fun = NULL;
-    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    int ret = esp_gmf_cap_append(&caps, &dec_caps);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
 
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    el->caps = *caps;
+    el->caps = caps;
     return ESP_GMF_ERR_OK;
 }
 
 static esp_gmf_err_t _load_mixer_methods_func(esp_gmf_element_handle_t handle)
 {
-    esp_gmf_method_t **method = NULL;
+    esp_gmf_method_t *method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_MIXER_SET_INFO_ARG_RATE, ESP_GMF_ARGS_TYPE_UINT32, sizeof(uint32_t), 0);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append RATE argument");
@@ -343,7 +343,7 @@ static esp_gmf_err_t _load_mixer_methods_func(esp_gmf_element_handle_t handle)
     ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_MIXER_SET_INFO_ARG_BITS, ESP_GMF_ARGS_TYPE_UINT8,
                                    sizeof(uint8_t), sizeof(uint8_t) + sizeof(uint32_t));
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append BITS argument");
-    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_MIXER_SET_INFO, __mixer_set_audio_info, set_args);
+    ret = esp_gmf_method_append(&method, ESP_GMF_METHOD_MIXER_SET_INFO, __mixer_set_audio_info, set_args);
     ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_MIXER_SET_INFO);
 
     set_args = NULL;
@@ -352,11 +352,11 @@ static esp_gmf_err_t _load_mixer_methods_func(esp_gmf_element_handle_t handle)
     ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_MIXER_SET_MODE_ARG_MODE, ESP_GMF_ARGS_TYPE_INT32,
                                    sizeof(int32_t), sizeof(uint8_t));
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append MODE argument");
-    ret = esp_gmf_method_append(method, ESP_GMF_METHOD_MIXER_SET_MODE, __mixer_set_mode, set_args);
+    ret = esp_gmf_method_append(&method, ESP_GMF_METHOD_MIXER_SET_MODE, __mixer_set_mode, set_args);
     ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_MIXER_SET_MODE);
 
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    el->method = *method;
+    el->method = method;
     return ESP_GMF_ERR_OK;
 }
 
