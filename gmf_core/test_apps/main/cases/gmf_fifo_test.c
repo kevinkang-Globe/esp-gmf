@@ -85,6 +85,10 @@ static void write_task(void *param)
     while (write_run) {
         start_cnt = esp_clk_rtc_time();
         int ret = esp_gmf_fifo_acquire_read(fifo, &blk, len, portMAX_DELAY);
+        if (ret != ESP_GMF_ERR_OK) {
+            ESP_LOGE(TAG, "Acquire read failed");
+            break;
+        }
         total_cnt += (esp_clk_rtc_time() - start_cnt);
         file_size += blk.valid_size;
 

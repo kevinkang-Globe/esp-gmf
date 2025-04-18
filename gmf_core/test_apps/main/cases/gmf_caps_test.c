@@ -443,7 +443,7 @@ TEST_CASE("GMF Element CAPS test", "ESP_GMF_CAPS")
     esp_gmf_cap_attr_t out_attr;
     uint32_t support_stepwise_test[] = {8000, 11000, 14000, 17000, 20000};
     uint32_t unsupport_stepwise_test[] = {7000, 11900, 13000, 19000, 21000, 25000};
-    esp_gmf_cap_find_attr(caps, STR_2_EIGHTCC("TEST"), &out_attr);
+    esp_gmf_cap_find_attr((esp_gmf_cap_t*)caps, STR_2_EIGHTCC("TEST"), &out_attr);
     bool is_last = false;
     int cnt = 0;
     bool is_support = false;

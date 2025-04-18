@@ -11,11 +11,11 @@ ESP-GMF 包含 GMF-Core、 GMF-Elements 和 GMF-Examples 三个模块。
 
 # ESP-GMF 组件介绍
 
-ESP-GMF 各个功能模块以组件的形式存在，目前包含 [ESP-GMF-Core](./gmf_core/README_CN.md)、[ESP-GMF-Audio](./gmf_elements/gmf_audio/README_CN.md)、ESP-GMF-Image、[ESP-GMF-Misc](./gmf_elements/gmf_misc/README_CN.md) 和 [ESP-GMF-IO](./gmf_elements/gmf_io/README_CN.md)。
+ESP-GMF 各个功能模块以组件的形式存在，目前包含 [GMF-Core](./gmf_core/README_CN.md)、[ESP-GMF-Audio](./gmf_elements/gmf_audio/README_CN.md)、ESP-GMF-Image、[ESP-GMF-Misc](./gmf_elements/gmf_misc/README_CN.md) 和 [ESP-GMF-IO](./gmf_elements/gmf_io/README_CN.md)。
 
 |  组件名称 |  功能 | 依赖的组件  |
 | :------------: | :------------:|:------------ |
-|  [esp_gmf_core](./gmf_core) | GMF 基础框架  |  无 |
+|  [gmf_core](./gmf_core) | GMF 基础框架  |  无 |
 |  [esp_gmf_audio](./gmf_elements/gmf_audio) | GMF 音频编解码和<br>音效处理 element  | - `esp_gmf_core`<br>- `esp_audio_effects`<br> - `esp_audio_codec` |
 |  [esp_gmf_misc](./gmf_elements/gmf_misc) | 工具类 element   | 无  |
 |  esp_gmf_image | GMF 图像编解码和<br>图像效果处理 element  | - `esp_gmf_core`<br>- `esp_new_jpeg` |

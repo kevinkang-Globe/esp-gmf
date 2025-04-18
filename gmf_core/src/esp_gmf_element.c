@@ -438,6 +438,7 @@ esp_gmf_err_t esp_gmf_element_exe_method(esp_gmf_element_handle_t handle, const 
     while (mthd) {
         if (strcasecmp(mthd->name, name) == 0) {
             ret = mthd->func(handle, mthd->args_desc, buf, buf_len);
+            return ret;
         }
         ESP_LOGD(TAG, "Method[%p-%s], ret:%x, [%p-%s]\r\n", mthd, mthd->name, ret, el, OBJ_GET_TAG(el));
         mthd = mthd->next;

@@ -49,7 +49,7 @@ ut_esp32s3_gmf_core:
     IDF_VERSION_TAG: v5.3
     IDF_TARGET: esp32s3
 
-ut_esp32p4_gmf_core:
+.ut_esp32p4_gmf_core:
   extends:
     - .rules:build:protected-merge-requests-pipeline
     - .build_gmf_core

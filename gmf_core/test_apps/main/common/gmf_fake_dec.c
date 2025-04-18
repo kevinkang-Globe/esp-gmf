@@ -324,21 +324,21 @@ static esp_gmf_err_t __get_filter(esp_gmf_element_handle_t handle, esp_gmf_args_
 
 static esp_gmf_err_t _load_caps_func(esp_gmf_element_handle_t handle)
 {
-    esp_gmf_cap_t **caps = NULL;
+    esp_gmf_cap_t *caps = NULL;
     esp_gmf_cap_t dec_caps = {0};
     dec_caps.cap_eightcc = STR_2_EIGHTCC("FAKEDEC");
     dec_caps.attr_fun = audio_attr_iter_fun;
-    int ret = esp_gmf_cap_append(caps, &dec_caps);
+    int ret = esp_gmf_cap_append(&caps, &dec_caps);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
 
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    el->caps = *caps;
+    el->caps = caps;
     return ESP_GMF_ERR_OK;
 }
 
 static esp_gmf_err_t _load_methods_func(esp_gmf_element_handle_t handle)
 {
-    esp_gmf_method_t **method = NULL;
+    esp_gmf_method_t *method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_args_desc_t *pointer_args = NULL;
     esp_gmf_args_desc_t *get_args = NULL;
@@ -352,12 +352,12 @@ static esp_gmf_err_t _load_methods_func(esp_gmf_element_handle_t handle)
 
     esp_gmf_args_desc_append(&set_args, "index", ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
     esp_gmf_args_desc_append_array(&set_args, "para", pointer_args, sizeof(mock_para_t), sizeof(uint8_t));
-    int ret = esp_gmf_method_append(method, "set_para", __set_para, set_args);
+    int ret = esp_gmf_method_append(&method, "set_para", __set_para, set_args);
     ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", "set_para");
     ESP_GMF_ARGS_DESC_PRINT(set_args);
 
     esp_gmf_args_desc_copy(set_args, &get_args);
-    ret = esp_gmf_method_append(method, "get_para", __get_para, get_args);
+    ret = esp_gmf_method_append(&method, "get_para", __get_para, get_args);
     ESP_GMF_ARGS_DESC_PRINT(get_args);
 
     //// Register nested structure
@@ -381,11 +381,11 @@ static esp_gmf_err_t _load_methods_func(esp_gmf_element_handle_t handle)
 
     esp_gmf_args_desc_append_array(&set_args, "desc", nested_args, sizeof(mock_dec_desc_t), offsetof(mock_dec_el_args_t, desc));
     esp_gmf_args_desc_append(&set_args, "label", ESP_GMF_ARGS_TYPE_INT8, 16, offsetof(mock_dec_el_args_t, label));
-    ret = esp_gmf_method_append(method, "set_args", __set_args, set_args);
+    ret = esp_gmf_method_append(&method, "set_args", __set_args, set_args);
     ESP_GMF_ARGS_DESC_PRINT(set_args);
 
     esp_gmf_args_desc_copy(set_args, &get_args);
-    ret = esp_gmf_method_append(method, "get_args", __get_args, get_args);
+    ret = esp_gmf_method_append(&method, "get_args", __get_args, get_args);
     ESP_GMF_ARGS_DESC_PRINT(get_args);
 
     // Register integer parameters
@@ -394,25 +394,25 @@ static esp_gmf_err_t _load_methods_func(esp_gmf_element_handle_t handle)
     esp_gmf_args_desc_append(&set_args, "ch", ESP_GMF_ARGS_TYPE_UINT16, sizeof(uint16_t), sizeof(uint32_t));
     esp_gmf_args_desc_append(&set_args, "bits", ESP_GMF_ARGS_TYPE_UINT16, sizeof(uint16_t), sizeof(uint16_t) + sizeof(uint32_t));
     esp_gmf_args_desc_copy(set_args, &get_args);
-    ret = esp_gmf_method_append(method, "set_info", __set_info, set_args);
+    ret = esp_gmf_method_append(&method, "set_info", __set_info, set_args);
     ESP_GMF_ARGS_DESC_PRINT(get_args);
-    ret = esp_gmf_method_append(method, "get_info", __get_info, get_args);
+    ret = esp_gmf_method_append(&method, "get_info", __get_info, get_args);
 
     // Register string parameters
     set_args = NULL;
     esp_gmf_args_desc_append(&set_args, "dec_name", ESP_GMF_ARGS_TYPE_INT8, 32, 0);
     esp_gmf_args_desc_copy(set_args, &get_args);
-    ret = esp_gmf_method_append(method, "set_name", __set_name, set_args);
+    ret = esp_gmf_method_append(&method, "set_name", __set_name, set_args);
     ESP_GMF_ARGS_DESC_PRINT(get_args);
-    ret = esp_gmf_method_append(method, "get_name", __get_name, get_args);
+    ret = esp_gmf_method_append(&method, "get_name", __get_name, get_args);
 
     // Register 64bits integer parameters
     set_args = NULL;
     esp_gmf_args_desc_append(&set_args, "size", ESP_GMF_ARGS_TYPE_UINT64, 8, 0);
     esp_gmf_args_desc_copy(set_args, &get_args);
     ESP_GMF_ARGS_DESC_PRINT(set_args);
-    ret = esp_gmf_method_append(method, "set_size", __set_size, set_args);
-    ret = esp_gmf_method_append(method, "get_size", __get_size, get_args);
+    ret = esp_gmf_method_append(&method, "set_size", __set_size, set_args);
+    ret = esp_gmf_method_append(&method, "get_size", __get_size, get_args);
 
     // Register two parameters, one for in, one for out
     set_args = NULL;
@@ -420,11 +420,11 @@ static esp_gmf_err_t _load_methods_func(esp_gmf_element_handle_t handle)
     esp_gmf_args_desc_append(&set_args, "filter", ESP_GMF_ARGS_TYPE_UINT64, 8, sizeof(uint8_t));
     esp_gmf_args_desc_copy(set_args, &get_args);
     ESP_GMF_ARGS_DESC_PRINT(set_args);
-    ret = esp_gmf_method_append(method, "set_filter", __set_filter, set_args);
-    ret = esp_gmf_method_append(method, "get_filter", __get_filter, get_args);
+    ret = esp_gmf_method_append(&method, "set_filter", __set_filter, set_args);
+    ret = esp_gmf_method_append(&method, "get_filter", __get_filter, get_args);
 
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
-    el->method = *method;
+    el->method = method;
     return ESP_GMF_ERR_OK;
 }
 
