@@ -190,6 +190,7 @@ esp_gmf_err_io_t esp_gmf_pbuf_acquire_write(esp_gmf_pbuf_handle_t handle, esp_gm
     if (pbuf->empty_head == NULL) {
         if (pbuf->capacity < pbuf->buf_cnt) {
             ESP_LOGE(TAG, "ACQ_WR, the buffer size is out of range, %p, cnt:%d, cap:%ld", pbuf, pbuf->buf_cnt, pbuf->capacity);
+            pbuf_unlock(pbuf->lock);
             return ESP_GMF_IO_FAIL;
         }
         pbuf_list_t *new_pbuf = (pbuf_list_t *)esp_gmf_oal_calloc(1, sizeof(pbuf_list_t));

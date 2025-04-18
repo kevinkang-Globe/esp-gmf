@@ -221,20 +221,23 @@ static esp_gmf_err_t esp_gmf_fade_destroy(esp_gmf_audio_element_handle_t self)
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t _load_fade_caps_func(esp_gmf_cap_t **caps)
+static esp_gmf_err_t _load_fade_caps_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t **caps = NULL;
     esp_gmf_cap_t dec_caps = {0};
     dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_FADE;
     dec_caps.attr_fun = NULL;
     int ret = esp_gmf_cap_append(caps, &dec_caps);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->caps = *caps;
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t _load_fade_methods_func(esp_gmf_method_t **method)
+static esp_gmf_err_t _load_fade_methods_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_method_t **method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_args_desc_t *get_args = NULL;
     esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_FADE_SET_MODE_ARG_MODE, ESP_GMF_ARGS_TYPE_INT32, sizeof(int32_t), 0);
@@ -249,14 +252,17 @@ static esp_gmf_err_t _load_fade_methods_func(esp_gmf_method_t **method)
 
     ret = esp_gmf_method_append(method, ESP_GMF_METHOD_FADE_RESET, __fade_reset, NULL);
     ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_FADE_RESET);
+
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->method = *method;
     return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_fade_set_mode(esp_gmf_audio_element_handle_t handle, esp_ae_fade_mode_t mode)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_FADE_SET_MODE, &method);
     uint8_t buf[4] = {0};
@@ -267,8 +273,8 @@ esp_gmf_err_t esp_gmf_fade_set_mode(esp_gmf_audio_element_handle_t handle, esp_a
 esp_gmf_err_t esp_gmf_fade_get_mode(esp_gmf_audio_element_handle_t handle, esp_ae_fade_mode_t *mode)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_FADE_GET_MODE, &method);
     uint8_t buf[4] = {0};
@@ -283,8 +289,8 @@ esp_gmf_err_t esp_gmf_fade_get_mode(esp_gmf_audio_element_handle_t handle, esp_a
 esp_gmf_err_t esp_gmf_fade_reset(esp_gmf_audio_element_handle_t handle)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_FADE_RESET, &method);
     uint8_t buf[1] = {0};

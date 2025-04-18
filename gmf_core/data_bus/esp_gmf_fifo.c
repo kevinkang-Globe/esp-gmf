@@ -18,6 +18,8 @@
 
 static const char *TAG = "ESP_GMF_FIFO";
 
+#define GMF_FIFO_DEFAULT_ALIGNMENT (16)
+
 typedef struct esp_esp_gmf_fifo_node {
     struct esp_esp_gmf_fifo_node *next;
     void                         *buffer;
@@ -39,6 +41,7 @@ typedef struct {
     esp_gmf_fifo_node_t *fill_head;           /*!< Pointer to the head of the list of filled buffer nodes that can be read */
     uint8_t              _is_write_done : 1;  /*!< Flag indicating if all writing operations to the FIFO have been completed. Set to 1 when writing is finished */
     uint8_t              _is_abort      : 1;  /*!< Flag indicating if an abort operation has been requested. Set to 1 to signal that FIFO operations should be aborted */
+    uint8_t              align;               /*!< Alignment for the request buffer */
 } esp_gmf_fifo_t;
 
 static inline esp_gmf_fifo_node_t *esp_gmf_fifo_node_create(void)
@@ -50,18 +53,19 @@ static inline esp_gmf_fifo_node_t *esp_gmf_fifo_node_create(void)
     return node;
 }
 
-static inline esp_gmf_fifo_node_t *esp_gmf_fifo_node_with_buf_create(size_t buf_size)
+static inline esp_gmf_fifo_node_t *esp_gmf_fifo_node_with_buf_create(size_t buf_size, uint8_t align)
 {
     esp_gmf_fifo_node_t *node = esp_gmf_fifo_node_create();
     if (!node) {
         return NULL;
     }
     if (buf_size > 0) {
-        node->buffer = esp_gmf_oal_calloc(1, buf_size);
+        node->buffer = esp_gmf_oal_malloc_align(align, buf_size);
         if (!node->buffer) {
             esp_gmf_oal_free(node);
             return NULL;
         }
+        memset(node->buffer, 0, buf_size);
         node->buf_length = buf_size;
     }
     node->is_done = false;
@@ -136,12 +140,21 @@ esp_gmf_err_t esp_gmf_fifo_create(int block_cnt, int block_size, esp_gmf_fifo_ha
     fifo->capacity = block_cnt;
     fifo->node_cnt = 0;
     fifo->_is_write_done = 0;
+    fifo->align = GMF_FIFO_DEFAULT_ALIGNMENT;
     *handle = fifo;
     return ESP_GMF_ERR_OK;
 
 esp_gmf_fifo_err:
     _gmf_fifo_handle_free(fifo);
     return ESP_GMF_ERR_FAIL;
+}
+
+esp_gmf_err_t esp_gmf_fifo_set_align(esp_gmf_fifo_handle_t handle, uint8_t align)
+{
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
+    esp_gmf_fifo_t *fifo = (esp_gmf_fifo_t *)handle;
+    fifo->align = (align == 0) ? GMF_FIFO_DEFAULT_ALIGNMENT : align;
+    return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_fifo_destroy(esp_gmf_fifo_handle_t handle)
@@ -224,7 +237,7 @@ esp_gmf_err_io_t esp_gmf_fifo_acquire_write(esp_gmf_fifo_handle_t handle, esp_gm
     esp_gmf_oal_mutex_lock(fifo->lock);
     if (fifo->empty_head == NULL) {
         if (fifo->node_cnt < fifo->capacity) {
-            node = esp_gmf_fifo_node_with_buf_create(wanted_size);
+            node = esp_gmf_fifo_node_with_buf_create(wanted_size, fifo->align);
             ESP_GMF_NULL_CHECK(TAG, node, {esp_gmf_oal_mutex_unlock(fifo->lock); return ESP_GMF_ERR_MEMORY_LACK;});
             fifo->empty_head = node;
             fifo->node_cnt++;

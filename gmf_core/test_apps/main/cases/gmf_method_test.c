@@ -71,8 +71,8 @@ TEST_CASE("Test basic arithmetic type arguments description", "ESP_GMF_METHOD")
     esp_gmf_element_process_open((esp_gmf_element_handle_t)dec, NULL);
 
     /// Check  uint32_t
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method1 = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method1 = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)dec, &method_head);
     esp_gmf_method_found(method_head, "set_info", &method1);
     size_t cnt = 0;
@@ -178,8 +178,8 @@ TEST_CASE("Test structure description", "ESP_GMF_METHOD")
     esp_gmf_element_register_in_port((esp_gmf_element_handle_t)dec, in_port);
     esp_gmf_element_process_open((esp_gmf_element_handle_t)dec, NULL);
 
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method1 = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method1 = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)dec, &method_head);
     size_t cnt = 0;
     uint8_t *buf = NULL;

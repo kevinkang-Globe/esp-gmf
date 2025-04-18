@@ -260,20 +260,23 @@ static esp_gmf_err_t esp_gmf_sonic_destroy(esp_gmf_audio_element_handle_t self)
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t _load_sonic_caps_func(esp_gmf_cap_t **caps)
+static esp_gmf_err_t _load_sonic_caps_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, caps, return ESP_ERR_INVALID_ARG);
+    esp_gmf_cap_t **caps = NULL;
     esp_gmf_cap_t dec_caps = {0};
     dec_caps.cap_eightcc = ESP_GMF_CAPS_AUDIO_SONIC;
     dec_caps.attr_fun = NULL;
     int ret = esp_gmf_cap_append(caps, &dec_caps);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to create capability");
+
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->caps = *caps;
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t _load_sonic_methods_func(esp_gmf_method_t **method)
+static esp_gmf_err_t _load_sonic_methods_func(esp_gmf_element_handle_t handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, method, return ESP_ERR_INVALID_ARG);
+    esp_gmf_method_t **method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_args_desc_t *get_args = NULL;
     esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_SONIC_SET_SPEED_ARG_SPEED,
@@ -298,14 +301,17 @@ static esp_gmf_err_t _load_sonic_methods_func(esp_gmf_method_t **method)
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
     ret = esp_gmf_method_append(method, ESP_GMF_METHOD_SONIC_GET_PITCH, __sonic_get_pitch, get_args);
     ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_GET_PITCH);
+
+    esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
+    el->method = *method;
     return ESP_GMF_ERR_OK;
 }
 
 esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_audio_element_handle_t handle, float speed)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_SONIC_SET_SPEED, &method);
     uint8_t buf[4] = {0};
@@ -316,8 +322,8 @@ esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_audio_element_handle_t handle, flo
 esp_gmf_err_t esp_gmf_sonic_get_speed(esp_gmf_audio_element_handle_t handle, float *speed)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_SONIC_GET_SPEED, &method);
     uint8_t buf[4] = {0};
@@ -332,8 +338,8 @@ esp_gmf_err_t esp_gmf_sonic_get_speed(esp_gmf_audio_element_handle_t handle, flo
 esp_gmf_err_t esp_gmf_sonic_set_pitch(esp_gmf_audio_element_handle_t handle, float pitch)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_SONIC_SET_PITCH, &method);
     uint8_t buf[4] = {0};
@@ -344,8 +350,8 @@ esp_gmf_err_t esp_gmf_sonic_set_pitch(esp_gmf_audio_element_handle_t handle, flo
 esp_gmf_err_t esp_gmf_sonic_get_pitch(esp_gmf_audio_element_handle_t handle, float *pitch)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_SONIC_GET_PITCH, &method);
     uint8_t buf[4] = {0};

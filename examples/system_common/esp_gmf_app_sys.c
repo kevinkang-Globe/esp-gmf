@@ -21,7 +21,7 @@ static void sys_monitor_task(void *para)
             break;
         }
         ESP_GMF_MEM_SHOW("MONITOR");
-        esp_gmf_oal_sys_get_real_time_stats(1000);
+        esp_gmf_oal_sys_get_real_time_stats(1000, false);
     }
     vTaskDelete(NULL);
 }

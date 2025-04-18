@@ -445,13 +445,13 @@ esp_gmf_err_t esp_gmf_element_exe_method(esp_gmf_element_handle_t handle, const 
     return ret;
 }
 
-esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, esp_gmf_method_t **mthd)
+esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, const esp_gmf_method_t **mthd)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, mthd, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
     if ((el->method == NULL) && el->ops.load_methods) {
-        int ret = el->ops.load_methods(&el->method);
+        int ret = el->ops.load_methods(handle);
         if (ret != ESP_GMF_ERR_OK) {
             ESP_LOGE(TAG, "Load method failed, ret:%x, [%p-%s]\r\n", ret, el, OBJ_GET_TAG(el));
             return ret;
@@ -461,13 +461,13 @@ esp_gmf_err_t esp_gmf_element_get_method(esp_gmf_element_handle_t handle, esp_gm
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_element_get_caps(esp_gmf_element_handle_t handle, esp_gmf_cap_t **caps)
+esp_gmf_err_t esp_gmf_element_get_caps(esp_gmf_element_handle_t handle, const esp_gmf_cap_t **caps)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, caps, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
     if ((el->caps == NULL) && el->ops.load_caps) {
-        int ret = el->ops.load_caps(&el->caps);
+        int ret = el->ops.load_caps(handle);
         if (ret != ESP_GMF_ERR_OK) {
             ESP_LOGE(TAG, "Load caps failed, ret:%x, [%p-%s]\r\n", ret, el, OBJ_GET_TAG(el));
             return ret;

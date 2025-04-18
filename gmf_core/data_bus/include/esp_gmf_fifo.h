@@ -43,6 +43,20 @@ typedef void *esp_gmf_fifo_handle_t;
 esp_gmf_err_t esp_gmf_fifo_create(int block_cnt, int block_size, esp_gmf_fifo_handle_t *handle);
 
 /**
+ * @brief  Set alignment for FIFO buffer
+ *
+ * @note  Should call this API before `esp_gmf_fifo_acquire_write` to get aligned buffer
+ *
+ * @param[in]   handle  FIFO handle
+ * @param[in]   align   Alignment for FIFO buffer to get (power of 2, 0=default)
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           Success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid arguments
+ */
+esp_gmf_err_t esp_gmf_fifo_set_align(esp_gmf_fifo_handle_t handle, uint8_t align);
+
+/**
  * @brief  Destroy the FIFO buffer and release resources
  *
  * @param[in]  handle  FIFO handle to be destroyed
