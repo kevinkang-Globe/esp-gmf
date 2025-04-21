@@ -155,17 +155,23 @@ static esp_gmf_job_err_t esp_gmf_deinterleave_process(esp_gmf_audio_element_hand
         out_len = ESP_GMF_JOB_ERR_DONE;
     }
 __deintlv_release:
-    if (deinterleave->in_load != NULL) {
-        load_ret = esp_gmf_port_release_in(in_port, deinterleave->in_load, ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, load_ret, out_len, NULL);
-    }
     out_port = out;
     i = 0;
     while (out_port != NULL && deinterleave->out_load[i] != NULL) {
         load_ret = esp_gmf_port_release_out(out_port, deinterleave->out_load[i], out_port->wait_ticks);
-        ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, load_ret, out_len, NULL);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "OUT port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
         out_port = out_port->next;
         i++;
+    }
+    if (deinterleave->in_load != NULL) {
+        load_ret = esp_gmf_port_release_in(in_port, deinterleave->in_load, ESP_GMF_MAX_DELAY);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "IN port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
     }
     return out_len;
 }

@@ -216,13 +216,19 @@ static esp_gmf_job_err_t esp_gmf_audio_enc_process(esp_gmf_audio_element_handle_
 
 __audio_enc_release:
     esp_gmf_cache_release(audio_enc->cached_payload, in_load);
-    if ((origin_in_load != NULL) && (out_len != ESP_GMF_JOB_ERR_TRUNCATE)) {
-        load_ret = esp_gmf_port_release_in(in_port, origin_in_load, in_port->wait_ticks);
-        ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, load_ret, out_len, NULL);
-    }
     if (out_load != NULL) {
         load_ret = esp_gmf_port_release_out(out_port, out_load, out_port->wait_ticks);
-        ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, load_ret, out_len, NULL);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "OUT port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
+    }
+    if ((origin_in_load != NULL) && (out_len != ESP_GMF_JOB_ERR_TRUNCATE)) {
+        load_ret = esp_gmf_port_release_in(in_port, origin_in_load, in_port->wait_ticks);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "IN port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
     }
     return out_len;
 }

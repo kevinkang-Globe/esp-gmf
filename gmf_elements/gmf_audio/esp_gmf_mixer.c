@@ -206,17 +206,24 @@ static esp_gmf_job_err_t esp_gmf_mixer_process(esp_gmf_audio_element_handle_t se
         esp_gmf_audio_el_update_file_pos((esp_gmf_element_handle_t)self, mixer->out_load->valid_size);
     }
 __mixer_release:
+    // Release in and out port
+    if (mixer->out_load != NULL) {
+        ret = esp_gmf_port_release_out(out_port, mixer->out_load, ESP_GMF_MAX_DELAY);
+        if ((ret < ESP_GMF_IO_OK) && (ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "OUT port release error, ret:%d", ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
+    }
     in_port = in;
     i = 0;
     while (in_port != NULL && mixer->in_load[i] != NULL) {
         ret = esp_gmf_port_release_in(in_port, mixer->in_load[i], ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, ret, out_len, NULL);
+        if ((ret < ESP_GMF_IO_OK) && (ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "IN port release error, ret:%d", ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
         in_port = in_port->next;
         i++;
-    }
-    if (mixer->out_load != NULL) {
-        ret = esp_gmf_port_release_out(out_port, mixer->out_load, ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, ret, out_len, NULL);
     }
     return out_len;
 }
