@@ -14,10 +14,11 @@ jobs:
         uses: espressif/upload-components-ci-action@v2
         with:
           components: |
-            esp_audio_simple_player:./examples/esp_audio_simple_player
             gmf_core:./gmf_core
-            esp_gmf_audio:./gmf_elements/gmf_audio
-            esp_gmf_io:./gmf_elements/gmf_io
-            esp_gmf_misc:./gmf_elements/gmf_misc
+            gmf_audio:./gmf_elements/gmf_audio
+            gmf_io:./gmf_elements/gmf_io
+            gmf_misc:./gmf_elements/gmf_misc
+            esp_audio_simple_player:./examples/esp_audio_simple_player
+            gmf_ai_audio:./gmf_elements/gmf_ai_audio
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}

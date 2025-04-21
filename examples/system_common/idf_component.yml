@@ -1,10 +1,10 @@
 dependencies:
-  espressif/esp_gmf_misc:
+  espressif/gmf_misc:
     require: public
-    version: "*"
-  espressif/esp_gmf_audio:
+    version: "^0.6"
+  espressif/gmf_audio:
     require: public
-    version: "*"
-  espressif/esp_gmf_io:
+    version: "^0.6"
+  espressif/gmf_io:
     require: public
-    version: "*"
+    version: "^0.6"

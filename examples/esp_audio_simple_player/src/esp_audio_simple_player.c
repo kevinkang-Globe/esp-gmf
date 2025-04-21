@@ -217,10 +217,10 @@ static int __setup_pipeline(esp_audio_simple_player_t *player, const char *uri, 
             esp_gmf_port_handle_t in_port = NULL;
             if (io_type == ESP_GMF_IO_TYPE_BYTE) {
                 in_port = NEW_ESP_GMF_PORT_IN_BYTE(esp_gmf_io_acquire_read, esp_gmf_io_release_read, NULL, new_io,
-                                                   (ESP_GMF_ELEMENT_GET(player->pipe->head_el)->in_attr.size), ESP_GMF_MAX_DELAY);
+                                                   (ESP_GMF_ELEMENT_GET(player->pipe->head_el)->in_attr.data_size), ESP_GMF_MAX_DELAY);
             } else if (io_type == ESP_GMF_IO_TYPE_BLOCK) {
                 in_port = NEW_ESP_GMF_PORT_IN_BLOCK(esp_gmf_io_acquire_read, esp_gmf_io_release_read, NULL, new_io,
-                                                    (ESP_GMF_ELEMENT_GET(player->pipe->head_el)->in_attr.size), ESP_GMF_MAX_DELAY);
+                                                    (ESP_GMF_ELEMENT_GET(player->pipe->head_el)->in_attr.data_size), ESP_GMF_MAX_DELAY);
             } else {
                 ESP_LOGE(TAG, "The IN type is incorrect,%d, [%p-%s]", io_type, new_io, OBJ_GET_TAG(new_io));
                 ret = ESP_GMF_ERR_NOT_SUPPORT;

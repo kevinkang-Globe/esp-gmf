@@ -4,7 +4,6 @@ cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
-set(EXTRA_COMPONENT_DIRS ${EXTRA_COMPONENT_DIRS} "../../esp_audio_simple_player")
 set(EXTRA_COMPONENT_DIRS ${EXTRA_COMPONENT_DIRS} "../../system_common")
 
 project(test_aud_simp_player)

@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.6.0
+
+### Features
+- Updated the logic for GMF capabilities and method handling
+- Added support for NULL object configuration
+- Added GMF port attribution for elements
+- Added gmf_cache and optimized the loop path for the audio encoder and decoder
+- Renamed component to `gmf_audio`
+- Updated the License
+
 ## v0.5.2
 
 ### Bug Fixes

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.6.1
+
+### Bug Fixes
+
+- Fixed an issue where gmf_task failed to wait for event bits
+- Fixed compilation failure when building for P4
+
+
 ## v0.6.0
 
 ### Features

@@ -1,10 +1,10 @@
 dependencies:
   espressif/gmf_audio:
-    path: ../../gmf_audio
+    override_path: ../../gmf_audio
   espressif/gmf_io:
-    path: ../../gmf_io
+    override_path: ../../gmf_io
   espressif/gmf_misc:
-    path: ../../gmf_misc
+    override_path: ../../gmf_misc
   espressif/gmf_ai_audio:
-    path: ../../gmf_ai_audio
+    override_path: ../../gmf_ai_audio
   espressif/esp-dsp: <=1.5.0

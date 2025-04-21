@@ -4,11 +4,11 @@
 
 `GMF AI Audio` 是一个人工智能语音处理模块，它在 [GMF](https://github.com/espressif/esp-gmf) 层面为用户提供方便、易用的语音唤醒、命令词识别和回声消除等常用智能语音处理算法。目前基于 `esp-sr` 提供以下模块：
 
-* [esp_afe_manager](./src/esp_afe_manager.c): `audio front end(afe)` 管理器
+* [esp_gmf_afe_manager](./src/esp_gmf_afe_manager.c): `audio front end(afe)` 管理器
 * [esp_gmf_aec](./src/esp_gmf_aec.c): 回声消除
 * [esp_gmf_afe](./src/esp_gmf_afe.c): 基于 `esp-sr` 中 `audio front end (afe)` 实现的易用接口，提供了语音唤醒，命令词识别，人声检测等语音识别的功能
 
-## AFE 管理器 `esp_afe_manager`
+## AFE 管理器 `esp_gmf_afe_manager`
 
 ### 功能
 
@@ -87,7 +87,7 @@
     end
 
     subgraph GMF_AFE
-        AFE_MGR[AFE管理器<br>esp_afe_manager]
+        AFE_MGR[AFE管理器<br>esp_gmf_afe_manager]
         INPUT_RB[输入缓存]
         OUTPUT_RB[输出缓存]
         STATE_MACHINE[唤醒/VAD状态机]
@@ -196,6 +196,6 @@
 * 命令词检测与唤醒状态机独立
 * 命令词支持连续检测，直到超时
 
-## 许可协议
+## 示例
 
-遵循 `Espressif 修改版 MIT 协议`，详情见文件头声明
+示例代码，请参阅 [示例](./examples) 文件夹中的唤醒词检测和音频回声消除程序。
