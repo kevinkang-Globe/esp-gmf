@@ -161,7 +161,7 @@ static esp_gmf_job_err_t esp_gmf_sonic_process(esp_gmf_audio_element_handle_t se
                  in_load->buf, in_load->valid_size, out_port,
                  out_load->buf, out_load->buf_length, ret);
         load_ret = esp_gmf_port_release_out(out_port, out_load, ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, load_ret, out_len, NULL);
+        ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, load_ret, out_len, goto __sonic_release;);
         in = (char *)sonic->in_data_hd.samples + sonic->in_data_hd.consume_num * sonic->bytes_per_sample;
         sonic->in_data_hd.samples = in;
         sonic->in_data_hd.num -= sonic->in_data_hd.consume_num;
@@ -173,7 +173,10 @@ static esp_gmf_job_err_t esp_gmf_sonic_process(esp_gmf_audio_element_handle_t se
 __sonic_release:
     if (in_load != NULL) {
         load_ret = esp_gmf_port_release_in(in_port, in_load, ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, load_ret, out_len, NULL);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "IN port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
     }
     return out_len;
 }

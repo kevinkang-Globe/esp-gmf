@@ -139,13 +139,20 @@ static esp_gmf_job_err_t esp_gmf_rate_cvt_process(esp_gmf_audio_element_handle_t
         ESP_LOGD(TAG, "Rate convert done, out len: %d", out_load->valid_size);
     }
 __rate_release:
-    if (in_load != NULL) {
-        load_ret = esp_gmf_port_release_in(in_port, in_load, ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, load_ret, out_len, NULL);
-    }
+    // Release in and out port
     if (out_load != NULL) {
         load_ret = esp_gmf_port_release_out(out_port, out_load, ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, load_ret, out_len, NULL);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "OUT port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
+    }
+    if (in_load != NULL) {
+        load_ret = esp_gmf_port_release_in(in_port, in_load, ESP_GMF_MAX_DELAY);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "IN port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
     }
     return out_len;
 }

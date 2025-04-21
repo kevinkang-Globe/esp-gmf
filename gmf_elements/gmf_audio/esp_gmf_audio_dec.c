@@ -197,14 +197,20 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
         break;
     }
 __aud_proc_release:
-    if (audio_dec->in_load && (audio_dec->in_data.len == 0)) {
-        load_ret = esp_gmf_port_release_in(in_port, audio_dec->in_load, ESP_GMF_MAX_DELAY);
-        ESP_GMF_PORT_RELEASE_IN_CHECK(TAG, load_ret, out_len, NULL);
-        audio_dec->in_load = NULL;
-    }
     if (out_load != NULL) {
         load_ret = esp_gmf_port_release_out(out, out_load, out->wait_ticks);
-        ESP_GMF_PORT_RELEASE_OUT_CHECK(TAG, load_ret, out_len, NULL);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "OUT port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
+    }
+    if (audio_dec->in_load && (audio_dec->in_data.len == 0)) {
+        load_ret = esp_gmf_port_release_in(in_port, audio_dec->in_load, ESP_GMF_MAX_DELAY);
+        if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
+            ESP_LOGE(TAG, "IN port release error, ret:%d", load_ret);
+            out_len = ESP_GMF_JOB_ERR_FAIL;
+        }
+        audio_dec->in_load = NULL;
     }
     return out_len;
 }
