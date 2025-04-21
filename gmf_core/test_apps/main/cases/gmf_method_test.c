@@ -62,7 +62,6 @@ TEST_CASE("Test basic arithmetic type arguments description", "ESP_GMF_METHOD")
     fake_dec_cfg_t cfg = DEFAULT_FAKE_DEC_CONFIG();
     esp_gmf_obj_handle_t dec = NULL;
     fake_dec_init(&cfg, &dec);
-    fake_dec_cast(&cfg, dec);
 
     esp_gmf_port_handle_t out_port = NEW_ESP_GMF_PORT_OUT_BYTE(NULL, NULL, NULL, NULL, 1000, ESP_GMF_MAX_DELAY);
     esp_gmf_element_register_out_port((esp_gmf_element_handle_t)dec, out_port);
@@ -170,7 +169,6 @@ TEST_CASE("Test structure description", "ESP_GMF_METHOD")
     fake_dec_cfg_t cfg = DEFAULT_FAKE_DEC_CONFIG();
     esp_gmf_obj_handle_t dec = NULL;
     fake_dec_init(&cfg, &dec);
-    fake_dec_cast(&cfg, dec);
 
     esp_gmf_port_handle_t out_port = NEW_ESP_GMF_PORT_OUT_BYTE(NULL, NULL, NULL, NULL, 1000, ESP_GMF_MAX_DELAY);
     esp_gmf_element_register_out_port((esp_gmf_element_handle_t)dec, out_port);

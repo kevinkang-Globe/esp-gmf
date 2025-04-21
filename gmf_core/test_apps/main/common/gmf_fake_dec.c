@@ -120,58 +120,10 @@ static esp_err_t fake_dec_new(void *cfg, esp_gmf_obj_handle_t *handle)
     if (ret != ESP_OK) {
         return ret;
     }
-    ret = fake_dec_cast(fake_cfg, new_obj);
-    if (ret != ESP_OK) {
-        return ret;
-    }
     *handle = (void *)new_obj;
     ESP_LOGI(TAG, "New an object,%s-%p", OBJ_GET_TAG(new_obj), new_obj);
 
     return ESP_OK;
-}
-
-esp_err_t fake_dec_init(fake_dec_cfg_t *config, esp_gmf_obj_handle_t *handle)
-{
-    ESP_GMF_MEM_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
-    fake_decoder_t *fake = esp_gmf_oal_calloc(1, sizeof(fake_decoder_t));
-    ESP_GMF_MEM_CHECK(TAG, fake, return ESP_ERR_NO_MEM);
-    esp_gmf_obj_t *obj = (esp_gmf_obj_t *)fake;
-    esp_gmf_err_t ret = ESP_GMF_ERR_OK;
-    ret = esp_gmf_obj_set_tag(obj, "fake_dec");
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto WAV_DEC_FAIL, "Failed set OBJ tag");
-    if (config) {
-        fake_dec_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
-        ESP_GMF_MEM_CHECK(TAG, cfg, {esp_gmf_oal_free(fake); return ESP_GMF_ERR_MEMORY_LACK;});
-        memcpy(cfg, config, sizeof(*config));
-        esp_gmf_obj_set_config(obj, cfg, sizeof(*cfg));
-        if (config->name) {
-            ret = esp_gmf_obj_set_tag(obj, cfg->name);
-            ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto WAV_DEC_FAIL, "Failed set OBJ tag");
-        }
-    }
-
-    obj->new_obj = fake_dec_new;
-    obj->del_obj = fake_dec_destroy;
-    *handle = obj;
-
-    esp_gmf_element_cfg_t el_cfg = {
-        .cb = config->cb,
-        .in_attr.cap = ESP_GMF_EL_PORT_CAP_SINGLE,
-        .out_attr.cap = ESP_GMF_EL_PORT_CAP_SINGLE,
-        .in_attr.port.type = ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE,
-        .out_attr.port.type = ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE,
-        .in_attr.data_size = config->in_buf_size,
-        .out_attr.data_size = config->out_buf_size,
-    };
-    ret = esp_gmf_audio_el_init(fake, &el_cfg);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto WAV_DEC_FAIL, "Failed Initialize audio el");
-    ESP_LOGI(TAG, "Create fake dec,%s-%p, in:%d, out:%d", OBJ_GET_TAG(obj), obj, config->in_buf_size, config->out_buf_size);
-    return ESP_OK;
-
-WAV_DEC_FAIL:
-    esp_gmf_obj_delete(obj);
-    esp_gmf_oal_free(fake);
-    return ret;
 }
 
 static esp_gmf_err_t __set_para(esp_gmf_element_handle_t handle, esp_gmf_args_desc_t *arg_desc, uint8_t *buf, int buf_len)
@@ -428,23 +380,50 @@ static esp_gmf_err_t _load_methods_func(esp_gmf_element_handle_t handle)
     return ESP_GMF_ERR_OK;
 }
 
-esp_err_t fake_dec_cast(fake_dec_cfg_t *config, esp_gmf_obj_handle_t handle)
+esp_err_t fake_dec_init(fake_dec_cfg_t *config, esp_gmf_obj_handle_t *handle)
 {
-    ESP_GMF_MEM_CHECK(TAG, config, return ESP_ERR_INVALID_ARG);
     ESP_GMF_MEM_CHECK(TAG, handle, return ESP_ERR_INVALID_ARG);
-    esp_gmf_audio_element_t *fake_el = (esp_gmf_audio_element_t *)handle;
-    fake_el->base.ops.open = fake_dec_open;
-    fake_el->base.ops.process = fake_dec_process;
-    fake_el->base.ops.close = fake_dec_close;
-    fake_el->base.ops.load_caps = _load_caps_func;
-    fake_el->base.ops.load_methods = _load_methods_func;
+    fake_decoder_t *fake = esp_gmf_oal_calloc(1, sizeof(fake_decoder_t));
+    ESP_GMF_MEM_CHECK(TAG, fake, return ESP_ERR_NO_MEM);
+    esp_gmf_obj_t *obj = (esp_gmf_obj_t *)fake;
+    esp_gmf_err_t ret = ESP_GMF_ERR_OK;
+    ret = esp_gmf_obj_set_tag(obj, "fake_dec");
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto FAKE_DEC_FAIL, "Failed set OBJ tag");
+    if (config) {
+        fake_dec_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
+        ESP_GMF_MEM_CHECK(TAG, cfg, {esp_gmf_oal_free(fake); return ESP_GMF_ERR_MEMORY_LACK;});
+        memcpy(cfg, config, sizeof(*config));
+        esp_gmf_obj_set_config(obj, cfg, sizeof(*cfg));
+        if (config->name) {
+            ret = esp_gmf_obj_set_tag(obj, cfg->name);
+            ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto FAKE_DEC_FAIL, "Failed set OBJ tag");
+        }
+    }
 
-    fake_dec_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
-    ESP_GMF_MEM_CHECK(TAG, cfg, return ESP_GMF_ERR_MEMORY_LACK);
-    memcpy(cfg, config, sizeof(*config));
-    // Free memory before overwriting
-    esp_gmf_oal_free(OBJ_GET_CFG(handle));
-    esp_gmf_obj_set_config(handle, cfg, sizeof(*config));
+    obj->new_obj = fake_dec_new;
+    obj->del_obj = fake_dec_destroy;
 
+    esp_gmf_element_cfg_t el_cfg = {
+        .cb = config->cb,
+        .in_attr.cap = ESP_GMF_EL_PORT_CAP_SINGLE,
+        .out_attr.cap = ESP_GMF_EL_PORT_CAP_SINGLE,
+        .in_attr.port.type = ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE,
+        .out_attr.port.type = ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE,
+        .in_attr.data_size = config->in_buf_size,
+        .out_attr.data_size = config->out_buf_size,
+    };
+    ret = esp_gmf_audio_el_init(fake, &el_cfg);
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto FAKE_DEC_FAIL, "Failed Initialize audio el");
+    ESP_GMF_ELEMENT_GET(fake)->ops.open = fake_dec_open;
+    ESP_GMF_ELEMENT_GET(fake)->ops.process = fake_dec_process;
+    ESP_GMF_ELEMENT_GET(fake)->ops.close = fake_dec_close;
+    ESP_GMF_ELEMENT_GET(fake)->ops.load_caps = _load_caps_func;
+    ESP_GMF_ELEMENT_GET(fake)->ops.load_methods = _load_methods_func;
+    *handle = obj;
+    ESP_LOGI(TAG, "Create fake dec,%s-%p, in:%d, out:%d", OBJ_GET_TAG(obj), obj, config->in_buf_size, config->out_buf_size);
     return ESP_OK;
+
+FAKE_DEC_FAIL:
+    fake_dec_destroy(obj);
+    return ret;
 }

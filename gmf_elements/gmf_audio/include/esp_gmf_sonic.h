@@ -34,19 +34,6 @@ extern "C" {
 esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_t *handle);
 
 /**
- * @brief  Initializes the GMF sonic with the provided configuration
- *
- * @param[in]   config  Pointer to the sonic configuration
- * @param[out]  handle  Pointer to the sonic handle to be initialized
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_ERR_INVALID_ARG      Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_sonic_cast(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_t handle);
-
-/**
  * @brief  Set the audio speed
  *
  * @param[in]  handle  The handle of the sonic

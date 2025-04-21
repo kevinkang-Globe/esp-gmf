@@ -95,20 +95,7 @@ static int _http_read_data(http_stream_t *http, char *buffer, int len)
 
 static esp_gmf_err_t _http_new(void *cfg, esp_gmf_obj_handle_t *io)
 {
-    *io = NULL;
-    esp_gmf_obj_handle_t new_io = NULL;
-    http_io_cfg_t *config = (http_io_cfg_t *)cfg;
-    int ret = esp_gmf_io_http_init(config, &new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        return ret;
-    }
-    ret = esp_gmf_io_http_cast(config, new_io);
-    if (ret != ESP_GMF_ERR_OK) {
-        _http_destroy(new_io);
-        return ret;
-    }
-    *io = new_io;
-    return ret;
+    return esp_gmf_io_http_init(cfg, io);
 }
 
 static esp_gmf_err_t _http_open(esp_gmf_io_handle_t self)
@@ -480,27 +467,14 @@ esp_gmf_err_t esp_gmf_io_http_init(http_io_cfg_t *config, esp_gmf_io_handle_t *i
     obj->new_obj = _http_new;
     obj->del_obj = _http_destroy;
     http_io_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
-    ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto HTTP_FAIL;},
+    ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto _http_init_fail;},
                        "http stream configuration", sizeof(*config));
     memcpy(cfg, config, sizeof(*config));
     esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
     ret = esp_gmf_obj_set_tag(obj, "http");
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto HTTP_FAIL, "Failed to set obj tag");
+    ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto _http_init_fail, "Failed to set obj tag");
     http->base.dir = config->dir;
     http->base.type = ESP_GMF_IO_TYPE_BLOCK;
-    *io = obj;
-    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(http), http);
-    return ESP_GMF_ERR_OK;
-HTTP_FAIL:
-    esp_gmf_obj_delete(obj);
-    return ret;
-}
-
-esp_gmf_err_t esp_gmf_io_http_cast(http_io_cfg_t *config, esp_gmf_io_handle_t obj)
-{
-    ESP_GMF_NULL_CHECK(TAG, obj, {return ESP_GMF_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_GMF_ERR_INVALID_ARG;});
-    http_stream_t *http = (http_stream_t *)obj;
     http->base.open = _http_open;
     http->base.process = _http_process;
     http->base.seek = _http_seek;
@@ -514,12 +488,13 @@ esp_gmf_err_t esp_gmf_io_http_cast(http_io_cfg_t *config, esp_gmf_io_handle_t ob
         http->base.release_read = _http_release_read;
     } else {
         ESP_LOGE(TAG, "Does not set read or write function");
-        return ESP_ERR_NOT_SUPPORTED;
+        ret = ESP_ERR_NOT_SUPPORTED;
+        goto _http_init_fail;
     }
-    int ret = esp_gmf_db_new_block(1, config->out_buf_size, &http->data_bus);
+    ret = esp_gmf_db_new_block(1, config->out_buf_size, &http->data_bus);
     if (ret != ESP_GMF_ERR_OK) {
         ESP_LOGE(TAG, "Failed to create the download buffer, sz: %d, %s-%p", config->out_buf_size, OBJ_GET_TAG(http), http);
-        return ret;
+        goto _http_init_fail;
     }
     esp_gmf_data_bus_type_t db_type = 0;
     esp_gmf_db_get_type(http->data_bus, &db_type);
@@ -530,5 +505,14 @@ esp_gmf_err_t esp_gmf_io_http_cast(http_io_cfg_t *config, esp_gmf_io_handle_t ob
         .thread.core = config->task_core,
         .thread.stack_in_ext = config->stack_in_ext,
     };
-    return esp_gmf_io_init(&http->base, &io_cfg);
+    ret = esp_gmf_io_init(&http->base, &io_cfg);
+    if(ret != ESP_GMF_ERR_OK) {
+        goto _http_init_fail;
+    }
+    *io = obj;
+    ESP_LOGD(TAG, "Initialization, %s-%p", OBJ_GET_TAG(http), http);
+    return ESP_GMF_ERR_OK;
+_http_init_fail:
+    esp_gmf_obj_delete(obj);
+    return ret;
 }

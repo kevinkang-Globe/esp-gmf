@@ -16,10 +16,10 @@ ESP-GMF 各个功能模块以组件的形式存在，目前包含 [GMF-Core](./g
 |  组件名称 |  功能 | 依赖的组件  |
 | :------------: | :------------:|:------------ |
 |  [gmf_core](./gmf_core) | GMF 基础框架  |  无 |
-|  [esp_gmf_audio](./gmf_elements/gmf_audio) | GMF 音频编解码和<br>音效处理 element  | - `esp_gmf_core`<br>- `esp_audio_effects`<br> - `esp_audio_codec` |
+|  [esp_gmf_audio](./gmf_elements/gmf_audio) | GMF 音频编解码和<br>音效处理 element  | - `gmf_core`<br>- `esp_audio_effects`<br> - `esp_audio_codec` |
 |  [esp_gmf_misc](./gmf_elements/gmf_misc) | 工具类 element   | 无  |
-|  esp_gmf_image | GMF 图像编解码和<br>图像效果处理 element  | - `esp_gmf_core`<br>- `esp_new_jpeg` |
-|  [esp_gmf_io](./gmf_elements/gmf_io) | 文件、flash、HTTP 输入输出  | - `esp_gmf_core`<br>- `esp_codec_dev`  |
+|  esp_gmf_image | GMF 图像编解码和<br>图像效果处理 element  | - `gmf_core`<br>- `esp_new_jpeg` |
+|  [esp_gmf_io](./gmf_elements/gmf_io) | 文件、flash、HTTP 输入输出  | - `gmf_core`<br>- `esp_codec_dev`  |
 
 在开发项目时，推荐使用官方 GMF-Elements 仓库的 elements 和 IOs 组件进行开发，也可以自行创建 element 和 IO 组件来扩展其应用场景。
 

@@ -657,7 +657,6 @@ TEST_CASE("Un-shared port, [port callback -> dec -> port callback]", "[ELEMENT_P
     esp_gmf_element_handle_t fake_dec = NULL;
     fake_dec_init(&fake_dec_cfg, &fake_dec);
     obj_hd = fake_dec;
-    fake_dec_cast(&fake_dec_cfg, obj_hd);
     TEST_ASSERT_NOT_NULL(fake_dec);
     // Print obj tag
     ESP_LOGE(TAG, "%s-%d,obj_hd:%p", (OBJ_GET_TAG(obj_hd)), __LINE__, obj_hd);
@@ -702,7 +701,6 @@ TEST_CASE("Shared port, [port callback -> dec -> port callback]", "[ELEMENT_POOL
     esp_gmf_element_handle_t fake_dec = NULL;
     fake_dec_init(&fake_dec_cfg, &fake_dec);
     obj_hd = fake_dec;
-    fake_dec_cast(&fake_dec_cfg, obj_hd);
     TEST_ASSERT_NOT_NULL(fake_dec);
     // Print obj tag
     ESP_LOGE(TAG, "%s-%d,obj_hd:%p", (OBJ_GET_TAG(obj_hd)), __LINE__, obj_hd);

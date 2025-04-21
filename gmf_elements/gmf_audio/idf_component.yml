@@ -14,6 +14,6 @@ dependencies:
   espressif/esp_audio_effects:
     require: public
     version: "*"
-  espressif/esp_gmf_core:
+  espressif/gmf_core:
     require: public
-    version: "^0.5"
+    version: "^0.6"

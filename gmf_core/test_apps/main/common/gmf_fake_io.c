@@ -99,7 +99,6 @@ static esp_gmf_err_t fake_io_new(void *cfg, esp_gmf_obj_handle_t *io)
     if (ret != ESP_GMF_ERR_OK) {
         return ret;
     }
-    ret = fake_io_cast(config, new_io);
     *io = new_io;
     ESP_LOGI(TAG, "New an object,%s-%p", OBJ_GET_TAG(new_io), new_io);
     return ret;
@@ -125,20 +124,6 @@ esp_gmf_err_t fake_io_init(fake_io_cfg_t *config, esp_gmf_io_handle_t *io)
     obj->new_obj = fake_io_new;
     obj->del_obj = _file_delete;
 
-    *io = obj;
-    ESP_LOGI(TAG, "Init Fake IO,%s-%p", OBJ_GET_TAG(obj), file_io);
-    return ESP_GMF_ERR_OK;
-
-_file_fail:
-    esp_gmf_obj_delete(obj);
-    return ret;
-}
-
-esp_gmf_err_t fake_io_cast(fake_io_cfg_t *config, esp_gmf_io_handle_t obj)
-{
-    ESP_GMF_MEM_CHECK(TAG, obj, return ESP_ERR_INVALID_ARG);
-    int ret = ESP_GMF_ERR_OK;
-    fake_io_t *file_io = (fake_io_t *)obj;
     file_io->base.close = _file_close;
     file_io->base.open = _file_open;
     file_io->base.seek = _file_seek;
@@ -153,6 +138,14 @@ esp_gmf_err_t fake_io_cast(fake_io_cfg_t *config, esp_gmf_io_handle_t obj)
     } else {
         ESP_LOGW(TAG, "Does not set read or write function,%x", fat_cfg->dir);
         ret = ESP_GMF_ERR_NOT_SUPPORT;
+        goto _file_fail;
     }
+
+    *io = obj;
+    ESP_LOGI(TAG, "Init Fake IO,%s-%p", OBJ_GET_TAG(obj), file_io);
+    return ESP_GMF_ERR_OK;
+
+_file_fail:
+    _file_delete(obj);
     return ret;
 }

@@ -37,18 +37,6 @@ typedef struct {
  */
 esp_gmf_err_t fake_io_init(fake_io_cfg_t *config, esp_gmf_io_handle_t *io);
 
-/**
- * @brief  Casts the fake stream I/O with the provided configuration.
- *
- * @param[in]   config  Pointer to the fake IO configuration
- * @param[out]  obj     File IO handle to be casted
- *
- * @return
- *       - ESP_GMF_ERR_OK  Success
- *       - other           error codes  Casting failed
- */
-esp_gmf_err_t fake_io_cast(fake_io_cfg_t *config, esp_gmf_io_handle_t obj);
-
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

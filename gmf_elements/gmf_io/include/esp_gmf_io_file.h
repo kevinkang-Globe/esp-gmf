@@ -39,19 +39,6 @@ typedef struct {
  */
 esp_gmf_err_t esp_gmf_io_file_init(file_io_cfg_t *config, esp_gmf_io_handle_t *io);
 
-/**
- * @brief  Casts the file stream I/O with the provided configuration.
- *
- * @param[in]   config  Pointer to the file IO configuration
- * @param[out]  obj     File IO handle to be casted
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_io_file_cast(file_io_cfg_t *config, esp_gmf_io_handle_t obj);
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

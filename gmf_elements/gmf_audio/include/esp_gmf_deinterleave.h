@@ -41,19 +41,6 @@ typedef struct {
  */
 esp_gmf_err_t esp_gmf_deinterleave_init(esp_gmf_deinterleave_cfg *config, esp_gmf_obj_handle_t *handle);
 
-/**
- * @brief  Initializes the GMF deinterleave with the provided configuration
- *
- * @param[in]   config  Pointer to the deinterleave configuration
- * @param[out]  handle  Pointer to the deinterleave handle to be initialized
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_deinterleave_cast(esp_gmf_deinterleave_cfg *config, esp_gmf_obj_handle_t handle);
-
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

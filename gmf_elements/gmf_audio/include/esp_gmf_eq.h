@@ -40,19 +40,6 @@ extern "C" {
 esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t *handle);
 
 /**
- * @brief  Initializes the GMF EQ with the provided configuration
- *
- * @param[in]   config  Pointer to the EQ configuration
- * @param[out]  handle  Pointer to the EQ handle to be initialized
- *
- * @return
- *       - ESP_GMF_ERR_OK           Success
- *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
- *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
- */
-esp_gmf_err_t esp_gmf_eq_cast(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t handle);
-
-/**
  * @brief  Set the filter parameters for a specific filter identified by 'idx'
  *
  * @param[in]  handle  The EQ handle
