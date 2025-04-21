@@ -42,6 +42,19 @@ typedef struct {
  */
 esp_gmf_err_t esp_gmf_io_codec_dev_init(codec_dev_io_cfg_t *config, esp_gmf_io_handle_t *io);
 
+/**
+ * @brief  Set or update the audio codec device handle for an existing I/O instance
+ *
+ * @param[in]  io   Audio codec device I/O handle
+ * @param[in]  dev  New audio codec device handle to set
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK             Success
+ *       - ESP_GMF_ERR_INVALID_ARG    Invalid arguments provided
+ *       - ESP_GMF_ERR_INVALID_STATE  Invalid state
+ */
+esp_gmf_err_t esp_gmf_io_codec_dev_set_dev(esp_gmf_io_handle_t io, esp_codec_dev_handle_t dev);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

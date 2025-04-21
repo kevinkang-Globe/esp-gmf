@@ -1,0 +1,21 @@
+menu "GMF Video Effects"
+
+    config GMF_VIDEO_EFFECTS_INIT_PPA
+        bool "Initialize Video PPA"
+        default n
+        help
+            Initialize the video PPA element.
+
+    config GMF_VIDEO_EFFECTS_INIT_FPS_CONVERT
+        bool "Initialize Video FPS Convert"
+        default n
+        help
+            Initialize the video FPS convert element.
+
+    config GMF_VIDEO_EFFECTS_INIT_OVERLAY
+        bool "Initialize Video Overlay"
+        default n
+        help
+            Initialize the video overlay element.
+
+endmenu

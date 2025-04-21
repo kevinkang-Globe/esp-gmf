@@ -1,0 +1,202 @@
+config GMF_AUDIO_CODEC_INIT_DECODER
+        bool "Initialize GMF Audio Codec Decoder"
+        default y
+        help
+            Initialize GMF audio codec decoder
+    choice
+        prompt "Select Default GMF Audio Codec Decoder Type"
+        default GMF_AUDIO_CODEC_DECODER_TYPE_AAC
+        depends on GMF_AUDIO_CODEC_INIT_DECODER
+
+        config GMF_AUDIO_CODEC_DECODER_TYPE_AAC
+            bool "AAC Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_MP3
+            bool "MP3 Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_AMRNB
+            bool "AMR-NB Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_AMRWB
+            bool "AMR-WB Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_FLAC
+            bool "FLAC Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_WAV
+            bool "WAV Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_M4A
+            bool "M4A Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_TS
+            bool "TS Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_RAW_OPUS
+            bool "Raw Opus Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_G711A
+            bool "G711A Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_G711U
+            bool "G711U Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_PCM
+            bool "PCM Decoder"
+        config GMF_AUDIO_CODEC_DECODER_TYPE_ADPCM
+            bool "ADPCM Decoder"
+    endchoice
+
+    menu "AAC Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_AAC
+
+        config GMF_AUDIO_CODEC_DEC_AAC_NO_ADTS_HEADER
+            bool "AAC Decoder No ADTS Header"
+            default n
+            help
+                Set this option if the AAC frame data does not contain an ADTS header.
+
+        config GMF_AUDIO_CODEC_DEC_AAC_PLUS_ENABLE
+            bool "Enable AAC-Plus Support"
+            default n
+            help
+                Enable this option if AAC-Plus support is required.
+    endmenu
+
+    menu "OPUS Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_RAW_OPUS
+
+        choice
+            prompt "OPUS Decoder Output Sample Rate"
+            default GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_8K
+            help
+                Configure the sample rate for the OPUS decoder.
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_8K
+            bool "8 kHz"
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_12K
+            bool "12 kHz"
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_16K
+            bool "16 kHz"
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_24K
+            bool "24 kHz"
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_48K
+            bool "48 kHz"
+        endchoice
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE
+        int
+        default 8000  if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_8K
+        default 12000 if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_12K
+        default 16000 if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_16K
+        default 24000 if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_24K
+        default 48000 if GMF_AUDIO_CODEC_DEC_OPUS_SAMPLE_RATE_48K
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_CHANNEL
+            int "OPUS Decoder Output Channel"
+            default 2
+            range 1 2
+            help
+                Configure the number of audio channels for the OPUS decoder.
+
+        choice
+            prompt "OPUS Decoder Frame Duration"
+            default GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_60_MS
+            help
+                Configure the frame duration for the OPUS decoder. If set to 60 ms, the output PCM size is counted as a 60 ms frame.
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_2_5_MS
+                bool "2.5 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_5_MS
+                bool "5 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_10_MS
+                bool "10 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_20_MS
+                bool "20 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_40_MS
+                bool "40 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_60_MS
+                bool "60 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_80_MS
+                bool "80 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_100_MS
+                bool "100 ms"
+
+            config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_120_MS
+                bool "120 ms"
+        endchoice
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION
+            int
+            default 0 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_2_5_MS
+            default 1 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_5_MS
+            default 2 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_10_MS
+            default 3 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_20_MS
+            default 4 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_40_MS
+            default 5 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_60_MS
+            default 6 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_80_MS
+            default 7 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_100_MS
+            default 8 if GMF_AUDIO_CODEC_DEC_OPUS_FRAME_DURATION_120_MS
+
+        config GMF_AUDIO_CODEC_DEC_OPUS_SELF_DELIMITED
+            bool "OPUS Decoder Self-Delimited Packet"
+            default n
+            help
+                Enable this option if the OPUS decoder uses self-delimited packets.
+                Self-delimited packets require an extra 1 or 2 bytes for packet size.
+                Set to false if encapsulated in OGG.
+    endmenu
+
+    menu "PCM Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_PCM
+
+        config GMF_AUDIO_CODEC_DEC_PCM_SAMPLE_RATE
+            int "PCM Decoder Sample Rate"
+            default 44100
+            help
+                Configure the sample rate for the PCM decoder.
+
+        config GMF_AUDIO_CODEC_DEC_PCM_CHANNEL
+            int "PCM Decoder Channel"
+            default 2
+            range 1 8
+            help
+                Configure the number of audio channels for the PCM decoder.
+
+        config GMF_AUDIO_CODEC_DEC_PCM_BITS_PER_SAMPLE
+            int "PCM Decoder Bits Per Sample"
+            default 16
+            range 8 32
+            help
+                Configure the bits per sample for the PCM decoder.
+    endmenu
+
+    menu "G711 Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_G711A || GMF_AUDIO_CODEC_DECODER_TYPE_G711U
+
+        config GMF_AUDIO_CODEC_DEC_G711_CHANNEL
+            int "G711 Decoder Channel"
+            default 1
+            range 1 2
+            help
+                Configure the number of audio channels for the G711 decoder.
+                This setting applies to both G711 A-law and u-law decoders.
+    endmenu
+
+    menu "ADPCM Decoder Configuration"
+        depends on GMF_AUDIO_CODEC_DECODER_TYPE_ADPCM
+
+        config GMF_AUDIO_CODEC_DEC_ADPCM_SAMPLE_RATE
+            int "ADPCM Decoder Sample Rate"
+            default 44100
+            help
+                Configure the sample rate for the ADPCM decoder.
+
+        config GMF_AUDIO_CODEC_DEC_ADPCM_CHANNEL
+            int "ADPCM Decoder Channel"
+            default 1
+            range 1 2
+            help
+                Configure the number of audio channels for the ADPCM decoder.
+
+    endmenu

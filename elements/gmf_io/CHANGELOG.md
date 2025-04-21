@@ -1,5 +1,11 @@
 # Changelog
 
+## *Unreleased*
+
+### Features
+
+- Add API `esp_gmf_io_codec_dev_set_dev` to set audio codec device handle
+
 ## v0.6.3
 
 ### Bug Fixes

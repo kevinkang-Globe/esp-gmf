@@ -642,3 +642,13 @@ esp_gmf_err_t esp_gmf_afe_vcmd_detection_cancel(esp_gmf_element_handle_t handle)
 {
     return esp_gmf_afe_set_vcmd_detection(handle, false);
 }
+
+esp_gmf_err_t esp_gmf_afe_set_event_cb(esp_gmf_element_handle_t handle, esp_gmf_afe_event_cb_t cb, void *ctx)
+{
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG;);
+    esp_gmf_afe_cfg_t *cfg = OBJ_GET_CFG(handle);
+    ESP_GMF_NULL_CHECK(TAG, cfg, return ESP_GMF_ERR_INVALID_STATE;)
+    cfg->event_cb = cb;
+    cfg->event_ctx = ctx;
+    return ESP_GMF_ERR_OK;
+}

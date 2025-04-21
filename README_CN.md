@@ -41,6 +41,7 @@ ESP-GMF 各个模块以组件的形式存在，组件又按功能分为**原子�
 |  组件名称 |  功能 | 依赖的组件  |
 | :------------: | :------------:|:------------ |
 |  [esp_audio_simple_player](./packages/esp_audio_simple_player) | 简单的音频播放器 | - `gmf_audio`<br>- `gmf_io` |
+|  [gmf_loader](./packages/gmf_loader) | 使用 `Kconfig` 选择的配置<br>设置给定的 GMF Pool | - `gmf_core`<br>- `gmf_io`<br>- `gmf_audio`<br>- `gmf_ai_audio`<br>- `esp_codec_dev`<br>- `esp_audio_codec` |
 
 # ESP-GMF 使用说明
 
