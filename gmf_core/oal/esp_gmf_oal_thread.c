@@ -12,6 +12,7 @@
 #include "esp_log.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_thread.h"
+#include "esp_memory_utils.h"
 
 static const char *TAG = "ESP_GMF_THREAD";
 

@@ -31,7 +31,7 @@ static const char *TAG = "ESP_GMF_TASK";
 #define GMF_TASK_EXIT_BIT   (1 << 4)
 
 #define GMF_TASK_WAIT_FOR_STATE_BITS(event_group, bits, timeout) \
-    (bits == xEventGroupWaitBits((EventGroupHandle_t)event_group, bits, true, true, timeout))
+    (bits == (bits & xEventGroupWaitBits((EventGroupHandle_t)event_group, bits, true, true, timeout)))
 
 #define GMF_TASK_SET_STATE_BITS(event_group, bits) \
     xEventGroupSetBits((EventGroupHandle_t)event_group, bits);

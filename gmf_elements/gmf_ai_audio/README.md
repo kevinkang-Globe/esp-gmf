@@ -4,11 +4,11 @@
 
 `GMF AI Audio` is an artificial intelligence audio processing module that provides users with convenient and easy-to-use intelligent audio processing algorithms at the [GMF](https://github.com/espressif/esp-gmf) framework, such as voice wake-up, command word recognition, and echo cancellation. Currently, it offers the following modules based on `esp-sr`:
 
-* [esp_afe_manager](./src/esp_afe_manager.c): `audio front end(afe)` manager
+* [esp_gmf_afe_manager](./src/esp_gmf_afe_manager.c): `audio front end(afe)` manager
 * [esp_gmf_aec](./src/esp_gmf_aec.c): Echo Cancellation
 * [esp_gmf_afe](./src/esp_gmf_afe.c): An easy-to-use interface based on the `audio front end (afe)` from `esp-sr`, providing functionalities such as voice wake-up, command word recognition, and speech detection
 
-## AFE Manager `esp_afe_manager`
+## AFE Manager `esp_gmf_afe_manager`
 
 ### Features
 
@@ -87,7 +87,7 @@
     end
 
     subgraph GMF_AFE
-        AFE_MGR[AFE Manager<br>esp_afe_manager]
+        AFE_MGR[AFE Manager<br>esp_gmf_afe_manager]
         INPUT_RB[Input Buffer]
         OUTPUT_RB[Output Buffer]
         STATE_MACHINE[Wake-Up/VAD State Machine]
@@ -196,6 +196,6 @@ Users need to decide when to start command word detection. A typical use case is
 * Command word detection is independent of the wake word state machine
 * Command word detection supports continuous detection until timeout
 
-## License
+## Usage
 
-Follows the `Espressif Modified MIT License`. See file headers for details
+For example code, refer to the [examples](./examples) folder for the Wake Word Detection and Audio Echo Cancellation demos.
