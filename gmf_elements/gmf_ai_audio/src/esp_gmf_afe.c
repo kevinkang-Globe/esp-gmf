@@ -434,7 +434,9 @@ static esp_gmf_job_err_t esp_gmf_afe_close(esp_gmf_audio_element_handle_t self, 
 {
     esp_gmf_afe_t *gmf_afe = (esp_gmf_afe_t *)self;
     esp_gmf_afe_cfg_t *cfg = OBJ_GET_CFG(self);
-    vcmd_det_cancel(gmf_afe);
+    if (cfg->vcmd_detect_en) {
+        vcmd_det_cancel(gmf_afe);
+    }
     esp_gmf_afe_manager_set_read_cb(cfg->afe_manager, NULL, NULL);
     esp_gmf_afe_manager_set_result_cb(cfg->afe_manager, NULL, NULL);
 
@@ -622,8 +624,8 @@ __failed:
 static esp_gmf_err_t esp_gmf_afe_set_vcmd_detection(esp_gmf_element_handle_t handle, bool enable)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
-    esp_gmf_method_t *method_head = NULL;
-    esp_gmf_method_t *method = NULL;
+    const esp_gmf_method_t *method_head = NULL;
+    const esp_gmf_method_t *method = NULL;
     esp_gmf_element_get_method((esp_gmf_element_handle_t)handle, &method_head);
     esp_gmf_method_found(method_head, ESP_GMF_METHOD_AFE_START_VCMD_DET, &method);
     uint8_t buf[1] = { enable };

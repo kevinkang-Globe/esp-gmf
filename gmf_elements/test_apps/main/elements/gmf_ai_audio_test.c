@@ -190,8 +190,9 @@ static int aec_acquire_write(void *handle, esp_gmf_payload_t *load, int wanted_s
 static int aec_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
     uint8_t *dest = (uint8_t *)handle;
+#ifdef CONFIG_IDF_TARGET_ESP32S3
     analyze_frequency((int16_t *)load->buf, load->valid_size / 2);
-
+#endif /* CONFIG_IDF_TARGET_ESP32S3 */
     if (out_count < SIGNAL_LEN * 2) {
         if (out_count + load->valid_size > SIGNAL_LEN * 2) {
             load->valid_size = SIGNAL_LEN * 2 - out_count;
@@ -241,12 +242,12 @@ TEST_CASE("Test gmf aec process", "[ESP_GMF_AEC]")
         .filter_len = 4,
         .type = AFE_TYPE_VC,
         .mode = AFE_MODE_HIGH_PERF,
-        .input_format = "RM",
+        .input_format = (char *)"RM",
     };
     esp_gmf_aec_init(&gmf_aec_cfg, &gmf_aec_handle);
     esp_gmf_cap_t *caps = NULL;
     esp_gmf_cap_t *out_caps = NULL;
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_get_caps(gmf_aec_handle, &caps));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_get_caps(gmf_aec_handle, (const esp_gmf_cap_t **)&caps));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_cap_fetch_node(caps, ESP_GMF_CAPS_AUDIO_AEC, &out_caps));
 
     esp_gmf_element_register_in_port(gmf_aec_handle, in_port);
@@ -431,7 +432,7 @@ TEST_CASE("Test gmf afe process", "[ESP_GMF_AFE]")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_afe_init(&gmf_afe_cfg, &gmf_afe));
     esp_gmf_cap_t *caps = NULL;
     esp_gmf_cap_t *out_caps = {0};
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_get_caps(gmf_afe, &caps));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_get_caps(gmf_afe, (const esp_gmf_cap_t **)&caps));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_cap_fetch_node(caps, ESP_GMF_CAPS_AUDIO_AEC, &out_caps));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_cap_fetch_node(caps, ESP_GMF_CAPS_AUDIO_NS, &out_caps));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_cap_fetch_node(caps, ESP_GMF_CAPS_AUDIO_AGC, &out_caps));

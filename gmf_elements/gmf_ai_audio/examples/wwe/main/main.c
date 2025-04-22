@@ -192,7 +192,7 @@ void app_main(void)
         .port_num = ADC_I2S_PORT,
     };
     void *record_dev = NULL;
-    ret = esp_gmf_setup_periph_codec(&audio_info, &audio_info, NULL, &record_dev);
+    ret = esp_gmf_setup_periph_codec(NULL, &audio_info, NULL, &record_dev);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, { return;}, "Failed to setup audio codec");
     g_event_group = xEventGroupCreate();
 

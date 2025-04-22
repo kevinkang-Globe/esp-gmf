@@ -11,7 +11,7 @@ ESP-GMF consists of three modules: **GMF-Core**, **GMF-Elements**, and **GMF-Exa
 
 # ESP-GMF Component Overview
 
-Each ESP-GMF functional module exists as a component, currently including [GMF-Core](./gmf_core/README.md), [GMF-Audio](./gmf_elements/gmf_audio/README.md),  [GMF-Misc](./gmf_elements/gmf_misc/README.md), [GMF-IO](./gmf_elements/gmf_io/README.md), and [GMF-AI-Audio](./gmf_elements/gmf_ai_audio/README.md).
+Each ESP-GMF functional module exists as a component, currently including [GMF-Core](./gmf_core/README.md), [GMF-Audio](./gmf_elements/gmf_audio/README.md), [GMF-Misc](./gmf_elements/gmf_misc/README.md), [GMF-IO](./gmf_elements/gmf_io/README.md), and [GMF-AI-Audio](./gmf_elements/gmf_ai_audio/README.md).
 
 | Component Name | Function | Dependent Components |
 | :------------: | :------------: | :------------ |
