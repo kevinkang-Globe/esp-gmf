@@ -5,6 +5,8 @@ dependencies:
     override_path: ../../../../gmf_elements/gmf_io
   espressif/gmf_misc:
     override_path: ../../../../gmf_elements/gmf_misc
+  espressif/gmf_core:
+    override_path: ../../../../gmf_core
   espressif/esp_wifi_remote:
     version: '*'
     rules:
