@@ -25,7 +25,7 @@ typedef struct {
 
 #define ESP_GMF_IO_I2S_PDM_CFG_DEFAULT() {  \
     .pdm_chan = NULL,                       \
-    .dir      = ESP_GMF_IO_DIR_NONE,        \
+    .dir      = ESP_GMF_IO_DIR_READER,      \
     .name     = NULL,                       \
 }
 

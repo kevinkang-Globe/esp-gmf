@@ -10,7 +10,6 @@
 #include "esp_gmf_node.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_mutex.h"
-#include "esp_gmf_audio_element.h"
 #include "esp_gmf_bit_cvt.h"
 #include "gmf_audio_common.h"
 #include "esp_gmf_audio_methods_def.h"
@@ -18,16 +17,17 @@
 #include "esp_gmf_caps_def.h"
 
 /**
- * @brief Audio bit conversion context in GMF
+ * @brief  Audio bit conversion context in GMF
  */
 typedef struct {
     esp_gmf_audio_element_t parent;                /*!< The GMF bit cvt handle */
     esp_ae_bit_cvt_handle_t bit_hd;                /*!< The audio effects bit cvt handle */
     uint8_t                 in_bytes_per_sample;   /*!< Source bytes number of per sampling point */
     uint8_t                 out_bytes_per_sample;  /*!< Dest bytes number of per sampling point */
-    bool                    need_reopen;           /*!< Whether need to reopen.
+    bool                    need_reopen : 1;       /*!< Whether need to reopen.
                                                         True: Execute the close function first, then execute the open function
                                                         False: Do nothing */
+    bool                    bypass : 1;            /*!< Whether bypass. True: need bypass. False: needn't bypass */
 } esp_gmf_bit_cvt_t;
 
 static const char *TAG = "ESP_GMF_BIT_CVT";
@@ -58,6 +58,7 @@ static esp_gmf_job_err_t esp_gmf_bit_cvt_open(esp_gmf_audio_element_handle_t sel
     ESP_LOGD(TAG, "Open, rate: %ld, channel: %d, src_bits: %d, dest_bits: %d",
              bit_info->sample_rate, bit_info->channel, bit_info->src_bits, bit_info->dest_bits);
     bit_cvt->need_reopen = false;
+    bit_cvt->bypass = (bit_info->src_bits == bit_info->dest_bits);
     return ESP_GMF_JOB_ERR_OK;
 }
 
@@ -98,8 +99,7 @@ static esp_gmf_job_err_t esp_gmf_bit_cvt_process(esp_gmf_audio_element_handle_t 
         out_len = ESP_GMF_JOB_ERR_FAIL;
         goto __bit_release;
     }
-    esp_ae_bit_cvt_cfg_t *bit_cvt_info = (esp_ae_bit_cvt_cfg_t *)OBJ_GET_CFG(self);
-    if ((bit_cvt_info->src_bits == bit_cvt_info->dest_bits) && (in_port->is_shared == 1)) {
+    if ((bit_cvt->bypass) && (in_port->is_shared == 1)) {
         // This case bit conversion is do bypass
         out_load = in_load;
     }

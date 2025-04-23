@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.1
+
+- Added missing #include "esp_gmf_audio_element.h" across all audio elements
+- Fixed out-of-range parameter handling for mixer and EQ elements
+- Resolved rate/bit/channel converter bypass errors caused by asynchronous modification of obj->cfg between set/event callbacks and process functions
+- Deleted one unreasonable log from esp_gmf_audio_helper.c
+
 ## v0.6.0
 
 ### Features

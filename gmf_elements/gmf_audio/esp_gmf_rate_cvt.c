@@ -10,7 +10,6 @@
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_mutex.h"
 #include "esp_gmf_node.h"
-#include "esp_gmf_audio_element.h"
 #include "esp_gmf_rate_cvt.h"
 #include "gmf_audio_common.h"
 #include "esp_gmf_audio_methods_def.h"
@@ -24,9 +23,10 @@ typedef struct {
     esp_gmf_audio_element_t  parent;            /*!< The GMF rate cvt handle */
     esp_ae_rate_cvt_handle_t rate_hd;           /*!< The audio effects rate cvt handle */
     uint8_t                  bytes_per_sample;  /*!< Bytes number of per sampling point */
-    bool                     need_reopen;       /*!< Whether need to reopen.
-                                              True: Execute the close function first, then execute the open function
-                                              False: Do nothing */
+    bool                     need_reopen : 1;   /*!< Whether need to reopen.
+                                                     True: Execute the close function first, then execute the open function
+                                                     False: Do nothing */
+    bool                     bypass : 1;        /*!< Whether bypass. True: need bypass. False: needn't bypass */
 } esp_gmf_rate_cvt_t;
 
 static const char *TAG = "ESP_GMF_RATE_CVT";
@@ -68,6 +68,7 @@ static esp_gmf_job_err_t esp_gmf_rate_cvt_open(esp_gmf_audio_element_handle_t se
     ESP_LOGD(TAG, "Open, src: %"PRIu32", dest: %"PRIu32", ch: %d, bits: %d",
              rate_info->src_rate, rate_info->dest_rate, rate_info->channel, rate_info->bits_per_sample);
     rate_cvt->need_reopen = false;
+    rate_cvt->bypass = rate_info->src_rate == rate_info->dest_rate;
     return ESP_GMF_JOB_ERR_OK;
 }
 
@@ -114,9 +115,8 @@ static esp_gmf_job_err_t esp_gmf_rate_cvt_process(esp_gmf_audio_element_handle_t
         ret = esp_ae_rate_cvt_get_max_out_sample_num(rate_cvt->rate_hd, samples_num, &out_samples_num);
         ESP_GMF_RET_ON_ERROR(TAG, ret, {out_len = ESP_GMF_JOB_ERR_FAIL; goto __rate_release;}, "Failed to get resample out size, ret: %d", ret);
     }
-    esp_ae_rate_cvt_cfg_t *rate_cvt_info = (esp_ae_rate_cvt_cfg_t *)OBJ_GET_CFG(self);
     int acq_out_size = out_samples_num == 0 ? in_load->buf_length : out_samples_num * rate_cvt->bytes_per_sample;
-    if ((rate_cvt_info->src_rate == rate_cvt_info->dest_rate) && (in_port->is_shared == true)) {
+    if (rate_cvt->bypass && (in_port->is_shared == true)) {
         // This case rate conversion is do bypass
         out_load = in_load;
     }

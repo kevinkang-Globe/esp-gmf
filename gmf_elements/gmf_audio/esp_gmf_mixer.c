@@ -9,7 +9,6 @@
 #include "esp_log.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_mutex.h"
-#include "esp_gmf_audio_element.h"
 #include "esp_gmf_node.h"
 #include "esp_gmf_mixer.h"
 #include "esp_heap_caps.h"
@@ -318,6 +317,11 @@ esp_gmf_err_t esp_gmf_mixer_set_mode(esp_gmf_audio_element_handle_t handle, uint
 {
     ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
     esp_gmf_mixer_t *mixer = (esp_gmf_mixer_t *)handle;
+    esp_ae_mixer_cfg_t *cfg = (esp_ae_mixer_cfg_t *)OBJ_GET_CFG(handle);
+    if (src_idx >= cfg->src_num) {
+        ESP_LOGE(TAG, "Source index %d overlimit %d hd:%p", src_idx, cfg->src_num, mixer);
+        return ESP_GMF_ERR_INVALID_ARG;
+    }
     if (mixer->mixer_hd) {
         esp_gmf_oal_mutex_lock(((esp_gmf_audio_element_t *)handle)->lock);
         esp_ae_err_t ret = esp_ae_mixer_set_mode(mixer->mixer_hd, src_idx, mode);

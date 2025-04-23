@@ -9,7 +9,6 @@
 #include "esp_log.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_mutex.h"
-#include "esp_gmf_audio_element.h"
 #include "esp_gmf_node.h"
 #include "esp_gmf_fade.h"
 #include "gmf_audio_common.h"

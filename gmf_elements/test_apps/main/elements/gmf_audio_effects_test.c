@@ -33,6 +33,8 @@
 #include "esp_gmf_audio_enc.h"
 #include "esp_gmf_audio_dec.h"
 #include "esp_audio_simple_dec_default.h"
+#include "esp_audio_enc_reg.h"
+#include "esp_audio_dec_reg.h"
 
 #include "esp_gmf_setup_peripheral.h"
 #include "esp_gmf_setup_pool.h"
@@ -337,9 +339,9 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_gmf_obj_delete(sonic_hd);
 
     printf("\r\n///////////////////// DEC /////////////////////\r\n");
-    esp_audio_dec_register_default();
-    esp_audio_simple_dec_register_default();
+    esp_mp3_dec_register();
     esp_audio_simple_dec_cfg_t es_dec_cfg = DEFAULT_ESP_GMF_AUDIO_DEC_CONFIG();
+    es_dec_cfg.dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3;
     esp_gmf_element_handle_t es_hd = NULL;
     esp_gmf_audio_dec_init(&es_dec_cfg, &es_hd);
     in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
@@ -350,9 +352,10 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_gmf_element_process_running(es_hd, NULL);
     esp_gmf_element_process_close(es_hd, NULL);
     esp_gmf_obj_delete(es_hd);
+    esp_audio_dec_unregister(ESP_AUDIO_TYPE_MP3);
 
     printf("\r\n///////////////////// ENC /////////////////////\r\n");
-    esp_audio_enc_register_default();
+    esp_aac_enc_register();
     esp_audio_enc_config_t es_enc_cfg = DEFAULT_ESP_GMF_AUDIO_ENC_CONFIG();
     esp_aac_enc_config_t aac_enc_cfg = ESP_AAC_ENC_CONFIG_DEFAULT();
     es_enc_cfg.type = ESP_AUDIO_TYPE_AAC;
@@ -368,6 +371,7 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
     esp_gmf_element_process_running(enc_handle, NULL);
     esp_gmf_element_process_close(enc_handle, NULL);
     esp_gmf_obj_delete(enc_handle);
+    esp_audio_enc_unregister(ESP_AUDIO_TYPE_AAC);
 
     printf("\r\n///////////////////// DEINTERLEAVE /////////////////////\r\n");
     esp_gmf_deinterleave_cfg deinterleave_cfg = DEFAULT_ESP_GMF_DEINTERLEAVE_CONFIG();

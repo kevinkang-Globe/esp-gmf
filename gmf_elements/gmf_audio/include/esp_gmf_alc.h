@@ -8,6 +8,7 @@
 #pragma once
 
 #include "esp_gmf_err.h"
+#include "esp_gmf_audio_element.h"
 #include "esp_ae_alc.h"
 
 #ifdef __cplusplus

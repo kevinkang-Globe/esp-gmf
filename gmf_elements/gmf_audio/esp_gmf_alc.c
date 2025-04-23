@@ -9,7 +9,6 @@
 #include "esp_log.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_mutex.h"
-#include "esp_gmf_audio_element.h"
 #include "esp_gmf_node.h"
 #include "esp_gmf_alc.h"
 #include "esp_gmf_args_desc.h"
@@ -18,7 +17,7 @@
 #include "esp_gmf_cap.h"
 #include "esp_gmf_caps_def.h"
 
-#define GMF_DEFAULT_MAX_CHANNLE 2
+#define GMF_ALC_DEFAULT_MAX_CHANNEL 2
 /**
  * @brief  Audio ALC context in GMF
  */
@@ -255,7 +254,7 @@ esp_gmf_err_t esp_gmf_alc_set_gain(esp_gmf_audio_element_handle_t handle, uint8_
 {
     ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
     esp_gmf_alc_t *alc = (esp_gmf_alc_t *)handle;
-    if(idx > alc->max_ch) {
+    if (idx >= alc->max_ch) {
         ESP_LOGE(TAG, "Gain index %d is out of range", idx);
         return ESP_GMF_ERR_INVALID_ARG;
     }
@@ -301,15 +300,16 @@ esp_gmf_err_t esp_gmf_alc_init(esp_ae_alc_cfg_t *config, esp_gmf_obj_handle_t *h
     esp_gmf_obj_t *obj = (esp_gmf_obj_t *)alc;
     obj->new_obj = esp_gmf_alc_new;
     obj->del_obj = esp_gmf_alc_destroy;
+    alc->max_ch = GMF_ALC_DEFAULT_MAX_CHANNEL;
     if (config) {
         esp_ae_alc_cfg_t *cfg = esp_gmf_oal_calloc(1, sizeof(*config));
         ESP_GMF_MEM_VERIFY(TAG, cfg, {ret = ESP_GMF_ERR_MEMORY_LACK; goto ALC_INIT_FAIL;}, "alc configuration", sizeof(*config));
-        alc->max_ch = config->channel > 0 ? config->channel : GMF_DEFAULT_MAX_CHANNLE;
-        alc->gain = esp_gmf_oal_calloc(1, alc->max_ch * sizeof(*alc->gain));
-        ESP_GMF_MEM_VERIFY(TAG, alc->gain, goto ALC_INIT_FAIL, "alc gain", alc->max_ch * sizeof(*alc->gain));
+        alc->max_ch = config->channel > 0 ? config->channel : GMF_ALC_DEFAULT_MAX_CHANNEL;
         memcpy(cfg, config, sizeof(*config));
         esp_gmf_obj_set_config(obj, cfg, sizeof(*config));
     }
+    alc->gain = esp_gmf_oal_calloc(1, alc->max_ch * sizeof(int8_t));
+    ESP_GMF_MEM_VERIFY(TAG, alc->gain, goto ALC_INIT_FAIL, "alc gain", alc->max_ch * sizeof(int8_t));
     ret = esp_gmf_obj_set_tag(obj, "alc");
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto ALC_INIT_FAIL, "Failed to set obj tag");
     esp_gmf_element_cfg_t el_cfg = {0};
