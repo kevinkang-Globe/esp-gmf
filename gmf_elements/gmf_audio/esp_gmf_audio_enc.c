@@ -10,7 +10,6 @@
 #include "esp_gmf_node.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_mutex.h"
-#include "esp_gmf_audio_element.h"
 #include "esp_gmf_audio_enc.h"
 #include "esp_audio_enc_default.h"
 #include "esp_gmf_cache.h"

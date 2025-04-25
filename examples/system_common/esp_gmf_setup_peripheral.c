@@ -157,7 +157,9 @@ static void setup_periph_new_play_codec()
     gpio_if->set(ESP_GMF_AMP_IO_NUM, 1);
 #else
     audio_codec_i2c_cfg_t i2c_ctrl_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR, .port = 0, .bus_handle = i2c_handle};
-    out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_ctrl_cfg);
+    if (out_ctrl_if == NULL) {
+        out_ctrl_if = audio_codec_new_i2c_ctrl(&i2c_ctrl_cfg);
+    }
     if (gpio_if == NULL) {
         gpio_if = audio_codec_new_gpio();
     }
@@ -169,7 +171,9 @@ static void setup_periph_new_play_codec()
         .pa_pin = ESP_GMF_AMP_IO_NUM,
         .use_mclk = true,
     };
-    out_codec_if = es8311_codec_new(&es8311_cfg);
+    if (out_codec_if == NULL) {
+        out_codec_if = es8311_codec_new(&es8311_cfg);
+    }
 #endif /* CONFIG_IDF_TARGET_ESP32C3 */
 }
 
@@ -264,7 +268,6 @@ static void setup_periph_record_codec(esp_gmf_setup_periph_aud_info *aud_info, v
 void teardown_periph_play_codec(void *play_dev)
 {
     esp_codec_dev_close(play_dev);
-    play_dev = NULL;
     esp_codec_dev_delete(play_dev);
     play_dev = NULL;
     audio_codec_delete_codec_if(out_codec_if);

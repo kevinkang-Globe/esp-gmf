@@ -9,6 +9,7 @@
 
 #include "esp_gmf_err.h"
 #include "encoder/esp_audio_enc.h"
+#include "esp_gmf_audio_element.h"
 
 #ifdef __cplusplus
 extern "C" {

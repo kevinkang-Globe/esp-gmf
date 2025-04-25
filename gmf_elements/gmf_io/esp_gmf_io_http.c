@@ -439,6 +439,7 @@ static esp_gmf_err_io_t _http_release_write(esp_gmf_io_handle_t handle, void *pa
 
 esp_gmf_err_t esp_gmf_io_http_reset(esp_gmf_io_handle_t el)
 {
+    ESP_GMF_NULL_CHECK(TAG, el, return ESP_GMF_ERR_INVALID_ARG;);
     http_stream_t *http = (http_stream_t *)el;
     esp_gmf_io_set_pos(el, 0);
     esp_gmf_io_set_size(el, 0);
@@ -448,6 +449,7 @@ esp_gmf_err_t esp_gmf_io_http_reset(esp_gmf_io_handle_t el)
 
 esp_gmf_err_t esp_gmf_io_http_set_server_cert(esp_gmf_io_handle_t el, const char *cert)
 {
+    ESP_GMF_NULL_CHECK(TAG, el, return ESP_GMF_ERR_INVALID_ARG;);
     ESP_GMF_NULL_CHECK(TAG, cert, return ESP_GMF_ERR_INVALID_ARG);
     http_io_cfg_t *http_io_cfg = (http_io_cfg_t *)OBJ_GET_CFG(el);
     http_io_cfg->cert_pem = cert;
@@ -488,7 +490,7 @@ esp_gmf_err_t esp_gmf_io_http_init(http_io_cfg_t *config, esp_gmf_io_handle_t *i
         http->base.release_read = _http_release_read;
     } else {
         ESP_LOGE(TAG, "Does not set read or write function");
-        ret = ESP_ERR_NOT_SUPPORTED;
+        ret = ESP_GMF_ERR_NOT_SUPPORT;
         goto _http_init_fail;
     }
     ret = esp_gmf_db_new_block(1, config->out_buf_size, &http->data_bus);

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.1
+
+- Fixed memory leaks in I/O flash destroy API
+- Corrected default values for I/O file and I/O I2S elements to ensure stable initialization
+- Enforced esp_gmf_err_t return type for all element initialization functions (I/O flash, HTTP)
+
 ## v0.6.0
 
 ### Features

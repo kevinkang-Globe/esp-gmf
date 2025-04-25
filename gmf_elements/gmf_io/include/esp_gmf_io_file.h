@@ -21,9 +21,9 @@ typedef struct {
     const char *name; /*!< Name for this instance */
 } file_io_cfg_t;
 
-#define FILE_IO_CFG_DEFAULT() {   \
-    .dir  = ESP_GMF_IO_DIR_NONE,  \
-    .name = NULL,                 \
+#define FILE_IO_CFG_DEFAULT() {     \
+    .dir  = ESP_GMF_IO_DIR_READER,  \
+    .name = NULL,                   \
 }
 
 /**

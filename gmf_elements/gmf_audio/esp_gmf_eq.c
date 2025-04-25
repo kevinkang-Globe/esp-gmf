@@ -9,7 +9,6 @@
 #include "esp_log.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_mutex.h"
-#include "esp_gmf_audio_element.h"
 #include "esp_gmf_node.h"
 #include "esp_gmf_eq.h"
 #include "esp_gmf_args_desc.h"
@@ -370,6 +369,11 @@ esp_gmf_err_t esp_gmf_eq_enable_filter(esp_gmf_audio_element_handle_t handle, ui
 {
     ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
     esp_gmf_eq_t *eq = (esp_gmf_eq_t *)handle;
+    esp_ae_eq_cfg_t *cfg = (esp_ae_eq_cfg_t *)OBJ_GET_CFG(handle);
+    if (idx >= cfg->filter_num) {
+        ESP_LOGE(TAG, "Filter index %d overlimit %d hd:%p", idx, cfg->filter_num, eq);
+        return ESP_GMF_ERR_INVALID_ARG;
+    }
     if (eq->eq_hd) {
         esp_gmf_oal_mutex_lock(((esp_gmf_audio_element_t *)handle)->lock);
         esp_ae_err_t ret = 0;

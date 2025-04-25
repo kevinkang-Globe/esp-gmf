@@ -10,7 +10,6 @@
 #include "esp_gmf_node.h"
 #include "esp_gmf_oal_mem.h"
 #include "esp_gmf_oal_mutex.h"
-#include "esp_gmf_audio_element.h"
 #include "esp_gmf_ch_cvt.h"
 #include "gmf_audio_common.h"
 #include "esp_gmf_audio_methods_def.h"
@@ -18,16 +17,17 @@
 #include "esp_gmf_caps_def.h"
 
 /**
- * @brief Audio channel conversion context in GMF
+ * @brief  Audio channel conversion context in GMF
  */
 typedef struct {
     esp_gmf_audio_element_t parent;                /*!< The GMF channel cvt handle */
     esp_ae_ch_cvt_handle_t  ch_hd;                 /*!< The audio effects channel cvt handle */
     uint8_t                 in_bytes_per_sample;   /*!< Source bytes number of per sampling point */
     uint8_t                 out_bytes_per_sample;  /*!< Dest bytes number of per sampling point */
-    bool                    need_reopen;           /*!< Whether need to reopen.
+    bool                    need_reopen : 1;       /*!< Whether need to reopen.
                                                         True: Execute the close function first, then execute the open function
                                                         False: Do nothing */
+    bool                    bypass : 1;            /*!< Whether bypass. True: need bypass. False: needn't bypass */
 } esp_gmf_ch_cvt_t;
 
 static const char *TAG = "ESP_GMF_CH_CVT";
@@ -86,6 +86,7 @@ static esp_gmf_job_err_t esp_gmf_ch_cvt_open(esp_gmf_audio_element_handle_t self
     ESP_LOGD(TAG, "Open, rate: %ld, bits: %d, src_channel: %d, dest_channel: %d",
              ch_info->sample_rate, ch_info->bits_per_sample, ch_info->src_ch, ch_info->dest_ch);
     ch_cvt->need_reopen = false;
+    ch_cvt->bypass = ch_info->src_ch == ch_info->dest_ch;
     return ESP_GMF_JOB_ERR_OK;
 }
 
@@ -126,8 +127,7 @@ static esp_gmf_job_err_t esp_gmf_ch_cvt_process(esp_gmf_audio_element_handle_t s
         out_len = ESP_GMF_JOB_ERR_FAIL;
         goto __ch_release;
     }
-    esp_ae_ch_cvt_cfg_t *ch_info = (esp_ae_ch_cvt_cfg_t *)OBJ_GET_CFG(self);
-    if ((ch_info->src_ch == ch_info->dest_ch) && (in_port->is_shared == true)) {
+    if (ch_cvt->bypass && (in_port->is_shared == true)) {
         // This case channel conversion is do bypass
         out_load = in_load;
     }

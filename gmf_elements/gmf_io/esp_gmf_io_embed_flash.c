@@ -114,6 +114,9 @@ static esp_gmf_err_t _embed_flash_destroy(esp_gmf_io_handle_t io)
     if (cfg) {
         esp_gmf_oal_free(cfg);
     }
+    if (embed_flash->items) {
+        esp_gmf_oal_free(embed_flash->items);
+    }
     esp_gmf_io_deinit(io);
     esp_gmf_oal_free(embed_flash);
     return ESP_GMF_ERR_OK;
@@ -121,12 +124,12 @@ static esp_gmf_err_t _embed_flash_destroy(esp_gmf_io_handle_t io)
 
 esp_gmf_err_t esp_gmf_io_embed_flash_init(embed_flash_io_cfg_t *config, esp_gmf_io_handle_t *io)
 {
-    ESP_GMF_NULL_CHECK(TAG, config, {return ESP_ERR_INVALID_ARG;});
-    ESP_GMF_NULL_CHECK(TAG, io, {return ESP_ERR_INVALID_ARG;});
+    ESP_GMF_NULL_CHECK(TAG, config, return ESP_GMF_ERR_INVALID_ARG;);
+    ESP_GMF_NULL_CHECK(TAG, io, return ESP_GMF_ERR_INVALID_ARG;);
     *io = NULL;
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     embed_flash_io_t *embed_flash = esp_gmf_oal_calloc(1, sizeof(embed_flash_io_t));
-    ESP_GMF_MEM_VERIFY(TAG, embed_flash, return ESP_ERR_NO_MEM,
+    ESP_GMF_MEM_VERIFY(TAG, embed_flash, return ESP_GMF_ERR_MEMORY_LACK,
                        "embed flash stream", sizeof(embed_flash_io_t));
     embed_flash->base.dir = ESP_GMF_IO_DIR_READER;
     embed_flash->base.type = ESP_GMF_IO_TYPE_BYTE;
@@ -163,7 +166,8 @@ _embed_fail:
 
 esp_gmf_err_t esp_gmf_io_embed_flash_set_context(esp_gmf_io_handle_t io, const embed_item_info_t *context, int max_num)
 {
-    ESP_GMF_NULL_CHECK(TAG, context, return ESP_GMF_ERR_FAIL);
+    ESP_GMF_NULL_CHECK(TAG, io, return ESP_GMF_ERR_INVALID_ARG);
+    ESP_GMF_NULL_CHECK(TAG, context, return ESP_GMF_ERR_INVALID_ARG);
     embed_flash_io_t *embed_flash = (embed_flash_io_t *)io;
     if (embed_flash->items) {
         esp_gmf_oal_free(embed_flash->items);

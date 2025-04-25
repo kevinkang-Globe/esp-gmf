@@ -251,7 +251,6 @@ esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_gmf_
             ESP_GMF_MEM_CHECK(TAG, dec_cfg->dec_cfg, return ESP_GMF_ERR_MEMORY_LACK;);
             dec_cfg->cfg_size = sizeof(esp_opus_dec_cfg_t);
             memcpy(dec_cfg->dec_cfg, &opus_cfg, dec_cfg->cfg_size);
-            ESP_LOGE(TAG, "IS HERE, %s", uri);
         }
     } else if (strstr(uri, ".pcm")) {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_PCM;
