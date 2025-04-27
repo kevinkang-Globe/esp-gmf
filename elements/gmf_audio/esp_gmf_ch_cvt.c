@@ -15,6 +15,7 @@
 #include "esp_gmf_audio_methods_def.h"
 #include "esp_gmf_cap.h"
 #include "esp_gmf_caps_def.h"
+#include "esp_gmf_audio_element.h"
 
 /**
  * @brief  Audio channel conversion context in GMF
@@ -60,7 +61,7 @@ static inline void free_esp_ae_ch_cvt_cfg(esp_ae_ch_cvt_cfg_t *config)
     }
 }
 
-static esp_gmf_err_t __set_dest_ch(esp_gmf_audio_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
+static esp_gmf_err_t __set_dest_ch(esp_gmf_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
                                    uint8_t *buf, int buf_len)
 {
     ESP_GMF_NULL_CHECK(TAG, buf, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -70,10 +71,10 @@ static esp_gmf_err_t __set_dest_ch(esp_gmf_audio_element_handle_t handle, esp_gm
 
 static esp_gmf_err_t esp_gmf_ch_cvt_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    return esp_gmf_ch_cvt_init(cfg, handle);
+    return esp_gmf_ch_cvt_init(cfg, (esp_gmf_element_handle_t *)handle);
 }
 
-static esp_gmf_job_err_t esp_gmf_ch_cvt_open(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_ch_cvt_open(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_ch_cvt_t *ch_cvt = (esp_gmf_ch_cvt_t *)self;
     esp_ae_ch_cvt_cfg_t *ch_info = (esp_ae_ch_cvt_cfg_t *)OBJ_GET_CFG(self);
@@ -90,7 +91,7 @@ static esp_gmf_job_err_t esp_gmf_ch_cvt_open(esp_gmf_audio_element_handle_t self
     return ESP_GMF_JOB_ERR_OK;
 }
 
-static esp_gmf_job_err_t esp_gmf_ch_cvt_close(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_ch_cvt_close(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_ch_cvt_t *ch_cvt = (esp_gmf_ch_cvt_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
@@ -101,7 +102,7 @@ static esp_gmf_job_err_t esp_gmf_ch_cvt_close(esp_gmf_audio_element_handle_t sel
     return ESP_GMF_JOB_ERR_OK;
 }
 
-static esp_gmf_job_err_t esp_gmf_ch_cvt_process(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_ch_cvt_process(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_ch_cvt_t *ch_cvt = (esp_gmf_ch_cvt_t *)self;
     esp_gmf_job_err_t out_len = ESP_GMF_JOB_ERR_OK;
@@ -199,7 +200,7 @@ static esp_gmf_err_t ch_cvt_received_event_handler(esp_gmf_event_pkt_t *evt, voi
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t esp_gmf_ch_cvt_destroy(esp_gmf_audio_element_handle_t self)
+static esp_gmf_err_t esp_gmf_ch_cvt_destroy(esp_gmf_element_handle_t self)
 {
     esp_gmf_ch_cvt_t *ch_cvt = (esp_gmf_ch_cvt_t *)self;
     ESP_LOGD(TAG, "Destroyed, %p", self);
@@ -227,17 +228,17 @@ static esp_gmf_err_t _load_channel_cvt_methods_func(esp_gmf_element_handle_t han
 {
     esp_gmf_method_t *method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
-    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_CH_CVT_SET_DEST_CH_ARG_CH, ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
+    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, AMETHOD_ARG(CH_CVT, SET_DEST_CH, CH), ESP_GMF_ARGS_TYPE_UINT8, sizeof(uint8_t), 0);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_method_append(&method, ESP_GMF_METHOD_CH_CVT_SET_DEST_CH, __set_dest_ch, set_args);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_CH_CVT_SET_DEST_CH);
+    ret = esp_gmf_method_append(&method, AMETHOD(CH_CVT, SET_DEST_CH), __set_dest_ch, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", AMETHOD(CH_CVT, SET_DEST_CH));
 
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
     el->method = method;
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_ch_cvt_set_dest_channel(esp_gmf_audio_element_handle_t handle, uint8_t dest_ch)
+esp_gmf_err_t esp_gmf_ch_cvt_set_dest_channel(esp_gmf_element_handle_t handle, uint8_t dest_ch)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
     esp_ae_ch_cvt_cfg_t *cfg = (esp_ae_ch_cvt_cfg_t *)OBJ_GET_CFG(handle);
@@ -254,7 +255,7 @@ esp_gmf_err_t esp_gmf_ch_cvt_set_dest_channel(esp_gmf_audio_element_handle_t han
     return ESP_GMF_ERR_FAIL;
 }
 
-esp_gmf_err_t esp_gmf_ch_cvt_init(esp_ae_ch_cvt_cfg_t *config, esp_gmf_obj_handle_t *handle)
+esp_gmf_err_t esp_gmf_ch_cvt_init(esp_ae_ch_cvt_cfg_t *config, esp_gmf_element_handle_t *handle)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;

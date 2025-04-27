@@ -24,7 +24,7 @@
 #include "esp_gmf_rate_cvt.h"
 #include "esp_gmf_bit_cvt.h"
 #include "esp_gmf_ch_cvt.h"
-#include "esp_gmf_audio_helper.h"
+#include "esp_gmf_audio_dec.h"
 #include "cli.h"
 #include "gmf_loader_setup_defaults.h"
 
@@ -152,6 +152,7 @@ void app_main(void)
     esp_gmf_rate_cvt_set_dest_rate(rate_cvt, 16000);
 
     esp_gmf_info_sound_t info = {
+        .format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3,
         .sample_rates = 48000,
         .channels = INPUT_CH_NUM,
         .bits = INPUT_CH_BITS,
@@ -188,7 +189,7 @@ void app_main(void)
     esp_gmf_ch_cvt_set_dest_channel(ch_cvt, DAC_I2S_CH);
     esp_gmf_obj_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(play_pipe, "aud_simp_dec", &dec_el);
-    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test.mp3", &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
 
     esp_gmf_pipeline_set_in_uri(play_pipe, "/sdcard/test.mp3");
 

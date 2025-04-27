@@ -16,6 +16,7 @@
 #include "esp_gmf_setup_peripheral.h"
 #include "esp_gmf_setup_pool.h"
 #include "esp_gmf_audio_helper.h"
+#include "esp_gmf_audio_dec.h"
 
 static const char *TAG = "PLAY_EMBED_MUSIC";
 
@@ -84,7 +85,8 @@ void app_main(void)
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el);
     esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri(esp_embed_tone_url[ESP_EMBED_TONE_FF_16B_1C_44100HZ_MP3], &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_helper_get_audio_type_by_uri(esp_embed_tone_url[ESP_EMBED_TONE_FF_16B_1C_44100HZ_MP3], &info.format_id);
+    esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
 
     ESP_LOGI(TAG, "[ 3.2 ] Create gmf task, bind task to pipeline and load linked element jobs to the bind task");
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();

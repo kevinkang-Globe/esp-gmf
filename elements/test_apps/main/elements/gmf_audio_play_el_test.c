@@ -153,6 +153,79 @@ TEST_CASE("Create and destroy pipeline", "[ESP_GMF_POOL]")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
+TEST_CASE("Audio Play, ENC and DEC Loop TEST, [FILE->enc->dec->IIS]", "[ESP_GMF_POOL]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
+    ESP_GMF_MEM_SHOW(TAG);
+    esp_audio_type_t type_list[] = {ESP_AUDIO_TYPE_AAC, ESP_AUDIO_TYPE_G711A, ESP_AUDIO_TYPE_G711U,
+                                    ESP_AUDIO_TYPE_OPUS, ESP_AUDIO_TYPE_ADPCM, ESP_AUDIO_TYPE_PCM,
+                                    ESP_AUDIO_TYPE_SBC, ESP_AUDIO_TYPE_LC3};
+    void *sdcard = NULL;
+    esp_gmf_setup_periph_sdmmc(&sdcard);
+    esp_gmf_setup_periph_i2c(0);
+    esp_gmf_setup_periph_aud_info play_info = {
+        .sample_rate = 48000,
+        .channel = 2,
+        .bits_per_sample = 16,
+        .port_num = 0,
+    };
+    void *play_dev = NULL;
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL));
+
+    EventGroupHandle_t pipe_sync_evt = xEventGroupCreate();
+    ESP_GMF_NULL_CHECK(TAG, pipe_sync_evt, return);
+#ifdef MEDIA_LIB_MEM_TEST
+    media_lib_add_default_adapter();
+#endif /* MEDIA_LIB_MEM_TEST */
+    esp_gmf_pool_handle_t pool = NULL;
+    esp_gmf_pool_init(&pool);
+    TEST_ASSERT_NOT_NULL(pool);
+    pool_register_audio_codecs(pool);
+    pool_register_audio_effects(pool);
+    pool_register_io(pool);
+    pool_register_codec_dev_io(pool, play_dev, NULL);
+    ESP_GMF_MEM_SHOW(TAG);
+    ESP_GMF_POOL_SHOW_ITEMS(pool);
+
+    esp_gmf_pipeline_handle_t pipe = NULL;
+    const char *name[] = {"encoder","aud_simp_dec", "rate_cvt", "ch_cvt"};
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_new_pipeline(pool, "file", name, sizeof(name) / sizeof(char *), "codec_dev_tx", &pipe));
+    TEST_ASSERT_NOT_NULL(pipe);
+
+    esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
+    cfg.ctx = NULL;
+    cfg.cb = NULL;
+    cfg.thread.stack = 50*1024;
+    esp_gmf_task_handle_t work_task = NULL;
+    esp_gmf_task_init(&cfg, &work_task);
+    TEST_ASSERT_NOT_NULL(work_task);
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_bind_task(pipe, work_task));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe, _pipeline_event, pipe_sync_evt));
+    ESP_GMF_MEM_SHOW(TAG);
+    for (int i = 0; i < sizeof(type_list) / sizeof(esp_audio_type_t); ++i) {
+        play_loop_single_file(pipe, type_list[i]);
+        xEventGroupWaitBits(pipe_sync_evt, PIPELINE_BLOCK_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe));
+    }
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe));
+    pool_unregister_audio_codecs();
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
+    vEventGroupDelete(pipe_sync_evt);
+#ifdef MEDIA_LIB_MEM_TEST
+    media_lib_stop_mem_trace();
+#endif /* MEDIA_LIB_MEM_TEST */
+    esp_gmf_teardown_periph_codec(play_dev, NULL);
+    esp_gmf_teardown_periph_sdmmc(sdcard);
+    esp_gmf_teardown_periph_i2c(0);
+    vTaskDelay(1000 / portTICK_RATE_MS);
+    ESP_GMF_MEM_SHOW(TAG);
+}
+
 TEST_CASE("Audio Play, One Pipe, [FILE->dec->resample->IIS]", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
@@ -194,8 +267,10 @@ TEST_CASE("Audio Play, One Pipe, [FILE->dec->resample->IIS]", "[ESP_GMF_POOL]")
 
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el);
-    esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri(file_name, &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_info_sound_t info = {
+        .format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3,
+    };
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
 
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
     cfg.ctx = NULL;
@@ -386,9 +461,12 @@ TEST_CASE("Audio Play, two in pipe use same task, [file->dec]->rb->[resample+IIS
 
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe_in1, "aud_simp_dec", &dec_el);
-    esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri(wav_file_path[0], &info, OBJ_GET_CFG(dec_el));
-
+    uint32_t type = ESP_AUDIO_TYPE_UNSUPPORT;
+    esp_gmf_audio_helper_get_audio_type_by_uri(wav_file_path[0], &type);
+    esp_gmf_info_sound_t info = {
+        .format_id = type,
+    };
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe_in1));
     ESP_GMF_MEM_SHOW(TAG);
 
@@ -409,7 +487,8 @@ TEST_CASE("Audio Play, two in pipe use same task, [file->dec]->rb->[resample+IIS
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe_in2, (char *)wav_file_path[1]));
     dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe_in2, "aud_simp_dec", &dec_el);
-    esp_gmf_audio_helper_reconfig_dec_by_uri(wav_file_path[1], &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_helper_get_audio_type_by_uri(wav_file_path[1], &info.format_id);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe_in2));
 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_reg_event_recipient(pipe_in2, pipe_out));
@@ -511,7 +590,8 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "[ESP_GMF_POOL][ig
         TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe, uri));
         esp_gmf_element_handle_t dec_el = NULL;
         TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
-        esp_gmf_audio_helper_reconfig_dec_by_uri(uri, &info, OBJ_GET_CFG(dec_el));
+        esp_gmf_audio_helper_get_audio_type_by_uri(uri, &info.format_id);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
 
         ESP_GMF_MEM_SHOW(TAG);
         esp_gmf_task_set_timeout(pipe->thread, 5000);
@@ -562,7 +642,8 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "[ESP_GMF_POOL][ig
         TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe, uri));
         esp_gmf_element_handle_t dec_el = NULL;
         TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
-        esp_gmf_audio_helper_reconfig_dec_by_uri(uri, &info, OBJ_GET_CFG(dec_el));
+        info.format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3;
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
 
         ESP_GMF_MEM_SHOW(TAG);
         esp_gmf_task_set_timeout(pipe->thread, 5000);
@@ -663,8 +744,10 @@ TEST_CASE("Audio Play, Two Pipe, [HTTP->dec]--RB-->[resample->IIS]", "[ESP_GMF_P
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe_in, uri));
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe_in, "aud_simp_dec", &dec_el);
-    esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri(uri, &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_info_sound_t info = {
+        .format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3,
+    };
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
 
     esp_gmf_task_handle_t work_task_out = NULL;
     cfg.name = "RES_IIS";
@@ -838,13 +921,15 @@ TEST_CASE("Audio Play, loop with no gap, [file->dec]->rb->[resample+IIS]", "[ESP
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe_in2, file_name1));
 
     esp_gmf_element_handle_t dec_el = NULL;
-    esp_gmf_info_sound_t info = {0};
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe_in1, "aud_simp_dec", &dec_el));
-    esp_gmf_audio_helper_reconfig_dec_by_uri(file_name, &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_info_sound_t info = {0};
+    esp_gmf_audio_helper_get_audio_type_by_uri(file_name, &info.format_id);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
 
     dec_el = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe_in2, "aud_simp_dec", &dec_el));
-    esp_gmf_audio_helper_reconfig_dec_by_uri(file_name1, &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_helper_get_audio_type_by_uri(file_name1, &info.format_id);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe_in1));
     ESP_GMF_MEM_SHOW(TAG);
@@ -978,7 +1063,8 @@ TEST_CASE("Copier, 2 pipeline test, One pipeline play file to I2S, another save 
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_info_sound_t info = {0};
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
-    esp_gmf_audio_helper_reconfig_dec_by_uri(file_name, &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_helper_get_audio_type_by_uri(file_name, &info.format_id);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));
 
@@ -1105,7 +1191,8 @@ TEST_CASE("Copier, 3 pipeline test, One pipeline decoding file, one is play to I
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_info_sound_t info = {0};
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
-    esp_gmf_audio_helper_reconfig_dec_by_uri(file_name, &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_helper_get_audio_type_by_uri(file_name, &info.format_id);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info));
 
     cfg.name = "IIS";
     cfg.thread.core = 0;

@@ -15,6 +15,7 @@
 #include "esp_gmf_audio_methods_def.h"
 #include "esp_gmf_cap.h"
 #include "esp_gmf_caps_def.h"
+#include "esp_gmf_audio_element.h"
 
 #define SONIC_DEFAULT_OUTPUT_TIME_MS (10)
 
@@ -40,7 +41,7 @@ typedef struct {
 
 static const char *TAG = "ESP_GMF_SONIC";
 
-static esp_gmf_err_t __sonic_set_speed(esp_gmf_audio_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
+static esp_gmf_err_t __sonic_set_speed(esp_gmf_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
                                        uint8_t *buf, int buf_len)
 {
     ESP_GMF_NULL_CHECK(TAG, arg_desc, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -49,7 +50,7 @@ static esp_gmf_err_t __sonic_set_speed(esp_gmf_audio_element_handle_t handle, es
     return esp_gmf_sonic_set_pitch(handle, *speed);
 }
 
-static esp_gmf_err_t __sonic_get_speed(esp_gmf_audio_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
+static esp_gmf_err_t __sonic_get_speed(esp_gmf_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
                                        uint8_t *buf, int buf_len)
 {
     ESP_GMF_NULL_CHECK(TAG, buf, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -57,7 +58,7 @@ static esp_gmf_err_t __sonic_get_speed(esp_gmf_audio_element_handle_t handle, es
     return esp_gmf_sonic_get_speed(handle, speed);
 }
 
-static esp_gmf_err_t __sonic_set_pitch(esp_gmf_audio_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
+static esp_gmf_err_t __sonic_set_pitch(esp_gmf_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
                                        uint8_t *buf, int buf_len)
 {
     ESP_GMF_NULL_CHECK(TAG, arg_desc, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -66,7 +67,7 @@ static esp_gmf_err_t __sonic_set_pitch(esp_gmf_audio_element_handle_t handle, es
     return esp_gmf_sonic_set_pitch(handle, *pitch);
 }
 
-static esp_gmf_err_t __sonic_get_pitch(esp_gmf_audio_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
+static esp_gmf_err_t __sonic_get_pitch(esp_gmf_element_handle_t handle, esp_gmf_args_desc_t *arg_desc,
                                        uint8_t *buf, int buf_len)
 {
     ESP_GMF_NULL_CHECK(TAG, buf, {return ESP_GMF_ERR_INVALID_ARG;});
@@ -76,10 +77,10 @@ static esp_gmf_err_t __sonic_get_pitch(esp_gmf_audio_element_handle_t handle, es
 
 static esp_gmf_err_t esp_gmf_sonic_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    return esp_gmf_sonic_init(cfg, handle);
+    return esp_gmf_sonic_init(cfg, (esp_gmf_element_handle_t *)handle);
 }
 
-static esp_gmf_job_err_t esp_gmf_sonic_open(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_sonic_open(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)self;
     esp_ae_sonic_cfg_t *sonic_info = (esp_ae_sonic_cfg_t *)OBJ_GET_CFG(self);
@@ -96,7 +97,7 @@ static esp_gmf_job_err_t esp_gmf_sonic_open(esp_gmf_audio_element_handle_t self,
     return ESP_GMF_JOB_ERR_OK;
 }
 
-static esp_gmf_job_err_t esp_gmf_sonic_close(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_sonic_close(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
@@ -107,7 +108,7 @@ static esp_gmf_job_err_t esp_gmf_sonic_close(esp_gmf_audio_element_handle_t self
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_job_err_t esp_gmf_sonic_process(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_sonic_process(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)self;
     esp_gmf_job_err_t out_len = ESP_GMF_JOB_ERR_OK;
@@ -210,7 +211,7 @@ static esp_gmf_err_t sonic_received_event_handler(esp_gmf_event_pkt_t *evt, void
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t esp_gmf_sonic_destroy(esp_gmf_audio_element_handle_t self)
+static esp_gmf_err_t esp_gmf_sonic_destroy(esp_gmf_element_handle_t self)
 {
     esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)self;
     ESP_LOGD(TAG, "Destroyed, %p", self);
@@ -242,35 +243,35 @@ static esp_gmf_err_t _load_sonic_methods_func(esp_gmf_element_handle_t handle)
     esp_gmf_method_t *method = NULL;
     esp_gmf_args_desc_t *set_args = NULL;
     esp_gmf_args_desc_t *get_args = NULL;
-    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_SONIC_SET_SPEED_ARG_SPEED,
+    esp_gmf_err_t ret = esp_gmf_args_desc_append(&set_args, AMETHOD_ARG(SONIC, SET_SPEED, SPEED),
                                                  ESP_GMF_ARGS_TYPE_FLOAT, sizeof(float), 0);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_method_append(&method, ESP_GMF_METHOD_SONIC_SET_SPEED, __sonic_set_speed, set_args);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_SET_SPEED);
+    ret = esp_gmf_method_append(&method, AMETHOD(SONIC, SET_SPEED), __sonic_set_speed, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", AMETHOD(SONIC, SET_SPEED));
 
     ret = esp_gmf_args_desc_copy(set_args, &get_args);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
-    ret = esp_gmf_method_append(&method, ESP_GMF_METHOD_SONIC_GET_SPEED, __sonic_get_speed, get_args);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_GET_SPEED);
+    ret = esp_gmf_method_append(&method, AMETHOD(SONIC, GET_SPEED), __sonic_get_speed, get_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", AMETHOD(SONIC, GET_SPEED));
 
     set_args = NULL;
     get_args = NULL;
-    ret = esp_gmf_args_desc_append(&set_args, ESP_GMF_METHOD_SONIC_SET_PITCH_ARG_PITCH, ESP_GMF_ARGS_TYPE_FLOAT, sizeof(float), 0);
+    ret = esp_gmf_args_desc_append(&set_args, AMETHOD_ARG(SONIC, SET_PITCH, PITCH), ESP_GMF_ARGS_TYPE_FLOAT, sizeof(float), 0);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to append argument");
-    ret = esp_gmf_method_append(&method, ESP_GMF_METHOD_SONIC_SET_PITCH, __sonic_set_pitch, set_args);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_SET_PITCH);
+    ret = esp_gmf_method_append(&method, AMETHOD(SONIC, SET_PITCH), __sonic_set_pitch, set_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", AMETHOD(SONIC, SET_PITCH));
 
     ret = esp_gmf_args_desc_copy(set_args, &get_args);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, {return ret;}, "Failed to copy argument");
-    ret = esp_gmf_method_append(&method, ESP_GMF_METHOD_SONIC_GET_PITCH, __sonic_get_pitch, get_args);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", ESP_GMF_METHOD_SONIC_GET_PITCH);
+    ret = esp_gmf_method_append(&method, AMETHOD(SONIC, GET_PITCH), __sonic_get_pitch, get_args);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, {return ret;}, "Failed to register %s method", AMETHOD(SONIC, GET_PITCH));
 
     esp_gmf_element_t *el = (esp_gmf_element_t *)handle;
     el->method = method;
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_audio_element_handle_t handle, float speed)
+esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_element_handle_t handle, float speed)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
     esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)handle;
@@ -284,7 +285,7 @@ esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_audio_element_handle_t handle, flo
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_sonic_get_speed(esp_gmf_audio_element_handle_t handle, float *speed)
+esp_gmf_err_t esp_gmf_sonic_get_speed(esp_gmf_element_handle_t handle, float *speed)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, speed, { return ESP_GMF_ERR_INVALID_ARG;});
@@ -300,7 +301,7 @@ esp_gmf_err_t esp_gmf_sonic_get_speed(esp_gmf_audio_element_handle_t handle, flo
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_sonic_set_pitch(esp_gmf_audio_element_handle_t handle, float pitch)
+esp_gmf_err_t esp_gmf_sonic_set_pitch(esp_gmf_element_handle_t handle, float pitch)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
     esp_gmf_sonic_t *sonic = (esp_gmf_sonic_t *)handle;
@@ -314,7 +315,7 @@ esp_gmf_err_t esp_gmf_sonic_set_pitch(esp_gmf_audio_element_handle_t handle, flo
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_sonic_get_pitch(esp_gmf_audio_element_handle_t handle, float *pitch)
+esp_gmf_err_t esp_gmf_sonic_get_pitch(esp_gmf_element_handle_t handle, float *pitch)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, { return ESP_GMF_ERR_INVALID_ARG;});
     ESP_GMF_NULL_CHECK(TAG, pitch, { return ESP_GMF_ERR_INVALID_ARG;});
@@ -330,7 +331,7 @@ esp_gmf_err_t esp_gmf_sonic_get_pitch(esp_gmf_audio_element_handle_t handle, flo
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_t *handle)
+esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_element_handle_t *handle)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;

@@ -16,6 +16,7 @@
 #include "esp_gmf_setup_peripheral.h"
 #include "esp_gmf_setup_pool.h"
 #include "esp_gmf_audio_helper.h"
+#include "esp_gmf_audio_dec.h"
 
 static const char *TAG = "PLAY_SDCARD_MUSIC";
 
@@ -76,7 +77,8 @@ void app_main(void)
     esp_gmf_element_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el);
     esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test.mp3", &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_helper_get_audio_type_by_uri("/sdcard/test.mp3", &info.format_id);
+    esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
 
     ESP_LOGI(TAG, "[ 3.1 ] Set audio url to play");
     esp_gmf_pipeline_set_in_uri(pipe, "/sdcard/test.mp3");

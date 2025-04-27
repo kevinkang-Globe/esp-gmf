@@ -22,6 +22,7 @@
 #include "esp_gmf_audio_helper.h"
 #include "esp_audio_dec_default.h"
 #include "esp_audio_simple_dec_default.h"
+#include "esp_gmf_audio_dec.h"
 
 #define ASP_PIPELINE_STOPPED_BIT  BIT(0)
 #define ASP_PIPELINE_FINISHED_BIT BIT(1)
@@ -234,8 +235,9 @@ static int __setup_pipeline(esp_audio_simple_player_t *player, const char *uri, 
             .bits = music_info->bits,
             .bitrate = music_info->bitrate,
         };
+        esp_gmf_audio_helper_get_audio_type_by_uri((char *)uri_st->path, &info.format_id);
         ESP_LOGI(TAG, "Reconfig decoder by music info, rate:%d, channels:%d, bits:%d, bitrate:%d", info.sample_rates, info.channels, info.bits, info.bitrate);
-        ret = esp_gmf_audio_helper_reconfig_dec_by_uri((char *)uri_st->path, &info, OBJ_GET_CFG(dec_el));
+        ret = esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
     } else {
         esp_gmf_info_sound_t info ={
             .sample_rates = 16000,
@@ -243,7 +245,8 @@ static int __setup_pipeline(esp_audio_simple_player_t *player, const char *uri, 
             .bits = 16,
             .bitrate = 0,
         };
-        ret = esp_gmf_audio_helper_reconfig_dec_by_uri((char *)uri_st->path, &info, OBJ_GET_CFG(dec_el));
+        esp_gmf_audio_helper_get_audio_type_by_uri((char *)uri_st->path, &info.format_id);
+        ret = esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
     }
     ESP_GMF_RET_ON_ERROR(TAG, ret, goto __setup_pipe_err, "The audio format does not support, ret:%x, path:%p", ret, uri_st->path);
     ret = esp_gmf_pipeline_set_in_uri(player->pipe, uri);

@@ -10,6 +10,8 @@
 - Added helper macros for defining and retrieving GMF method and argument identifiers
 - Added helper function for GMF method execution
 - Added `esp_gmf_io_reset` API to reset the IO thread and reload jobs
+- Added `meta_flag` field to `esp_gmf_payload_t` to support audio decoder recovery status tracking
+- Added raw_pcm in `esp_fourcc.h`
 
 ### Bug Fixes
 

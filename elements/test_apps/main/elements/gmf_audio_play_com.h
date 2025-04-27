@@ -15,6 +15,8 @@ extern "C" {
 
 void play_pause_single_file( esp_gmf_pipeline_handle_t pipe, const char *uri);
 
+void play_loop_single_file(esp_gmf_pipeline_handle_t pipe, esp_audio_type_t type);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

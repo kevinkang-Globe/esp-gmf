@@ -9,7 +9,7 @@
 
 #include "esp_gmf_err.h"
 #include "esp_ae_eq.h"
-#include "esp_gmf_audio_element.h"
+#include "esp_gmf_element.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +39,7 @@ extern "C" {
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
  *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
  */
-esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t *handle);
+esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_element_handle_t *handle);
 
 /**
  * @brief  Set the filter parameters for a specific filter identified by 'idx'
@@ -53,7 +53,7 @@ esp_gmf_err_t esp_gmf_eq_init(esp_ae_eq_cfg_t *config, esp_gmf_obj_handle_t *han
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_eq_set_para(esp_gmf_audio_element_handle_t handle, uint8_t idx, esp_ae_eq_filter_para_t *para);
+esp_gmf_err_t esp_gmf_eq_set_para(esp_gmf_element_handle_t handle, uint8_t idx, esp_ae_eq_filter_para_t *para);
 
 /**
  * @brief  Get the filter parameters for a specific filter identified by 'idx'
@@ -67,7 +67,7 @@ esp_gmf_err_t esp_gmf_eq_set_para(esp_gmf_audio_element_handle_t handle, uint8_t
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_eq_get_para(esp_gmf_audio_element_handle_t handle, uint8_t idx, esp_ae_eq_filter_para_t *para);
+esp_gmf_err_t esp_gmf_eq_get_para(esp_gmf_element_handle_t handle, uint8_t idx, esp_ae_eq_filter_para_t *para);
 
 /**
  * @brief  Choose to enable or disable filter processing for a specific filter identified by 'idx' in the equalizer
@@ -80,7 +80,7 @@ esp_gmf_err_t esp_gmf_eq_get_para(esp_gmf_audio_element_handle_t handle, uint8_t
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_eq_enable_filter(esp_gmf_audio_element_handle_t handle, uint8_t idx, bool is_enable);
+esp_gmf_err_t esp_gmf_eq_enable_filter(esp_gmf_element_handle_t handle, uint8_t idx, bool is_enable);
 
 #ifdef __cplusplus
 }

@@ -78,7 +78,7 @@ static esp_err_t _http_stream_event_handle(http_stream_event_msg_t *msg)
         char dat[10] = {0};
         snprintf(dat, sizeof(dat), "%d", SETUP_AUDIO_SAMPLE_RATE);
         esp_http_client_set_header(http, "x-audio-sample-rates", dat);
-        esp_audio_type_t fmt = 0;
+        uint32_t fmt = 0;
         esp_gmf_audio_helper_get_audio_type_by_uri((char *)msg->user_data, &fmt);
         if (fmt == ESP_AUDIO_TYPE_AAC) {
             esp_http_client_set_header(http, "Content-Type", header_type[0]);
