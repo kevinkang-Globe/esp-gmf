@@ -84,7 +84,42 @@ extern "C" {
 
 // PA
 #define ESP_GMF_AMP_IO_NUM          (GPIO_NUM_1)
+#elif CONFIG_IDF_TARGET_ESP32C5
+// ESP-SPOT
+// Sdmmc
+#define ESP_GMF_SD_CLK_IO_NUM       (GPIO_NUM_NC)
+#define ESP_GMF_SD_CMD_IO_NUM       (GPIO_NUM_NC)
+#define ESP_GMF_SD_D0_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_D1_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_D2_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_D3_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_D4_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_D5_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_D6_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_D7_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_CD_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_WP_IO_NUM        (GPIO_NUM_NC)
+#define ESP_GMF_SD_WIDTH            (1)
 
+// I2C
+#define ESP_GMF_I2C_SDA_IO_NUM      (GPIO_NUM_25)
+#define ESP_GMF_I2C_SCL_IO_NUM      (GPIO_NUM_26)
+
+// I2S
+#define ESP_GMF_I2S_DAC_MCLK_IO_NUM (GPIO_NUM_NC)
+#define ESP_GMF_I2S_DAC_BCLK_IO_NUM (GPIO_NUM_7)
+#define ESP_GMF_I2S_DAC_WS_IO_NUM   (GPIO_NUM_8)
+#define ESP_GMF_I2S_DAC_DO_IO_NUM   (GPIO_NUM_9)
+#define ESP_GMF_I2S_DAC_DI_IO_NUM   (GPIO_NUM_6)
+
+#define ESP_GMF_I2S_ADC_MCLK_IO_NUM (GPIO_NUM_NC)
+#define ESP_GMF_I2S_ADC_BCLK_IO_NUM (GPIO_NUM_7)
+#define ESP_GMF_I2S_ADC_WS_IO_NUM   (GPIO_NUM_8)
+#define ESP_GMF_I2S_ADC_DO_IO_NUM   (GPIO_NUM_9)
+#define ESP_GMF_I2S_ADC_DI_IO_NUM   (GPIO_NUM_6)
+
+// PA
+#define ESP_GMF_AMP_IO_NUM          (GPIO_NUM_23)
 #elif CONFIG_IDF_TARGET_ESP32S3
 // ESP32s3_Korvo_2
 // Sdmmc

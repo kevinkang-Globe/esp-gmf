@@ -4,9 +4,10 @@
 
 `GMF AI Audio` 是一个人工智能语音处理模块，它在 [GMF](https://github.com/espressif/esp-gmf) 层面为用户提供方便、易用的语音唤醒、命令词识别和回声消除等常用智能语音处理算法。目前基于 `esp-sr` 提供以下模块：
 
-* [esp_gmf_afe_manager](./src/esp_gmf_afe_manager.c): `audio front end(afe)` 管理器
-* [esp_gmf_aec](./src/esp_gmf_aec.c): 回声消除
-* [esp_gmf_afe](./src/esp_gmf_afe.c): 基于 `esp-sr` 中 `audio front end (afe)` 实现的易用接口，提供了语音唤醒，命令词识别，人声检测等语音识别的功能
+- [esp_gmf_afe_manager](./src/esp_gmf_afe_manager.c): `audio front end(afe)` 管理器
+- [esp_gmf_aec](./src/esp_gmf_aec.c): 回声消除
+- [esp_gmf_wn](./src/esp_gmf_wn.c): 独立的唤醒词检测模块，不依赖AFE
+- [esp_gmf_afe](./src/esp_gmf_afe.c): 基于 `esp-sr` 中 `audio front end (afe)` 实现的易用接口，提供了语音唤醒，命令词识别，人声检测等语音识别的功能
 
 ## AFE 管理器 `esp_gmf_afe_manager`
 
@@ -53,9 +54,29 @@
 
 ### 技术规格
 
-- 支持硬件：`ESP32`、`ESP32-S3`、`ESP32-C5` 和 `ESP32-P4`
+- 支持硬件：`ESP32`、`ESP32-S3` 和 `ESP32-P4`
 - 输入格式
   - 采样率：16 kHz
+  - 位宽：16-bit PCM
+- 通道配置：字符串标识（如 `MMNR`）
+  - `M`：麦克风通道
+  - `R`：回采信号通道
+  - `N`：无效信号
+- 输出格式：16-bit 单通道 PCM
+
+## 唤醒词检测 `esp_gmf_wn`
+
+### 功能
+
+- 独立运行，不依赖AFE，资源占用小
+- 支持多通道输入，单通道输出
+- 通过回调函数通知唤醒词检测结果
+
+### 技术规格
+
+- 支持硬件：`ESP32`、`ESP32-S3`、`ESP32-C3`、`ESP32-C5` 和 `ESP32-P4`
+- 输入格式
+  - 采样率：8 kHz, 16 kHz
   - 位宽：16-bit PCM
 - 通道配置：字符串标识（如 `MMNR`）
   - `M`：麦克风通道
@@ -165,7 +186,7 @@
 
 - **使能唤醒和VAD**
 
-  该场景结合命令词与人声检测，避免在唤醒间隔之外频繁触发人声检测事件
+  该场景结合唤醒词与人声检测，避免在唤醒间隔之外频繁触发人声检测事件
 
   修改示例 [wwe](./examples/wwe/main/main.c) 中的配置，从而使用该场景
 
@@ -193,8 +214,8 @@
 
 用户需决定何时开始检测命令词，如典型的使用场景：在状态机推送（WAKEUP_START）事件之后，开启检测，并在回调函数中根据检测到的命令词序号决定下一步操作
 
-* 命令词检测与唤醒状态机独立
-* 命令词支持连续检测，直到超时
+- 命令词检测与唤醒状态机独立
+- 命令词支持连续检测，直到超时
 
 ## 示例
 

@@ -27,13 +27,15 @@
 #include "esp_gmf_cap.h"
 #include "esp_gmf_caps_def.h"
 
+#include "esp_gmf_wn.h"
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
 #include "esp_afe_config.h"
 #include "esp_gmf_afe_manager.h"
 #include "esp_gmf_afe.h"
 #include "esp_gmf_aec.h"
-#include "esp_gmf_setup_peripheral.h"
-
 #include "esp_dsp.h"
+#endif  /* defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4) */
+#include "esp_gmf_setup_peripheral.h"
 
 #define DEBUG2FILE  (false)
 #define FS          16000
@@ -50,18 +52,23 @@
 #define AEC_ENABLE    (false)
 #define MN_ENABLE     (false)
 #define EVENTS_2_WAIT (WAKEUP_DETECTED | VAD_DETECTED)
-#else
+#elif defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
 #define AEC_ENABLE    (true)
 #define MN_ENABLE     (true)
 #define EVENTS_2_WAIT (WAKEUP_DETECTED | VAD_DETECTED | VCMD_FOUND)
+#else
+#define AEC_ENABLE    (false)
+#define MN_ENABLE     (false)
+#define EVENTS_2_WAIT (WAKEUP_DETECTED)
 #endif  /* CONFIG_IDF_TARGET_ESP32 */
 
-static const char        *TAG           = "AI_AUDIO_AEC_TEST";
+static const char        *TAG           = "AI_AUDIO_TEST";
 static uint32_t           out_count     = 0;
 static EventGroupHandle_t g_event_group = NULL;
 extern const uint8_t      hi_lexin_pcm_start[] asm("_binary_hi_lexin_pcm_start");
 extern const uint8_t      hi_lexin_pcm_end[] asm("_binary_hi_lexin_pcm_end");
 
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4)
 void generate_reference_signal(int16_t *signal, int len)
 {
     for (int i = 0; i < len; i++) {
@@ -313,6 +320,30 @@ TEST_CASE("Test gmf aec process", "[ESP_GMF_AEC]")
     esp_gmf_oal_free(output_signal);
 }
 
+TEST_CASE("Test gmf afe manager create", "[ESP_GMF_AFE_MANAGER]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    ESP_GMF_MEM_SHOW(TAG);
+
+    printf("\r\n///////////////////// AFE MANAGER CREATE /////////////////////\r\n");
+
+    esp_gmf_afe_manager_handle_t afe_manager = NULL;
+    srmodel_list_t *models = esp_srmodel_init("model");
+    const char *ch_format = "MR";
+    afe_config_t *afe_cfg = afe_config_init(ch_format, models, AFE_TYPE_SR, AFE_MODE_HIGH_PERF);
+    afe_cfg->vad_init = true;
+    afe_cfg->vad_mode = VAD_MODE_2;
+    afe_cfg->vad_min_speech_ms = 64;
+    afe_cfg->vad_min_noise_ms = 100;
+    afe_cfg->wakenet_init = true;
+    afe_cfg->aec_init = true;
+    esp_gmf_afe_manager_cfg_t afe_manager_cfg = DEFAULT_GMF_AFE_MANAGER_CFG(afe_cfg, NULL, NULL, NULL, NULL);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_afe_manager_create(&afe_manager_cfg, &afe_manager));
+    afe_config_free(afe_cfg);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_afe_manager_destroy(afe_manager));
+    esp_srmodel_deinit(models);
+}
+
 static esp_gmf_err_io_t afe_acquire_read(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
 {
     static int offset = 0;
@@ -394,7 +425,9 @@ void esp_gmf_afe_event_cb(esp_gmf_obj_handle_t obj, esp_gmf_afe_evt_t *event, vo
             esp_gmf_afe_vcmd_info_t *info = event->event_data;
             ESP_LOGW(TAG, "Command %d, phrase_id %d, prob %f, str: %s",
                      event->type, info->phrase_id, info->prob, info->str);
-            if (event->type == 25) {
+            if (event->type == 25 || event->type == 216) {
+                // 25: "da kai kong tiao"
+                // 216: "kai kong tiao"
                 xEventGroupSetBits(g_event_group, VCMD_FOUND);
             }
             break;
@@ -460,6 +493,104 @@ TEST_CASE("Test gmf afe process", "[ESP_GMF_AFE]")
     esp_gmf_obj_delete(gmf_afe);
     afe_config_free(afe_cfg);
     esp_gmf_afe_manager_destroy(afe_manager);
+    esp_srmodel_deinit(models);
+    vEventGroupDelete(g_event_group);
+    g_event_group = NULL;
+}
+#endif  /* CONFIG_IDF_TARGET_ESP32 || CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32P4 */
+
+static esp_gmf_err_io_t wn_acquire_read(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
+{
+    static int offset = 0;
+    const uint8_t *src = hi_lexin_pcm_start;
+    int total_size = hi_lexin_pcm_end - hi_lexin_pcm_start;
+
+    if (offset < total_size) {
+        if (offset + wanted_size > total_size) {
+            wanted_size = total_size - offset;
+        }
+        memcpy(load->buf, &src[offset], wanted_size);
+        offset += wanted_size;
+        load->valid_size = wanted_size;
+
+        if (offset == total_size) {
+            offset = 0;
+            load->is_done = true;
+        }
+    } else {
+        load->valid_size = 0;
+        load->is_done = true;
+    }
+    return 0;
+}
+
+static esp_gmf_err_io_t wn_release_read(void *handle, esp_gmf_payload_t *load, int block_ticks)
+{
+    load->valid_size = 0;
+    return ESP_OK;
+}
+
+static esp_gmf_err_io_t wn_acquire_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
+{
+    if (load->buf == NULL) {
+        return ESP_FAIL;
+    }
+    return wanted_size;
+}
+
+static esp_gmf_err_io_t wn_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
+{
+    return ESP_GMF_IO_OK;
+}
+
+static void esp_gmf_wn_event_cb(esp_gmf_obj_handle_t obj, int32_t trigger_ch, void *user_ctx)
+{
+    static int32_t cnt = 1;
+    ESP_LOGI(TAG, "WWE detected on channel %" PRIu32 ", cnt: %" PRIi32, trigger_ch, cnt++);
+    xEventGroupSetBits(g_event_group, WAKEUP_DETECTED);
+}
+
+TEST_CASE("Test gmf wakenet process", "[ESP_GMF_WN]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    ESP_GMF_MEM_SHOW(TAG);
+
+    printf("\r\n///////////////////// Wakenet /////////////////////\r\n");
+    g_event_group = xEventGroupCreate();
+    TEST_ASSERT_NOT_NULL(g_event_group);
+
+    esp_gmf_port_handle_t in_port = NEW_ESP_GMF_PORT_IN_BYTE(wn_acquire_read, wn_release_read, NULL, NULL, 1024, 100);
+    esp_gmf_port_handle_t out_port = NEW_ESP_GMF_PORT_OUT_BYTE(wn_acquire_write, wn_release_write, NULL, NULL, 1024, 100);
+
+    srmodel_list_t *models = esp_srmodel_init("model");
+    const char *ch_format = "MR";
+    esp_gmf_wn_cfg_t wn_cfg = {
+        .input_format = (char *)ch_format,
+        .det_mode = DET_MODE_95,
+        .models = models,
+        .detect_cb = esp_gmf_wn_event_cb,
+        .user_ctx = NULL,
+    };
+    esp_gmf_element_handle_t gmf_wn = NULL;
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_wn_init(&wn_cfg, &gmf_wn));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_register_in_port(gmf_wn, in_port));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_register_out_port(gmf_wn, out_port));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_process_open(gmf_wn, NULL));
+    esp_gmf_job_err_t ret = ESP_GMF_JOB_ERR_OK;
+    do {
+        ret = esp_gmf_element_process_running(gmf_wn, NULL);
+        if (ret == ESP_GMF_JOB_ERR_FAIL) {
+            ESP_LOGE(TAG, "WN process failed");
+            break;
+        } else if (ret == ESP_GMF_JOB_ERR_DONE) {
+            ESP_LOGI(TAG, "WN process done");
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(20));
+    } while (true);
+    TEST_ASSERT_EQUAL(WAKEUP_DETECTED, xEventGroupWaitBits(g_event_group, WAKEUP_DETECTED, pdTRUE, pdTRUE, pdMS_TO_TICKS(10 * 1000)));
+    esp_gmf_element_process_close(gmf_wn, NULL);
+    esp_gmf_obj_delete(gmf_wn);
     esp_srmodel_deinit(models);
     vEventGroupDelete(g_event_group);
     g_event_group = NULL;

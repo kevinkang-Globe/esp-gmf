@@ -178,7 +178,7 @@ esp_gmf_err_t esp_gmf_afe_manager_create(esp_gmf_afe_manager_cfg_t *cfg, esp_gmf
         xEventGroupSetBits(afe_manager->ctrl_events, AFE_RUN_EVENT);
     }
 
-#if (configSUPPORT_STATIC_ALLOCATION == 1)
+#if (configSUPPORT_STATIC_ALLOCATION == 1) && defined(CONFIG_SPIRAM_BOOT_INIT)
     prvTaskCreateDynamicPinnedToCoreWithCaps(feed_task,
                                              "afe_feed",
                                              cfg->feed_task_setting.stack_size,
