@@ -1,9 +1,9 @@
 dependencies:
   espressif/esp_codec_dev:
     require: "public"
-    version: "^1.3.4"
+    version: "~1.3"
   espressif/esp_audio_codec:
-    version: "^2.2.1"
+    version: "~2.2"
   espressif/gmf_io:
     version: "^0.6"
   espressif/gmf_misc:

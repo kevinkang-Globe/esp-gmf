@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.2
+
+### Features
+
+- Limit the version of `esp_codec_dev`
+
 ## v0.6.1
 
 - Fixed memory leaks in I/O flash destroy API
