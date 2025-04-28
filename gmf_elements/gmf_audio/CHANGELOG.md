@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.2
+
+### Features
+
+- Limit the version of `esp_audio_codec` and `esp_audio_effects`
+
 ## v0.6.1
 
 - Added missing #include "esp_gmf_audio_element.h" across all audio elements

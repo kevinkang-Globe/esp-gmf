@@ -1,4 +1,4 @@
-version: "0.6.1"
+version: "0.6.2"
 description: Espressif GMF Elements Audio Module
 url: https://github.com/espressif/esp-gmf/tree/main/gmf_elements/gmf_audio
 documentation: "https://github.com/espressif/esp-gmf/blob/main/gmf_elements/gmf_audio/README.md"
@@ -10,10 +10,10 @@ tags:
 dependencies:
   espressif/esp_audio_codec:
     require: public
-    version: "*"
+    version: "~2.2"
   espressif/esp_audio_effects:
     require: public
-    version: "*"
+    version: "~1.0"
   espressif/gmf_core:
     require: public
     version: "^0.6"

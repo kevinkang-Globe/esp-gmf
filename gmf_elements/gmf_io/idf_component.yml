@@ -1,4 +1,4 @@
-version: "0.6.1"
+version: "0.6.2"
 description: Espressif GMF IO Module
 url: https://github.com/espressif/esp-gmf/tree/main/gmf_elements/gmf_io
 documentation: "https://github.com/espressif/esp-gmf/blob/main/gmf_elements/gmf_io/README.md"
@@ -10,7 +10,7 @@ tags:
 dependencies:
   espressif/esp_codec_dev:
     require: "public"
-    version: "*"
+    version: "~1.3"
   espressif/gmf_core:
     require: public
     version: "^0.6"
