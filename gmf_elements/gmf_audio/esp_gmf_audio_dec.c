@@ -127,12 +127,23 @@ static esp_gmf_job_err_t esp_gmf_audio_dec_process(esp_gmf_audio_element_handle_
         audio_dec->in_data.consumed = 0;
         audio_dec->in_data.eos = audio_dec->in_load->is_done;
     }
+    if ((audio_dec->in_data.len == 0) && (audio_dec->in_load->is_done != true)) {
+        out_len = ESP_GMF_JOB_ERR_CONTINUE;
+        ESP_LOGD(TAG, "Return Continue, size:%d", audio_dec->in_load->valid_size);
+        goto __aud_proc_release;
+    }
     ESP_LOGV(TAG, "Read, in_len: %ld, done: %d\r\n", audio_dec->in_data.len, audio_dec->in_load ? audio_dec->in_load->is_done : -1);
     load_ret = esp_gmf_port_acquire_out(out, &out_load, audio_dec->buf_size, ESP_GMF_MAX_DELAY);
     ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, load_ret, out_len, {goto __aud_proc_release;});
     out_load->valid_size = 0;
     audio_dec->out_data.buffer = out_load->buf;
     audio_dec->out_data.len = out_load->buf_length;
+    if ((audio_dec->in_data.len == 0) && (audio_dec->in_load->is_done == true)) {
+        out_len = ESP_GMF_JOB_ERR_DONE;
+        out_load->is_done = audio_dec->in_load->is_done;
+        ESP_LOGD(TAG, "Return done, line:%d", __LINE__);
+        goto __aud_proc_release;
+    }
     while (1) {
         ret = esp_audio_simple_dec_process(audio_dec->dec_hd, &audio_dec->in_data, &audio_dec->out_data);
         if (ret != ESP_AUDIO_ERR_OK && ret != ESP_AUDIO_ERR_BUFF_NOT_ENOUGH) {

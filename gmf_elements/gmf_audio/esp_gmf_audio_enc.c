@@ -191,7 +191,14 @@ static esp_gmf_job_err_t esp_gmf_audio_enc_process(esp_gmf_audio_element_handle_
         out_len = ESP_GMF_JOB_ERR_FAIL;
         goto __audio_enc_release;
     }
-
+    // Insufficient data to encode full frame; skipping and finalizing pipeline
+    if ((in_load->valid_size != ESP_GMF_ELEMENT_GET(audio_enc)->in_attr.data_size) && (in_load->is_done == true)) {
+        out_len = ESP_GMF_JOB_ERR_DONE;
+        out_load->valid_size = 0;
+        out_load->is_done = in_load->is_done;
+        ESP_LOGD(TAG, "Return done, line:%d", __LINE__);
+        goto __audio_enc_release;
+    }
     enc_in_frame.buffer = in_load->buf;
     enc_in_frame.len = in_load->valid_size;
     enc_out_frame.buffer = out_load->buf;
@@ -222,7 +229,7 @@ __audio_enc_release:
             out_len = ESP_GMF_JOB_ERR_FAIL;
         }
     }
-    if ((out_len == ESP_GMF_JOB_ERR_FAIL) || ((origin_in_load != NULL) && (out_len != ESP_GMF_JOB_ERR_TRUNCATE))) {
+    if ((origin_in_load != NULL) && (out_len != ESP_GMF_JOB_ERR_TRUNCATE)) {
         load_ret = esp_gmf_port_release_in(in_port, origin_in_load, in_port->wait_ticks);
         if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
             ESP_LOGE(TAG, "IN port release error, ret:%d", load_ret);
