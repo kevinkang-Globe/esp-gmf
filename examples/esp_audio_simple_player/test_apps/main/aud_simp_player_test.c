@@ -23,16 +23,19 @@
 #include "esp_gmf_setup_peripheral.h"
 #include "esp_codec_dev.h"
 #include "esp_gmf_app_sys.h"
+#include "esp_embed_tone.h"
+#include "esp_gmf_io.h"
+#include "esp_gmf_io_embed_flash.h"
 
 static const char *TAG = "PLAYER_TEST";
 
 #define PIPELINE_BLOCK_BIT BIT(0)
 
 static const char *dec_file_path[] = {
+    "file://sdcard/test.mp3",
     "file://sdcard/test.opus",
     "file://sdcard/test.m4a",
     "file://sdcard/test.aac",
-    "file://sdcard/test.mp3",
     "file://sdcard/test.amr",
     "https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.mp3",
     "file://sdcard/test.flac",
@@ -116,7 +119,7 @@ TEST_CASE("Play, new and delete", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, async run and stop", "Simple_Player")
+TEST_CASE("Create and delete multiple instances for playback, stop", "Simple_Player")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -142,13 +145,12 @@ TEST_CASE("Play, async run and stop", "Simple_Player")
     };
     esp_asp_handle_t handle = NULL;
     ESP_GMF_MEM_SHOW(TAG);
-    for (size_t i = 0; i < 3; i++) {
+    ESP_LOGW(TAG, "--- Async playback ---\r\n");
+    for (int i = 0; i < 3; ++i) {
         esp_gmf_err_t err = esp_audio_simple_player_new(&cfg, &handle);
         TEST_ASSERT_EQUAL(ESP_OK, err);
         err = esp_audio_simple_player_set_event(handle, mock_event_callback, NULL);
-
-        const char *uri = "file://sdcard/test.mp3";
-        err = esp_audio_simple_player_run(handle, uri, NULL);
+        err = esp_audio_simple_player_run(handle, dec_file_path[0], NULL);
         TEST_ASSERT_EQUAL(ESP_OK, err);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
         esp_asp_state_t state;
@@ -163,6 +165,19 @@ TEST_CASE("Play, async run and stop", "Simple_Player")
         err = esp_audio_simple_player_destroy(handle);
         TEST_ASSERT_EQUAL(ESP_OK, err);
     }
+
+    ESP_LOGW(TAG, "--- Sync playback ---\r\n");
+    for (int i = 0; i < 3; ++i) {
+        esp_gmf_err_t err = esp_audio_simple_player_new(&cfg, &handle);
+        TEST_ASSERT_EQUAL(ESP_OK, err);
+        err = esp_audio_simple_player_set_event(handle, mock_event_callback, NULL);
+        err = esp_audio_simple_player_run_to_end(handle, dec_file_path[0], NULL);
+        TEST_ASSERT_EQUAL(ESP_OK, err);
+        err = esp_audio_simple_player_stop(handle);
+        TEST_ASSERT_EQUAL(ESP_OK, err);
+        err = esp_audio_simple_player_destroy(handle);
+        TEST_ASSERT_EQUAL(ESP_OK, err);
+    }
     ESP_GMF_MEM_SHOW(TAG);
 
     esp_gmf_teardown_periph_codec(play_dev, NULL);
@@ -171,7 +186,7 @@ TEST_CASE("Play, async run and stop", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, Sync run and stop", "Simple_Player")
+TEST_CASE("Repeat playback same URI", "Simple_Player")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -196,20 +211,170 @@ TEST_CASE("Play, Sync run and stop", "Simple_Player")
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
+    ESP_GMF_MEM_SHOW(TAG);
     esp_gmf_err_t err = esp_audio_simple_player_new(&cfg, &handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
     err = esp_audio_simple_player_set_event(handle, mock_event_callback, NULL);
 
-    const char *uri = "file://sdcard/test.mp3";
-    err = esp_audio_simple_player_run_to_end(handle, uri, NULL);
+    ESP_LOGW(TAG, "--- Async repeat playback music ---\r\n");
+    for (int i = 0; i < 3; ++i) {
+        err = esp_audio_simple_player_run(handle, dec_file_path[0], NULL);
+        TEST_ASSERT_EQUAL(ESP_OK, err);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        esp_asp_state_t state;
+        err = esp_audio_simple_player_get_state(handle, &state);
+        TEST_ASSERT_EQUAL(ESP_OK, err);
+        TEST_ASSERT_EQUAL(ESP_ASP_STATE_RUNNING, state);
+        vTaskDelay(6000 / portTICK_PERIOD_MS);
+
+        err = esp_audio_simple_player_stop(handle);
+        TEST_ASSERT_EQUAL(ESP_OK, err);
+    }
+    ESP_LOGW(TAG, "--- Sync repeat playback music ---\r\n");
+    for (int i = 0; i < 3; ++i) {
+        err = esp_audio_simple_player_run_to_end(handle, dec_file_path[0], NULL);
+        TEST_ASSERT_EQUAL(ESP_OK, err);
+    }
+
+    err = esp_audio_simple_player_destroy(handle);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+    ESP_GMF_MEM_SHOW(TAG);
+
+    esp_gmf_teardown_periph_codec(play_dev, NULL);
+    esp_gmf_teardown_periph_sdmmc(card);
+    esp_gmf_teardown_periph_i2c(0);
+    ESP_GMF_MEM_SHOW(TAG);
+}
+
+
+TEST_CASE("Playback with raw MP3 data", "Simple_Player")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    ESP_GMF_MEM_SHOW(TAG);
+    void *card = NULL;
+    esp_gmf_setup_periph_sdmmc(&card);
+    esp_gmf_setup_periph_i2c(0);
+    esp_gmf_setup_periph_aud_info play_info = {
+        .sample_rate = 48000,
+        .channel = 2,
+        .bits_per_sample = 16,
+        .port_num = 0,
+    };
+    esp_codec_dev_handle_t play_dev = NULL;
+    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
+    TEST_ASSERT_NOT_NULL(play_dev);
+    FILE *in_file = fopen("/sdcard/test.mp3", "rb");
+    if (in_file == NULL) {
+        ESP_LOGE(TAG, "Open the source file failed, in:%p", in_file);
+        return;
+    }
+    esp_asp_cfg_t cfg = {
+        .in.cb = in_data_callback,
+        .in.user_ctx = in_file,
+        .out.cb = out_data_callback,
+        .out.user_ctx = play_dev,
+        .task_prio = 5,
+    };
+    esp_asp_handle_t handle = NULL;
+    esp_gmf_err_t err = esp_audio_simple_player_new(&cfg, &handle);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+    err = esp_audio_simple_player_set_event(handle, mock_event_callback, NULL);
+
+    const char *uri = "raw://sdcard/test.mp3";
+    err = esp_audio_simple_player_run(handle, uri, NULL);
     TEST_ASSERT_EQUAL(ESP_OK, err);
 
     esp_asp_state_t state;
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
     err = esp_audio_simple_player_get_state(handle, &state);
     TEST_ASSERT_EQUAL(ESP_OK, err);
-    TEST_ASSERT_EQUAL(ESP_ASP_STATE_FINISHED, state);
+    TEST_ASSERT_EQUAL(ESP_ASP_STATE_RUNNING, state);
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
 
     err = esp_audio_simple_player_stop(handle);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+
+    ESP_LOGW(TAG, "--- Playback with sync mode ---\r\n");
+    // Reset the file pointer to the beginning of the file
+    if (in_file) {
+        fseek(in_file, 0, SEEK_SET);
+    }
+    err = esp_audio_simple_player_run_to_end(handle, uri, NULL);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+
+    err = esp_audio_simple_player_destroy(handle);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+    esp_gmf_teardown_periph_codec(play_dev, NULL);
+    esp_gmf_teardown_periph_sdmmc(card);
+    esp_gmf_teardown_periph_i2c(0);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    ESP_GMF_MEM_SHOW(TAG);
+}
+
+static int embed_flash_io_set(esp_asp_handle_t *handle, void *ctx)
+{
+    esp_gmf_pipeline_handle_t pipe = NULL;
+    int ret =  esp_audio_simple_player_get_pipeline(handle, &pipe);
+    if (pipe) {
+        esp_gmf_io_handle_t flash = NULL;
+        ret = esp_gmf_pipeline_get_in(pipe, &flash);
+        if ((ret == ESP_GMF_ERR_OK) && (strcasecmp(OBJ_GET_TAG(flash), "embed") == 0)) {
+            ret = esp_gmf_io_embed_flash_set_context(flash, (embed_item_info_t *)&g_esp_embed_tone[0], ESP_EMBED_TONE_URL_MAX);
+        }
+    }
+    return ret;
+}
+
+TEST_CASE("Playback embed flash tone", "Simple_Player")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    ESP_GMF_MEM_SHOW(TAG);
+    void *card = NULL;
+    esp_gmf_setup_periph_sdmmc(&card);
+    esp_gmf_setup_periph_i2c(0);
+    esp_gmf_setup_periph_aud_info play_info = {
+        .sample_rate = 48000,
+        .channel = 2,
+        .bits_per_sample = 16,
+        .port_num = 0,
+    };
+    esp_codec_dev_handle_t play_dev = NULL;
+    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
+    TEST_ASSERT_NOT_NULL(play_dev);
+
+    esp_asp_cfg_t cfg = {
+        .in.cb = NULL,
+        .in.user_ctx = NULL,
+        .out.cb = out_data_callback,
+        .out.user_ctx = play_dev,
+        .task_prio = 5,
+        .prev = embed_flash_io_set,
+        .prev_ctx = NULL,
+    };
+    esp_asp_handle_t handle = NULL;
+    esp_gmf_err_t err = esp_audio_simple_player_new(&cfg, &handle);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+    err = esp_audio_simple_player_set_event(handle, mock_event_callback, NULL);
+
+    err = esp_audio_simple_player_run(handle, esp_embed_tone_url[0], NULL);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+
+    esp_asp_state_t state;
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    err = esp_audio_simple_player_get_state(handle, &state);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+    TEST_ASSERT_EQUAL(ESP_ASP_STATE_RUNNING, state);
+    vTaskDelay(4000 / portTICK_PERIOD_MS);
+
+    err = esp_audio_simple_player_stop(handle);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+
+    ESP_LOGW(TAG, "--- Playback with sync mode ---\r\n");
+
+    err = esp_audio_simple_player_run_to_end(handle, esp_embed_tone_url[1], NULL);
+    TEST_ASSERT_EQUAL(ESP_OK, err);
+
+    err = esp_audio_simple_player_run_to_end(handle, dec_file_path[0], NULL);
     TEST_ASSERT_EQUAL(ESP_OK, err);
 
     err = esp_audio_simple_player_destroy(handle);
@@ -405,63 +570,6 @@ TEST_CASE("Play, play-multitask", "Simple_Player")
     err = esp_audio_simple_player_get_state(handle, &state);
     TEST_ASSERT_EQUAL(ESP_OK, err);
     TEST_ASSERT(state == ESP_ASP_STATE_STOPPED || state == ESP_ASP_STATE_FINISHED);
-
-    err = esp_audio_simple_player_destroy(handle);
-    TEST_ASSERT_EQUAL(ESP_OK, err);
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    ESP_GMF_MEM_SHOW(TAG);
-}
-
-TEST_CASE("Play, Raw IN MP3", "Simple_Player")
-{
-    esp_log_level_set("*", ESP_LOG_INFO);
-    ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
-
-    FILE *in_file = fopen("/sdcard/test.mp3", "rb");
-    if (in_file == NULL) {
-        ESP_LOGE(TAG, "Open the source file failed, in:%p", in_file);
-        return;
-    }
-    esp_asp_cfg_t cfg = {
-        .in.cb = in_data_callback,
-        .in.user_ctx = in_file,
-        .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
-        .task_prio = 5,
-    };
-    esp_asp_handle_t handle = NULL;
-    esp_gmf_err_t err = esp_audio_simple_player_new(&cfg, &handle);
-    TEST_ASSERT_EQUAL(ESP_OK, err);
-    err = esp_audio_simple_player_set_event(handle, mock_event_callback, NULL);
-
-    const char *uri = "raw://sdcard/test.mp3";
-    err = esp_audio_simple_player_run(handle, uri, NULL);
-    TEST_ASSERT_EQUAL(ESP_OK, err);
-
-    esp_asp_state_t state;
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    err = esp_audio_simple_player_get_state(handle, &state);
-    TEST_ASSERT_EQUAL(ESP_OK, err);
-    TEST_ASSERT_EQUAL(ESP_ASP_STATE_RUNNING, state);
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-
-    err = esp_audio_simple_player_stop(handle);
-    TEST_ASSERT_EQUAL(ESP_OK, err);
 
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);

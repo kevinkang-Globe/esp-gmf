@@ -55,6 +55,7 @@ typedef void *esp_asp_handle_t;  /*!< Handle to audio simple player instance */
 
 typedef int (*esp_asp_data_func)(uint8_t *data, int data_size, void *ctx);  /*!< Data callback function type */
 typedef int (*esp_asp_event_func)(esp_asp_event_pkt_t *pkt, void *ctx);     /*!< Event callback function type */
+typedef int (*esp_asp_prev_func_t)(esp_asp_handle_t *handle, void *ctx);    /*!< A callback function type for previous action */
 
 /**
  * @brief  Callback structure for input and output data
@@ -68,11 +69,13 @@ typedef struct {
  * @brief  Configuration structure for the audio simple player
  */
 typedef struct {
-    esp_asp_func_t  in;          /*!< Input data callback, it is required only for raw data(raw://xxx/xxx.mp3), and is ignored in other cases */
-    esp_asp_func_t  out;         /*!< Output data callback configuration */
-    int             task_prio;   /*!< Priority of the player task */
-    int             task_stack;  /*!< Size of the task stack */
-    uint8_t         task_core;   /*!< CPU core affinity for the task */
+    esp_asp_func_t       in;          /*!< Input data callback, it is required only for raw data(raw://xxx/xxx.mp3), and is ignored in other cases */
+    esp_asp_func_t       out;         /*!< Output data callback configuration, it is required for all cases */
+    int                  task_prio;   /*!< Priority of the player task */
+    int                  task_stack;  /*!< Size of the task stack */
+    uint8_t              task_core;   /*!< CPU core affinity for the task */
+    esp_asp_prev_func_t  prev;        /*!< An optional callback invoked before the pipeline starts (e.g., configure linked elements before running) */
+    void                *prev_ctx;    /*!< User context passed to the previous action callback */
 } esp_asp_cfg_t;
 
 /**
@@ -104,7 +107,8 @@ esp_gmf_err_t esp_audio_simple_player_set_event(esp_asp_handle_t handle, const e
 /**
  * @brief  Run the audio simple player using the given URI. After this function is called, it will set up a pipeline based on the given URI,
  *         unless esp_audio_simple_player_set_pipeline was called previously. The player determines the audio format based on the file extension,
- *         and currently supports formats including AAC, MP3, AMR, FLAC, WAV, M4A, RAW_OPUS, and TS.
+ *         and currently supports formats including AAC, MP3, AMR, FLAC, WAV, M4A, RAW_OPUS, and TS. If the previous action callback is set,
+ *         it will be invoked after the pipeline setup is complete, but before it starts running.
  *
  * @note  For the URI, the `scheme`, `host` and `path` segments are mandatory.
  *        If these are missing, an `ESP_GMF_ERR_INVALID_URI` error will be returned.

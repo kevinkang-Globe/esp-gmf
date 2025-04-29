@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.9.3
+
+### Features
+- Added `esp_audio_simple_player_get_pipeline` API
+- Added a configurable callback between pipeline setup and execution
+- Added test case for repeated playback
+- Added test case for embedded flash URI
+
+### Bug Fixes
+
+- Fixed an issue where raw stream playback repeatedly failed
+
+
 ## v0.9.2
 
 ### Features

@@ -73,7 +73,7 @@ void app_main(void)
     ESP_LOGI(TAG, "[ 3 ] Create audio pipeline");
     esp_gmf_pipeline_handle_t pipe = NULL;
     const char *name[] = {"aud_simp_dec", "bit_cvt", "rate_cvt", "ch_cvt"};
-    ret = esp_gmf_pool_new_pipeline(pool, "embed_flash", name, sizeof(name) / sizeof(char *), "codec_dev_tx", &pipe);
+    ret = esp_gmf_pool_new_pipeline(pool, "embed", name, sizeof(name) / sizeof(char *), "codec_dev_tx", &pipe);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, { return; }, "Failed to new pipeline");
 
     ESP_LOGI(TAG, "[ 3.1 ] Set audio url to play");

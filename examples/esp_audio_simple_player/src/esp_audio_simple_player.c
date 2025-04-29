@@ -191,18 +191,9 @@ static int __setup_pipeline(esp_audio_simple_player_t *player, const char *uri, 
         ESP_GMF_RET_ON_ERROR(TAG, ret, goto __setup_pipe_err, "Failed to register out port for tail element, ret:%x", ret);
     } else {
         esp_gmf_pipeline_reset(player->pipe);
-        esp_gmf_io_handle_t out_io = NULL;
-        esp_gmf_pipeline_get_in(player->pipe, &out_io);
-        if (out_io == NULL) {
-            esp_gmf_port_handle_t out_port = NEW_ESP_GMF_PORT_OUT_BYTE(asp_func_acquire_write, asp_func_release_write, NULL, &player->cfg.out, 2048, ESP_GMF_MAX_DELAY);
-            ESP_GMF_CHECK(TAG, out_port, goto __setup_pipe_err, "Failed to create out port on exist pipeline");
-            ret = esp_gmf_pipeline_reg_el_port(player->pipe, OBJ_GET_TAG(player->pipe->last_el), ESP_GMF_IO_DIR_WRITER, out_port);
-            ESP_GMF_RET_ON_ERROR(TAG, ret, goto __setup_pipe_err, "Failed to register out port for tail element, ret:%x", ret);
-        }
-
         esp_gmf_io_handle_t in_io = NULL;
         esp_gmf_pipeline_get_in(player->pipe, &in_io);
-        if ((in_io == NULL) || (strncasecmp(OBJ_GET_TAG(in_io), in_str, strlen(in_str)) != 0)) {
+        if ((in_str != NULL) && ((in_io == NULL) || (strcasecmp(OBJ_GET_TAG(in_io), in_str) != 0))) {
             esp_gmf_io_handle_t new_io = NULL;
 
             esp_gmf_pool_new_io(player->pool, in_str, ESP_GMF_IO_DIR_READER, &new_io);
@@ -324,11 +315,15 @@ esp_gmf_err_t esp_audio_simple_player_run(esp_asp_handle_t handle, const char *u
     ESP_GMF_NULL_CHECK(TAG, uri, { return ESP_GMF_ERR_INVALID_ARG;});
     esp_audio_simple_player_t *player = (esp_audio_simple_player_t *)handle;
     if ((player->state == ESP_ASP_STATE_RUNNING) || (player->state == ESP_ASP_STATE_PAUSED)) {
-        ESP_LOGE(TAG, "The player still running, call stop first, st:%d", player->state);
+        ESP_LOGE(TAG, "The player still running, call stop first on async play, st:%d", player->state);
         return ESP_GMF_ERR_INVALID_STATE;
     }
     int ret = __setup_pipeline(player, uri, music_info);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to setup pipeline, ret:%x", ret);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to setup pipeline on async play, ret:%x", ret);
+    if (player->cfg.prev) {
+        ret = player->cfg.prev((esp_asp_handle_t)player, player->cfg.prev_ctx);
+        ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to run previous action on async play, ret:%x", ret);
+    }
     player->state = ESP_ASP_STATE_NONE;
     esp_gmf_pipeline_set_event(player->pipe, _pipeline_event, player);
     ret = esp_gmf_pipeline_run(player->pipe);
@@ -341,7 +336,7 @@ esp_gmf_err_t esp_audio_simple_player_run_to_end(esp_asp_handle_t handle, const 
     ESP_GMF_NULL_CHECK(TAG, uri, { return ESP_GMF_ERR_INVALID_ARG;});
     esp_audio_simple_player_t *player = (esp_audio_simple_player_t *)handle;
     if ((player->state == ESP_ASP_STATE_RUNNING) || (player->state == ESP_ASP_STATE_PAUSED)) {
-        ESP_LOGE(TAG, "The player still running, call stop first, st:%d", player->state);
+        ESP_LOGE(TAG, "The player still running, call stop first on sync play, st:%d", player->state);
         return ESP_GMF_ERR_INVALID_STATE;
     }
     if (player->wait_event == NULL) {
@@ -350,10 +345,14 @@ esp_gmf_err_t esp_audio_simple_player_run_to_end(esp_asp_handle_t handle, const 
     }
     int ret = __setup_pipeline(player, uri, music_info);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to setup pipeline on sync play, ret:%x", ret);
+    if (player->cfg.prev) {
+        ret = player->cfg.prev((esp_asp_handle_t)player, player->cfg.prev_ctx);
+        ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to run previous action on sync play, ret:%x", ret);
+    }
     esp_gmf_pipeline_set_event(player->pipe, _pipeline_event, player);
     xEventGroupClearBits(player->wait_event, ASP_PIPELINE_ERROR_BIT | ASP_PIPELINE_STOPPED_BIT | ASP_PIPELINE_FINISHED_BIT);
     ret = esp_gmf_pipeline_run(player->pipe);
-    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Run pipeline failed, ret: %x", ret);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Run pipeline failed on sync play, ret: %x", ret);
 
     player->state = ESP_ASP_STATE_NONE;
     EventBits_t uxBits = xEventGroupWaitBits(player->wait_event, ASP_PIPELINE_ERROR_BIT | ASP_PIPELINE_STOPPED_BIT | ASP_PIPELINE_FINISHED_BIT,
