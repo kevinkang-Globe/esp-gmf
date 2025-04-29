@@ -204,7 +204,8 @@ __aud_proc_release:
             out_len = ESP_GMF_JOB_ERR_FAIL;
         }
     }
-    if (audio_dec->in_load && (audio_dec->in_data.len == 0)) {
+    // If decoding fails or there is no data on input side, release input port
+    if ((out_len == ESP_GMF_JOB_ERR_FAIL) || (audio_dec->in_load && (audio_dec->in_data.len == 0))) {
         load_ret = esp_gmf_port_release_in(in_port, audio_dec->in_load, ESP_GMF_MAX_DELAY);
         if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
             ESP_LOGE(TAG, "IN port release error, ret:%d", load_ret);

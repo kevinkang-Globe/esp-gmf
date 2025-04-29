@@ -222,7 +222,7 @@ __audio_enc_release:
             out_len = ESP_GMF_JOB_ERR_FAIL;
         }
     }
-    if ((origin_in_load != NULL) && (out_len != ESP_GMF_JOB_ERR_TRUNCATE)) {
+    if ((out_len == ESP_GMF_JOB_ERR_FAIL) || ((origin_in_load != NULL) && (out_len != ESP_GMF_JOB_ERR_TRUNCATE))) {
         load_ret = esp_gmf_port_release_in(in_port, origin_in_load, in_port->wait_ticks);
         if ((load_ret < ESP_GMF_IO_OK) && (load_ret != ESP_GMF_IO_ABORT)) {
             ESP_LOGE(TAG, "IN port release error, ret:%d", load_ret);

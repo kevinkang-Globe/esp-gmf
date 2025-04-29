@@ -1,5 +1,12 @@
 # Changelog
 
+## *Unreleased*
+
+### Bug Fixes
+
+- Fixed pause timeout caused by missing sync event when pause producer entered an error state
+
+
 ## v0.6.1
 
 ### Bug Fixes
