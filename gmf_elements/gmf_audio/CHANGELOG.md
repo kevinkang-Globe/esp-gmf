@@ -1,10 +1,18 @@
 # Changelog
 
+## *Unreleased*
+
+### Bug Fixes
+
+- Fixed decoder and encoder not releasing input port on failure
+
+
 ## v0.6.2
 
 ### Features
 
 - Limit the version of `esp_audio_codec` and `esp_audio_effects`
+
 
 ## v0.6.1
 
@@ -12,6 +20,7 @@
 - Fixed out-of-range parameter handling for mixer and EQ elements
 - Resolved rate/bit/channel converter bypass errors caused by asynchronous modification of obj->cfg between set/event callbacks and process functions
 - Deleted one unreasonable log from esp_gmf_audio_helper.c
+
 
 ## v0.6.0
 
@@ -22,6 +31,7 @@
 - Added gmf_cache and optimized the loop path for the audio encoder and decoder
 - Renamed component to `gmf_audio`
 - Updated the License
+
 
 ## v0.5.2
 
