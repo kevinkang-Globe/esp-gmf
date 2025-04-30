@@ -1,142 +1,215 @@
-#!/user/bin/env python
+#!/user/bin/env python3
 
-#  ESPRESSIF MIT License
+#  Espressif Modified MIT License
 #
-#  Copyright (c) 2022 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
+#  Copyright (c) 2025 Espressif Systems (Shanghai) CO., LTD
 #
-#  Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
-#  it is free of charge, to any person obtaining a copy of this software and associated
-#  documentation files (the "Software"), to deal in the Software without restriction, including
-#  without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-#  and/or sell copies of the Software, and to permit persons to whom the Software is furnished
-#  to do so, subject to the following conditions:
+#  Permission is hereby granted for use EXCLUSIVELY with Espressif Systems products.
+#  This includes the right to use, copy, modify, merge, publish, distribute, and sublicense
+#  the Software, subject to the following conditions:
 #
-#  The above copyright notice and this permission notice shall be included in all copies or
-#  substantial portions of the Software.
+#  1. This Software MUST BE USED IN CONJUNCTION WITH ESPRESSIF SYSTEMS PRODUCTS.
+#  2. The above copyright notice and this permission notice shall be included in all copies
+#     or substantial portions of the Software.
+#  3. Redistribution of the Software in source or binary form FOR USE WITH NON-ESPRESSIF PRODUCTS
+#     is strictly prohibited.
 #
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-#  FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-#  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-#  IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-#  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+#  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+#  PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+#  FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+#  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
+#
+#  SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
 
 import sys
 import os
 import time
 import argparse
+import logging
+from typing import Dict, Tuple, List
+from datetime import datetime
 
-LICENSE_STR = '''
-/*
- * ESPRESSIF MIT License
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Constants
+LICENSE_STR = f'''/*
+ * SPDX-FileCopyrightText: {datetime.now().year} Espressif Systems (Shanghai) CO LTD
  *
- * Copyright (c) 2025 <ESPRESSIF SYSTEMS (SHANGHAI) CO., LTD>
- *
- * Permission is hereby granted for use on all ESPRESSIF SYSTEMS products, in which case,
- * it is free of charge, to any person obtaining a copy of this software and associated
- * documentation files (the "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the Software is furnished
- * to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or
- * substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
+ * SPDX-License-Identifier: Unlicense OR CC0-1.0
  */
 
 '''
 
-GEN_HEAD_FILE_NAME =  'esp_embed_tone.h'
+GEN_HEAD_FILE_NAME = 'esp_embed_tone.h'
 GEN_CMAKE_FILE_NAME = 'esp_embed_tone.cmake'
+SUPPORTED_EXTENSIONS = ('.wav', '.mp3', '.aac', '.m4a')
 
-def sanitize_filename(filename):
-    return filename.replace('-', '_')
+def sanitize_filename(filename: str) -> str:
+    # Replace invalid characters with underscore
+    sanitized = filename.replace('-', '_').replace('.', '_').replace(' ', '_')
+    # Ensure it starts with a letter
+    if sanitized[0].isdigit():
+        sanitized = 'tone_' + sanitized
+    return sanitized
 
-def gen_h_file(file_dic):
-    h_file = '#pragma once\r\n\r\n'
-    h_file += '/**\n * @brief Structure for embedding tone information\n */\n'
-    h_file += 'typedef struct {\r\n    const uint8_t * address; /**< Pointer to the embedded tone data */\r\n    int size; /**< Size of the tone data in bytes */\r\n} esp_embed_tone_t;\r\n\r\n'
-    cmake_file = 'set(COMPONENT_EMBED_TXTFILES'
+def get_file_info(path: str) -> Dict[str, int]:
+    try:
+        file_list = [x for x in os.listdir(path) if x.lower().endswith(SUPPORTED_EXTENSIONS)]
+        file_list.sort()
+        if not file_list:
+            logger.warning(f'No supported audio files found in {path}')
+            return {}
 
-    enum_file = '\n/**\n * @brief Enumeration for tone URLs\n */\n'
-    enum_file += 'enum esp_embed_tone_index {'
-    struct_file = '/**\n * @brief Array of tone URLs\n */\n'
-    struct_file += 'const char * esp_embed_tone_url[] = {'
-    next_h_file = '/**\n * @brief Array of embedded tone information, use in `esp_gmf_io_embed_flash_set_context`\n */\n'
-    next_h_file += 'esp_embed_tone_t g_esp_embed_tone[] = {'
-    file_num = 0
+        file_info = {}
+        for filename in file_list:
+            try:
+                size = os.path.getsize(os.path.join(path, filename))
+                file_info[filename] = size
+                logger.info(f'Found audio file: {filename} ({size} bytes)')
+            except OSError as e:
+                logger.error(f'Error getting size for {filename}: {e}')
+                continue
+        return file_info
+    except OSError as e:
+        logger.error(f'Error scanning directory {path}: {e}')
+        return {}
 
-    for key in file_dic:
-        cmake_file += ' ' + key
-        sanitized_key = sanitize_filename(key.replace('.', '_'))
-        h_file += '/**\n * @brief External reference to embedded tone data\n */\n'
-        h_file += 'extern const uint8_t ' + sanitized_key + "[] asm(\"_binary_" + sanitized_key + "_start\");\r\n\r\n"
-        str_file_num = str(file_num)
-        str_file_size = str(file_dic[key])
-        next_h_file += '\n    [' + str_file_num + '] = {\n        .address = ' + sanitized_key + ', /**< Tone data address */\n        .size    = '+ str_file_size +', /**< Tone data size */\n    },'
-        file_num += 1
+def gen_h_file(file_info: Dict[str, int]) -> Tuple[str, str]:
+    if not file_info:
+        logger.error('No file information provided')
+        return '', ''
 
-        enum_file += '\n    ESP_EMBED_TONE_' + sanitized_key.upper() + ' = ' + str_file_num + ','
-        result = sanitized_key.rfind('_')
-        list_key = list(sanitized_key)
-        list_key[result] = '.'
-        sanitized_key = ''.join(list_key)
-        struct_file += "\n    \"" + 'embed://tone/' + str_file_num + '_' + sanitized_key + "\","
+    # Header file content
+    h_file = [
+        '#pragma once',
+        '',
+        '/**',
+        ' * @brief Structure for embedding tone information',
+        ' */',
+        'typedef struct {',
+        '    const uint8_t *address;  /*!< Pointer to the embedded tone data */',
+        '    int           size;      /*!< Size of the tone data in bytes */',
+        '} esp_embed_tone_t;',
+        ''
+    ]
+    # CMake file content
+    cmake_file = ['set(COMPONENT_EMBED_TXTFILES']
+    # Generate content for each file
+    enum_entries = []
+    url_entries = []
+    tone_entries = []
+    for idx, (filename, size) in enumerate(file_info.items()):
+        sanitized = sanitize_filename(filename)
+        # Add external reference
+        h_file.extend([
+            '/**',
+            f' * @brief External reference to embedded tone data: {filename}',
+            ' */',
+            f'extern const uint8_t {sanitized}[] asm("_binary_{sanitized}_start");',
+            ''
+        ])
+        # Add to CMake file
+        cmake_file.append(f' {filename}')
+        # Add tone entry
+        tone_entries.append(
+            f'    [{idx}] = {{\n'
+            f'        .address = {sanitized},\n'
+            f'        .size    = {size},\n'
+            f'    }},'
+        )
+        # Add enum entry
+        enum_entries.append(
+            f'    ESP_EMBED_TONE_{sanitized.upper()} = {idx},'
+        )
+        # Add URL entry with hyphens replaced by underscores
+        url_filename = filename.replace('-', '_')
+        url_entries.append(
+            f'    "embed://tone/{idx}_{url_filename}",'
+        )
+    # Complete header file
+    h_file.extend([
+        '/**',
+        ' * @brief Array of embedded tone information',
+        ' */',
+        'esp_embed_tone_t g_esp_embed_tone[] = {',
+        *tone_entries,
+        '};',
+        '',
+        '/**',
+        ' * @brief Enumeration for tone URLs',
+        ' */',
+        'enum esp_embed_tone_index {',
+        *enum_entries,
+        f'    ESP_EMBED_TONE_URL_MAX = {len(file_info)}',
+        '};',
+        '',
+        '/**',
+        ' * @brief Array of tone URLs',
+        ' */',
+        'const char * esp_embed_tone_url[] = {',
+        *url_entries,
+        '};',
+        ''
+    ])
+    # Complete CMake file
+    cmake_file.append(')')
+    return '\n'.join(h_file), ''.join(cmake_file)
 
-    enum_file += '\n    ESP_EMBED_TONE_URL_MAX = ' + str(file_num) + ''
-    next_h_file += '\n};\n';
-    cmake_file += ')'
-    enum_file += '\n};\n\n';
-    struct_file += '\n};\n';
-    h_file += next_h_file
-    h_file += enum_file
-    h_file += struct_file
-    return h_file, cmake_file
-
-def write_h_file(file, file_name, path):
-    if os.path.exists(file_name):
-        os.remove(file_name)
-
-    FileName = path + '/' + file_name
-    with open(FileName,'w+') as f:
-        if f != None:
-            if GEN_HEAD_FILE_NAME == file_name:
+def write_file(content: str, filepath: str, is_header: bool = False) -> bool:
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        with open(filepath, 'w+') as f:
+            if is_header:
                 f.write(LICENSE_STR)
-            f.write(file)
-            f.close()
+            f.write(content)
+        logger.info(f'Successfully wrote {filepath}')
+        return True
+    except OSError as e:
+        logger.error(f'Error writing to {filepath}: {e}')
+        return False
 
-def write_cmake_file(file, path):
-    ComponentName = path + '/' + GEN_CMAKE_FILE_NAME
-    with open(ComponentName,'w+') as f:
-        if f != None:
-            f.truncate(0)
-            f.write(file)
-            f.close()
+def main():
+    parser = argparse.ArgumentParser(
+        description='Generate embedded audio tone header and CMake files',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        '-p', '--path',
+        type=str,
+        required=True,
+        help='Base folder containing audio files'
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output'
+    )
+    args = parser.parse_args()
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    # Get file information
+    file_info = get_file_info(args.path)
+    if not file_info:
+        logger.error('No valid audio files found')
+        sys.exit(1)
+    # Generate files
+    h_content, cmake_content = gen_h_file(file_info)
+    # Write files
+    h_path = os.path.join(args.path, GEN_HEAD_FILE_NAME)
+    cmake_path = os.path.join(args.path, GEN_CMAKE_FILE_NAME)
+    if not write_file(h_content, h_path, is_header=True):
+        sys.exit(1)
+    if not write_file(cmake_content, cmake_path):
+        sys.exit(1)
+    logger.info('Successfully generated embedded tone files')
 
 if __name__ == '__main__':
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument('-p', '--path', type=str, required=False ,help='base folder for the source files generated')
-    args = argparser.parse_args()
-
-    file_list = [x for x in os.listdir(args.path) if ((x.endswith('.wav')) or (x.endswith('.mp3')))]
-    file_list.sort()
-
-    print('The file list:\r\n')
-    dict_file = dict()
-    for i in file_list:
-        size = os.path.getsize(i)
-        dict_file[i] = size
-    for j in dict_file:
-        print('name: %s' % j)
-        print('size: %d' % dict_file[j])
-
-    h_context, cmake_context  = gen_h_file(dict_file)
-    write_h_file(h_context, GEN_HEAD_FILE_NAME, args.path)
-    write_cmake_file(cmake_context, args.path)
+    main()

@@ -32,7 +32,7 @@ extern "C" {
  * @param[in]  io      The IO handle to register
  *
  * @return
- *       - ESP_GMF_OK               Successfully registered the IO handle
+ *       - ESP_GMF_ERR_OK           Successfully registered the IO handle
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument(s), such as a NULL handle or io
  *       - ESP_GMF_ERR_FAIL         Failed to register the IO handle due to other internal errors
  */
@@ -49,7 +49,7 @@ esp_gmf_err_t esp_audio_simple_player_register_io(esp_asp_handle_t handle, esp_g
  * @param[in]  element  The element handle to register
  *
  * @return
- *       - ESP_GMF_OK               Successfully registered the element handle
+ *       - ESP_GMF_ERR_OK           Successfully registered the element handle
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument(s), such as a NULL handle or element
  *       - ESP_GMF_ERR_FAIL         Failed to register the element handle due to other internal errors
  */
@@ -71,11 +71,28 @@ esp_gmf_err_t esp_audio_simple_player_register_el(esp_asp_handle_t handle, esp_g
  * @param  num_of_el_name  The number of intermediate elements specified in the `el_name` array
  *
  * @return
- *       - ESP_GMF_OK               Successfully registered the element handle
+ *       - ESP_GMF_ERR_OK           Successfully registered the element handle
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument(s), such as a NULL handle or element
  *       - ESP_GMF_ERR_FAIL         Failed to register the element handle due to other internal errors
  */
 esp_gmf_err_t esp_audio_simple_player_set_pipeline(esp_asp_handle_t handle, const char *in_name, const char *el_name[], int num_of_el_name);
+
+/**
+ * @brief  Gets the pipeline handle from the ESP Audio Simple Player instance
+ *
+ * @note
+ *     - This function can be called after `esp_audio_simple_player_set_pipeline` or `esp_audio_simple_player_run`
+ *     - The returned pipeline handle should not be destroyed by the caller, as it is managed by the ESP Audio Simple Player
+ *
+ * @param[in]   handle  The handle to the ESP Audio Simple Player instance
+ * @param[out]  pipe    Pointer to store the pipeline handle
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           Successfully got the pipeline handle
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument(s), such as a NULL handle or pipe pointer
+ *       - ESP_GMF_ERR_FAIL         Failed to get the pipeline handle due to other internal errors
+ */
+esp_gmf_err_t esp_audio_simple_player_get_pipeline(esp_asp_handle_t handle, esp_gmf_pipeline_handle_t *pipe);
 
 #ifdef __cplusplus
 }

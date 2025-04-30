@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.6.3
+
+### Bug Fixes
+
+- Changed the tag for embedded flash IO from `embed_flash` to `embed`
+- Refactor the script to make the generated files follow our coding style
+
 ## v0.6.2
 
 ### Features
