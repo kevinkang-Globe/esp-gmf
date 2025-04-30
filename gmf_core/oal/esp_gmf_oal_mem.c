@@ -12,6 +12,7 @@
 #include "esp_gmf_oal_mem.h"
 #include "esp_heap_caps.h"
 #include "hal/efuse_hal.h"
+#include "esp_private/esp_cache_private.h"
 
 // #define ENABLE_AUDIO_MEM_TRACE
 #define MALLOC_RAM_FLAG 1
@@ -168,4 +169,11 @@ bool esp_gmf_oal_mem_spiram_stack_is_enabled(void)
 #else  // defined(CONFIG_SPIRAM_BOOT_INIT)
     return false;
 #endif  /* defined(CONFIG_SPIRAM_BOOT_INIT) && (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY) */
+}
+
+uint8_t esp_gmf_oal_get_spiram_cache_align(void)
+{
+    size_t mem_alignment = 0;
+    esp_cache_get_alignment(MALLOC_CAP_SPIRAM, (size_t *)&mem_alignment);
+    return (uint8_t)mem_alignment;
 }

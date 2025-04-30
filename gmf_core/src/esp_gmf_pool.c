@@ -129,6 +129,27 @@ esp_gmf_err_t esp_gmf_pool_register_io(esp_gmf_pool_handle_t handle, esp_gmf_io_
     return ESP_GMF_ERR_OK;
 }
 
+esp_gmf_err_t esp_gmf_pool_iterate_element(esp_gmf_pool_handle_t handle, const void **iterator, esp_gmf_element_handle_t *el)
+{
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
+    ESP_GMF_NULL_CHECK(TAG, iterator, return ESP_GMF_ERR_INVALID_ARG);
+    ESP_GMF_NULL_CHECK(TAG, el, return ESP_GMF_ERR_INVALID_ARG);
+    esp_gmf_element_item_t *cur = (esp_gmf_element_item_t *) *iterator;
+
+    if (cur == NULL) {
+        cur = STAILQ_FIRST(&handle->el_list);
+    } else {
+        cur = STAILQ_NEXT(cur, next);
+    }
+    if (cur) {
+        *el = cur->instance;
+        *iterator = cur;
+        return ESP_GMF_ERR_OK;
+    }
+    *el = NULL;
+    return ESP_GMF_ERR_NOT_FOUND;
+}
+
 esp_gmf_err_t esp_gmf_pool_new_io(esp_gmf_pool_handle_t handle, const char *name, esp_gmf_io_dir_t dir, esp_gmf_io_handle_t *new_io)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);

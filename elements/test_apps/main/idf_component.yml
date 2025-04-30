@@ -9,4 +9,14 @@ dependencies:
     override_path: ../../gmf_ai_audio
   espressif/gmf_core:
     override_path: ../../../gmf_core
+  gmf_video:
+    override_path: ../../gmf_video
   espressif/esp-dsp: <=1.5.0
+  espressif/esp_video_codec: "~0.5.2"
+  espressif/esp_h264:
+    version: "1.0.4"
+    rules:
+      - if: "target in [esp32s3, esp32p4]"
+  espressif/esp_wifi_remote:
+    rules:
+      - if: "target in [esp32p4]"

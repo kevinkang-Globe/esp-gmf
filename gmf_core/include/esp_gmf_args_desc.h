@@ -49,6 +49,8 @@ typedef struct esp_gmf_args_desc {
 /**
  * @brief  Create a new argument description node
  *
+ * @note  The `name` is not copied, so it must have global or static scope to remain valid throughout the method's operation
+ *
  * @param[in]   name    Name of the argument
  * @param[in]   type    Type of the argument
  * @param[in]   val     Nested value for arrays or sublists
@@ -65,11 +67,7 @@ static inline esp_gmf_err_t esp_gmf_args_desc_create(const char *name, esp_gmf_a
     esp_gmf_args_desc_t *node = (esp_gmf_args_desc_t *)esp_gmf_oal_calloc(1, sizeof(esp_gmf_args_desc_t));
     if (node) {
         if (name) {
-            node->name = esp_gmf_oal_strdup(name);
-            if (node->name == NULL) {
-                esp_gmf_oal_free(node);
-                return ESP_GMF_ERR_MEMORY_LACK;
-            }
+            node->name = name;
         }
         node->type = type;
         node->val = val;
@@ -98,7 +96,6 @@ static inline void esp_gmf_args_desc_destroy(esp_gmf_args_desc_t *head)
             esp_gmf_args_desc_destroy(current->val);
             current->val = NULL;
         }
-        esp_gmf_oal_free((char *)current->name);
         esp_gmf_oal_free(current);
         current = next;
     }
@@ -133,6 +130,8 @@ static inline esp_gmf_err_t esp_gmf_args_desc_get_total_size(esp_gmf_args_desc_t
  *         This function creates a new argument description node and appends it to the end of the linked list.
  *         The new node is initialized with the specified `name`, `type`, `size`, `offset`, and a pointer to
  *         a `val` structure that contains additional argument-specific data.
+ *
+ * @note  The `name` is not copied, so it must have global or static scope to remain valid throughout the method's operation
  *
  * @param[in,out]  head    Pointer to the head of the linked list. This is a pointer to the first node
  *                         in the list, and it will be updated if the new node is added at the head
@@ -185,6 +184,8 @@ static inline esp_gmf_err_t esp_gmf_args_desc_append_base(esp_gmf_args_desc_t **
 
 /**
  * @brief  Append a new argument description for a non-array argument to the linked list
+ *
+ * @note  The `name` is not copied, so it must have global or static scope to remain valid throughout the method's operation
  *
  * @param[in,out]  head    Pointer to the head of the linked list. This is a pointer to the first node
  *                         in the list, and it will be updated if the new node is added at the head
@@ -254,7 +255,6 @@ static inline esp_gmf_err_t esp_gmf_args_desc_copy(const esp_gmf_args_desc_t *he
     if (head->val) {
         esp_gmf_args_desc_copy(head->val, &new_head->val);
         if (!new_head->val) {
-            esp_gmf_oal_free((void *)new_head->name);
             esp_gmf_oal_free(new_head);
             return ESP_GMF_ERR_MEMORY_LACK;
         }
@@ -268,7 +268,6 @@ static inline esp_gmf_err_t esp_gmf_args_desc_copy(const esp_gmf_args_desc_t *he
             if (new_head->val) {
                 esp_gmf_oal_free(new_head->val);
             }
-            esp_gmf_oal_free((void *)new_head->name);
             esp_gmf_oal_free(new_head);
             return ESP_GMF_ERR_MEMORY_LACK;
         }
@@ -317,7 +316,7 @@ static inline esp_gmf_err_t esp_gmf_args_desc_found(esp_gmf_args_desc_t *head, c
     while (current != NULL) {
         next = current->next;
         ESP_LOGV("GMF_ARG", "Desc_Find, %s, want:%s, offset:%d", current->name, wanted_name, current->offset);
-        if (strncasecmp(current->name, wanted_name, strlen(current->name)) == 0) {
+        if ((current->name == wanted_name) || (strcasecmp(current->name, wanted_name) == 0)) {
             *wanted_arg = current;
             ESP_LOGD("GMF_ARG", "Found %s, want:%s, offset:%d\r\n", current->name, wanted_name, current->offset);
             return ESP_GMF_ERR_OK;

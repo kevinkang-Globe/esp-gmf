@@ -72,7 +72,12 @@ static inline void gmf_eightcc_to_str(uint64_t eightcc, char out[9])
 /***************************************************************************/
 #define ESP_GMF_CAPS_VIDEO_DECODER              STR_2_EIGHTCC("VIDDEC")
 #define ESP_GMF_CAPS_VIDEO_ENCODER              STR_2_EIGHTCC("VIDENC")
-
+#define ESP_GMF_CAPS_VIDEO_COLOR_CONVERT        STR_2_EIGHTCC("VIDCCVT")
+#define ESP_GMF_CAPS_VIDEO_CROP                 STR_2_EIGHTCC("VIDCROP")
+#define ESP_GMF_CAPS_VIDEO_ROTATE               STR_2_EIGHTCC("VIDRTATE")
+#define ESP_GMF_CAPS_VIDEO_SCALE                STR_2_EIGHTCC("VIDSCALE")
+#define ESP_GMF_CAPS_VIDEO_OVERLAY              STR_2_EIGHTCC("VIDOVLY")
+#define ESP_GMF_CAPS_VIDEO_FPS_CVT              STR_2_EIGHTCC("VIDFPS")
 
 #ifdef __cplusplus
 }

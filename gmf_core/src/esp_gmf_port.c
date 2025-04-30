@@ -281,13 +281,13 @@ esp_gmf_err_io_t esp_gmf_port_acquire_out(esp_gmf_port_handle_t handle, esp_gmf_
         }
     }
     if (*load == NULL) {
-        if (port->payload) {
+        if (port->payload && port->ops.acquire == NULL) {
             *load = port->payload;
         } else {
             if (port->self_payload == NULL) {
                 esp_gmf_payload_new(&port->self_payload);
                 ESP_GMF_MEM_CHECK(TAG, port->self_payload, return ESP_GMF_IO_FAIL);
-                ESP_LOGI(TAG, "ACQ OUT, new self payload:%p, port:%p, el:%p-%s", port->self_payload, port, el, OBJ_GET_TAG(el));
+                ESP_LOGD(TAG, "ACQ OUT, new self payload:%p, port:%p, el:%p-%s", port->self_payload, port, el, OBJ_GET_TAG(el));
             }
             port->payload = port->self_payload;
             *load = port->self_payload;
