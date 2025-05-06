@@ -1,11 +1,13 @@
 # Changelog
 
-## *Unreleased*
+## v0.6.3
 
 ### Bug Fixes
 
-- Fixed decoder and encoder not releasing input port on failure
-
+- Fixed decoder not releasing input port on failure
+- Fixed missing input size check in gmf_audio_enc when input is insufficient to encode a frame and stream has ended
+- Fixed missing zero size check for acquire_in in gmf_audio_dec
+- Fixed unmatched sub_cfg when reconfigured by esp_gmf_audio_helper_reconfig_dec_by_uri
 
 ## v0.6.2
 

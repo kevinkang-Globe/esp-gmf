@@ -203,24 +203,22 @@ esp_gmf_err_t esp_gmf_audio_helper_get_audio_type_by_uri(const char *uri, esp_au
 
 esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_gmf_info_sound_t *info, esp_audio_simple_dec_cfg_t *dec_cfg)
 {
+    // free sub cfg first
+    if (dec_cfg->dec_cfg) {
+        esp_gmf_oal_free(dec_cfg->dec_cfg);
+        dec_cfg->dec_cfg = NULL;
+        dec_cfg->cfg_size = 0;
+    }
     if (strstr(uri, ".aac")) {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_AAC;
         esp_aac_dec_cfg_t aac_cfg = {
             .no_adts_header = false,
             .aac_plus_enable = true,
         };
-        if ((dec_cfg->dec_cfg == NULL)
-            || (dec_cfg->cfg_size != sizeof(esp_aac_dec_cfg_t))) {
-            if (dec_cfg->dec_cfg) {
-                esp_gmf_oal_free(dec_cfg->dec_cfg);
-                dec_cfg->dec_cfg = NULL;
-                dec_cfg->cfg_size = 0;
-            }
-            dec_cfg->dec_cfg = esp_gmf_oal_calloc(1, sizeof(esp_aac_dec_cfg_t));
-            ESP_GMF_MEM_CHECK(TAG, dec_cfg->dec_cfg, return ESP_GMF_ERR_MEMORY_LACK;);
-            dec_cfg->cfg_size = sizeof(esp_aac_dec_cfg_t);
-            memcpy(dec_cfg->dec_cfg, &aac_cfg, dec_cfg->cfg_size);
-        }
+        dec_cfg->dec_cfg = esp_gmf_oal_calloc(1, sizeof(esp_aac_dec_cfg_t));
+        ESP_GMF_MEM_CHECK(TAG, dec_cfg->dec_cfg, return ESP_GMF_ERR_MEMORY_LACK;);
+        dec_cfg->cfg_size = sizeof(esp_aac_dec_cfg_t);
+        memcpy(dec_cfg->dec_cfg, &aac_cfg, dec_cfg->cfg_size);
     } else if (strstr(uri, ".mp3")) {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3;
     } else if (strstr(uri, ".amrwb")) {
@@ -240,33 +238,17 @@ esp_gmf_err_t esp_gmf_audio_helper_reconfig_dec_by_uri(const char *uri, esp_gmf_
         esp_opus_dec_cfg_t opus_cfg = ESP_OPUS_DEC_CONFIG_DEFAULT();
         opus_cfg.channel = info->channels;
         opus_cfg.sample_rate = info->sample_rates;
-        if ((dec_cfg->dec_cfg == NULL)
-            || (dec_cfg->cfg_size != sizeof(esp_opus_dec_cfg_t))) {
-            if (dec_cfg->dec_cfg) {
-                esp_gmf_oal_free(dec_cfg->dec_cfg);
-                dec_cfg->dec_cfg = NULL;
-                dec_cfg->cfg_size = 0;
-            }
-            dec_cfg->dec_cfg = esp_gmf_oal_calloc(1, sizeof(esp_opus_dec_cfg_t));
-            ESP_GMF_MEM_CHECK(TAG, dec_cfg->dec_cfg, return ESP_GMF_ERR_MEMORY_LACK;);
-            dec_cfg->cfg_size = sizeof(esp_opus_dec_cfg_t);
-            memcpy(dec_cfg->dec_cfg, &opus_cfg, dec_cfg->cfg_size);
-        }
+        dec_cfg->dec_cfg = esp_gmf_oal_calloc(1, sizeof(esp_opus_dec_cfg_t));
+        ESP_GMF_MEM_CHECK(TAG, dec_cfg->dec_cfg, return ESP_GMF_ERR_MEMORY_LACK;);
+        dec_cfg->cfg_size = sizeof(esp_opus_dec_cfg_t);
+        memcpy(dec_cfg->dec_cfg, &opus_cfg, dec_cfg->cfg_size);
     } else if (strstr(uri, ".pcm")) {
         dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_PCM;
         esp_pcm_dec_cfg_t *cfg = dec_cfg->dec_cfg;
-        if ((dec_cfg->dec_cfg == NULL)
-            || (dec_cfg->cfg_size != sizeof(esp_pcm_dec_cfg_t))) {
-            if (dec_cfg->dec_cfg) {
-                esp_gmf_oal_free(dec_cfg->dec_cfg);
-                dec_cfg->dec_cfg = NULL;
-                dec_cfg->cfg_size = 0;
-            }
-            cfg = esp_gmf_oal_calloc(1, sizeof(esp_pcm_dec_cfg_t));
-            ESP_GMF_MEM_CHECK(TAG, cfg, return ESP_GMF_ERR_MEMORY_LACK;);
-            dec_cfg->cfg_size = sizeof(esp_pcm_dec_cfg_t);
-            dec_cfg->dec_cfg = cfg;
-        }
+        cfg = esp_gmf_oal_calloc(1, sizeof(esp_pcm_dec_cfg_t));
+        ESP_GMF_MEM_CHECK(TAG, cfg, return ESP_GMF_ERR_MEMORY_LACK;);
+        dec_cfg->cfg_size = sizeof(esp_pcm_dec_cfg_t);
+        dec_cfg->dec_cfg = cfg;
         cfg->sample_rate = info->sample_rates;
         cfg->channel = info->channels;
         cfg->bits_per_sample = info->bits;
