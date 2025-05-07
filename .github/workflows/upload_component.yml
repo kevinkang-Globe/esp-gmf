@@ -15,10 +15,10 @@ jobs:
         with:
           components: |
             gmf_core:./gmf_core
-            gmf_audio:./gmf_elements/gmf_audio
-            gmf_io:./gmf_elements/gmf_io
-            gmf_misc:./gmf_elements/gmf_misc
-            esp_audio_simple_player:./examples/esp_audio_simple_player
-            gmf_ai_audio:./gmf_elements/gmf_ai_audio
+            gmf_audio:./elements/gmf_audio
+            gmf_io:./elements/gmf_io
+            gmf_misc:./elements/gmf_misc
+            gmf_ai_audio:./elements/gmf_ai_audio
+            esp_audio_simple_player:./packages/esp_audio_simple_player
           namespace: "espressif"
           api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}

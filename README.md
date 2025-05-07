@@ -11,22 +11,22 @@ ESP-GMF consists of three modules: **GMF-Core**, **GMF-Elements**, and **GMF-Exa
 
 # ESP-GMF Component Overview
 
-Each ESP-GMF functional module exists as a component, currently including [GMF-Core](./gmf_core/README.md), [GMF-Audio](./gmf_elements/gmf_audio/README.md), [GMF-Misc](./gmf_elements/gmf_misc/README.md), [GMF-IO](./gmf_elements/gmf_io/README.md), and [GMF-AI-Audio](./gmf_elements/gmf_ai_audio/README.md).
+Each ESP-GMF functional module exists as a component, currently including [GMF-Core](./gmf_core/README.md), [GMF-Audio](./elements/gmf_audio/README.md), [GMF-Misc](./elements/gmf_misc/README.md), [GMF-IO](./elements/gmf_io/README.md), and [GMF-AI-Audio](./elements/gmf_ai_audio/README.md).
 
 | Component Name | Function | Dependent Components |
 | :------------: | :------------: | :------------ |
 | [gmf_core](./gmf_core) | Core framework for GMF | None |
-| [gmf_audio](./gmf_elements/gmf_audio) | Elements for audio encoding, decoding,<br>and sound effects processing | - `gmf_core`<br>- `esp_audio_effects`<br>- `esp_audio_codec` |
-| [gmf_misc](./gmf_elements/gmf_misc) | Utility elements | None |
+| [gmf_audio](./elements/gmf_audio) | Elements for audio encoding, decoding,<br>and sound effects processing | - `gmf_core`<br>- `esp_audio_effects`<br>- `esp_audio_codec` |
+| [gmf_misc](./elements/gmf_misc) | Utility elements | None |
 | esp_gmf_image | Elements for image encoding, decoding,<br>and image effects processing | - `gmf_core`<br>- `esp_new_jpeg` |
-| [gmf_io](./gmf_elements/gmf_io) | Input/output for files, flash, and HTTP | - `gmf_core`<br>- `esp_codec_dev` |
-| [gmf_ai_audio](./gmf_elements/gmf_ai_audio) | Elements for intelligence audio processing | - `esp-sr`<br>- `gmf_core` |
+| [gmf_io](./elements/gmf_io) | Input/output for files, flash, and HTTP | - `gmf_core`<br>- `esp_codec_dev` |
+| [gmf_ai_audio](./elements/gmf_ai_audio) | Elements for intelligence audio processing | - `esp-sr`<br>- `gmf_core` |
 
 When developing a project, it is recommended to use the elements and IOs components from the official GMF-Elements repository. You can also create your own elements and IO components to extend its application scenarios.
 
 # ESP-GMF Usage Guide
 
-For a basic example of GMF-Core API usage, see [test_apps](./gmf_core/test_apps/main/cases/gmf_pool_test.c). For practical application examples of GMF-Elements, see the [ examples ](./examples/basic_examples/) under GMF_Elements.
+For a basic example of GMF-Core API usage, see [test_apps](./gmf_core/test_apps/main/cases/gmf_pool_test.c). For practical application examples of GMF-Elements, see the [ examples ](./gmf_examples/basic_examples/) under GMF_Elements.
 
 # Frequently Asked Questions
 

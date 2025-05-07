@@ -11,22 +11,22 @@ ESP-GMF 包含 GMF-Core、 GMF-Elements 和 GMF-Examples 三个模块。
 
 # ESP-GMF 组件介绍
 
-ESP-GMF 各个功能模块以组件的形式存在，目前包含 [GMF-Core](./gmf_core/README_CN.md)、[GMF-Audio](./gmf_elements/gmf_audio/README_CN.md)、ESP-GMF-Image、[GMF-Misc](./gmf_elements/gmf_misc/README_CN.md)、[GMF-IO](./gmf_elements/gmf_io/README_CN.md) 和 [GMF-AI-Audio](./gmf_elements/gmf_ai_audio/README_CN.md)。
+ESP-GMF 各个功能模块以组件的形式存在，目前包含 [GMF-Core](./gmf_core/README_CN.md)、[GMF-Audio](./elements/gmf_audio/README_CN.md)、ESP-GMF-Image、[GMF-Misc](./elements/gmf_misc/README_CN.md)、[GMF-IO](./elements/gmf_io/README_CN.md) 和 [GMF-AI-Audio](./elements/gmf_ai_audio/README_CN.md)。
 
 |  组件名称 |  功能 | 依赖的组件  |
 | :------------: | :------------:|:------------ |
 |  [gmf_core](./gmf_core) | GMF 基础框架  |  无 |
-|  [gmf_audio](./gmf_elements/gmf_audio) | GMF 音频编解码和<br>音效处理 element  | - `gmf_core`<br>- `esp_audio_effects`<br> - `esp_audio_codec` |
-|  [gmf_misc](./gmf_elements/gmf_misc) | 工具类 element   | 无  |
+|  [gmf_audio](./elements/gmf_audio) | GMF 音频编解码和<br>音效处理 element  | - `gmf_core`<br>- `esp_audio_effects`<br> - `esp_audio_codec` |
+|  [gmf_misc](./elements/gmf_misc) | 工具类 element   | 无  |
 |  esp_gmf_image | GMF 图像编解码和<br>图像效果处理 element  | - `gmf_core`<br>- `esp_new_jpeg` |
-|  [gmf_io](./gmf_elements/gmf_io) | 文件、flash、HTTP 输入输出  | - `gmf_core`<br>- `esp_codec_dev`  |
-|  [gmf_ai_audio](./gmf_elements/gmf_ai_audio) | 智能语音算法和<br>语音识别 element | - `esp-sr`<br>- `gmf_core` |
+|  [gmf_io](./elements/gmf_io) | 文件、flash、HTTP 输入输出  | - `gmf_core`<br>- `esp_codec_dev`  |
+|  [gmf_ai_audio](./elements/gmf_ai_audio) | 智能语音算法和<br>语音识别 element | - `esp-sr`<br>- `gmf_core` |
 
 在开发项目时，推荐使用官方 GMF-Elements 仓库的 elements 和 IOs 组件进行开发，也可以自行创建 element 和 IO 组件来扩展其应用场景。
 
 # ESP-GMF 使用说明
 
-GMF-Core API 的简单示例代码请参考 [test_apps](./gmf_core/test_apps/main/cases/gmf_pool_test.c)，GMF-Elements 实际应用示例请参考 GMF_Elements 下的 [ examples ](./examples/basic_examples/)。
+GMF-Core API 的简单示例代码请参考 [test_apps](./gmf_core/test_apps/main/cases/gmf_pool_test.c)，GMF-Elements 实际应用示例请参考 GMF_Elements 下的 [ examples ](./gmf_examples/basic_examples/)。
 
 # 常见问题
 
