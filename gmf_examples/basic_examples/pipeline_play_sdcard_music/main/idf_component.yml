@@ -1,0 +1,17 @@
+dependencies:
+  espressif/gmf_audio:
+    override_path: ../../../../elements/gmf_audio
+  espressif/gmf_io:
+    override_path: ../../../../elements/gmf_io
+  espressif/gmf_misc:
+    override_path: ../../../../elements/gmf_misc
+  espressif/gmf_core:
+    override_path: ../../../../gmf_core
+  espressif/esp_wifi_remote:
+    version: '*'
+    rules:
+      - if: "target in [esp32p4]"
+  espressif/esp_hosted:
+    version: '*'
+    rules:
+      - if: "target in [esp32p4]"
