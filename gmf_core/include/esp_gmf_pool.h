@@ -126,6 +126,20 @@ esp_gmf_err_t esp_gmf_pool_new_io(esp_gmf_pool_handle_t handle, const char *name
 esp_gmf_err_t esp_gmf_pool_new_element(esp_gmf_pool_handle_t handle, const char *el_name, esp_gmf_element_handle_t *new_el);
 
 /**
+ * @brief  Iterate pool to retrieve element
+ *
+ * @param[in]   handle    GMF pool handle
+ * @param[out]  iterator  To retrieve first element set `*iterator = NULL`, after that do not modify `*iterator` any more
+ * @param[out]  el        To store retrieved element handle
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid arguments
+ *       - ESP_GMF_ERR_NOT_FOUND    Iterate finished, no more elements found
+ */
+esp_gmf_err_t esp_gmf_pool_iterate_element(esp_gmf_pool_handle_t handle, const void **iterator, esp_gmf_element_handle_t *el);
+
+/**
  * @brief  Print information about elements and IOs registered in a GMF pool
  *
  * @param[in]  handle  GMF pool handle

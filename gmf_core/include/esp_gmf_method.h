@@ -37,6 +37,8 @@ typedef struct esp_gmf_method {
  * @brief  Create a new GMF method
  *         This function creates a new GMF method and initializes its members
  *
+ * @note  The `name` argument must have global or static scope to ensure validity throughout the method's operation
+ *
  * @param[in]   name    Name of the method
  * @param[in]   func    Function pointer to the method implementation
  * @param[in]   args    The arguments description list
@@ -51,11 +53,7 @@ static inline esp_gmf_err_t esp_gmf_method_create(const char *name, esp_gmf_meth
     esp_gmf_method_t *new_method = (esp_gmf_method_t *)esp_gmf_oal_calloc(1, sizeof(esp_gmf_method_t));
     if (new_method) {
         if (name) {
-            new_method->name = esp_gmf_oal_strdup(name);
-            if (new_method->name == NULL) {
-                esp_gmf_oal_free(new_method);
-                return ESP_GMF_ERR_MEMORY_LACK;
-            }
+            new_method->name = name;
         }
         new_method->args_cnt  = esp_gmf_args_desc_count(args);
         new_method->func      = func;
@@ -70,6 +68,8 @@ static inline esp_gmf_err_t esp_gmf_method_create(const char *name, esp_gmf_meth
 /**
  * @brief  Append a new GMF method to the method list
  *         This function creates a new GMF method and appends it to the provided method list
+ *
+ * @note  The `name` argument must have global or static scope to ensure validity throughout the method's operation
  *
  * @param[in,out]  head  Pointer to the head of the method list
  * @param[in]      name  Name of the method
@@ -110,9 +110,6 @@ static inline void esp_gmf_method_destroy(esp_gmf_method_t *head)
     esp_gmf_method_t *next;
     while (current != NULL) {
         next = current->next;
-        if (current->name) {
-            esp_gmf_oal_free((char *)current->name);
-        }
         if (current->args_desc) {
             esp_gmf_args_desc_destroy(current->args_desc);
             current->args_desc = NULL;
@@ -158,7 +155,7 @@ static inline esp_gmf_err_t esp_gmf_method_found(const esp_gmf_method_t *head, c
     const esp_gmf_method_t *current = head;
     while (current != NULL) {
         ESP_LOGD("GMF_Method", "name:%s, want:%s", current->name, wanted_name);
-        if (strncasecmp(current->name, wanted_name, strlen(current->name)) == 0) {
+        if ((current->name == wanted_name) || (strcasecmp(current->name, wanted_name) == 0)) {
             *wanted_method = current;
             return ESP_GMF_ERR_OK;
         }

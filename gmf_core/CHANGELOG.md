@@ -6,6 +6,13 @@
 
 - Fixed pause timeout caused by missing sync event when pause producer entered an error state
 
+### Features
+- Added `esp_gmf_pool_iterate_element` to support iteration over elements in the GMF pool  
+- Added FourCC codes to represent video element caps  
+- Optimized GMF argument and method name handling to avoid unnecessary copying  
+- Added `esp_gmf_oal_get_spiram_cache_align` for retrieving SPIRAM cache alignment
+- Added helper macros for defining and retrieving GMF method and argument identifiers
+- Added helper function for GMF method execution
 
 ## v0.6.1
 

@@ -121,6 +121,14 @@ bool esp_gmf_oal_mem_spiram_stack_is_enabled(void);
 
 #define ESP_GMF_MEM_SHOW(x) esp_gmf_oal_mem_print(x, __LINE__, __func__)
 
+/**
+ * @brief  Get SPI RAM cache alignment
+ *
+ * @return
+ *       - Alignment  SPI RAM cache alignment
+ */
+uint8_t esp_gmf_oal_get_spiram_cache_align(void);
+
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

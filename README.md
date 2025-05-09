@@ -11,16 +11,16 @@ ESP-GMF consists of three modules: **GMF-Core**, **GMF-Elements**, and **GMF-Exa
 
 # ESP-GMF Component Overview
 
-Each ESP-GMF functional module exists as a component, currently including [GMF-Core](./gmf_core/README.md), [GMF-Audio](./elements/gmf_audio/README.md), [GMF-Misc](./elements/gmf_misc/README.md), [GMF-IO](./elements/gmf_io/README.md), and [GMF-AI-Audio](./elements/gmf_ai_audio/README.md).
+Each ESP-GMF functional module exists as a component, currently including [GMF-Core](./gmf_core/README.md), [GMF-Audio](./elements/gmf_audio/README.md), [GMF-Misc](./elements/gmf_misc/README.md), [GMF-IO](./elements/gmf_io/README.md), [GMF-AI-Audio](./elements/gmf_ai_audio/README.md), and [GMF-Video](./elements/gmf_video/README.md)..
 
 | Component Name | Function | Dependent Components |
 | :------------: | :------------: | :------------ |
 | [gmf_core](./gmf_core) | Core framework for GMF | None |
 | [gmf_audio](./elements/gmf_audio) | Elements for audio encoding, decoding,<br>and sound effects processing | - `gmf_core`<br>- `esp_audio_effects`<br>- `esp_audio_codec` |
 | [gmf_misc](./elements/gmf_misc) | Utility elements | None |
-| esp_gmf_image | Elements for image encoding, decoding,<br>and image effects processing | - `gmf_core`<br>- `esp_new_jpeg` |
 | [gmf_io](./elements/gmf_io) | Input/output for files, flash, and HTTP | - `gmf_core`<br>- `esp_codec_dev` |
 | [gmf_ai_audio](./elements/gmf_ai_audio) | Elements for intelligence audio processing | - `esp-sr`<br>- `gmf_core` |
+| [gmf_video](./elements/gmf_video) | Elements for video encoding, decoding,<br>and video effects processing | - `gmf_core`<br>- `esp_video_codec` |
 
 When developing a project, it is recommended to use the elements and IOs components from the official GMF-Elements repository. You can also create your own elements and IO components to extend its application scenarios.
 
