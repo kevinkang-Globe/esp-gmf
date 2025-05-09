@@ -3,30 +3,48 @@
 
 ESP-GMF 全称 Espressif General Multimedia Framework，是乐鑫开发的应用于 IoT 多媒体领域的轻量级通用软件框架。它灵活性高，可扩展性强，专为 IoT 芯片量身打造，RAM 资源占用只有 7 KB。ESP-GMF 可应用于音频、图像、视频等产品，还可应用于任何流式处理数据的产品中。
 
-ESP-GMF 包含 GMF-Core、 GMF-Elements 和 GMF-Examples 三个模块。
+ESP-GMF 包含 GMF-Core、 Elements、Packages 和 GMF-Examples 四个模块。
 
-- GMF-Core 是 ESP-GMF 软件框架的核心，有 GMF-Element、GMF-Pipeline、GMF-Task 等主要部件。
-- GMF-Elements 是基于 GMF-Core 实现的各种具体功能 element，比如编解码算法、音效处理算法等。
-- GMF-Examples 提供如何使用 GMF-Pipeline 实现简单功能的示例，比如播放 flash 或 SD 卡中的音乐，同时还有基于 GMF-Pipeline 实现的 High Level 功能的组件示例，比如 **ESP Audio Simple Player** 是一个简单音频解码播放器。
+- **GMF-Core** 是 ESP-GMF 软件框架的核心，有 GMF-Element、GMF-Pipeline、GMF-Task 等主要部件。
+- **Elements** 是基于 GMF-Core 实现的各种具体功能 element，比如音视频编解码算法、音效处理算法 和 AI 算法等。
+- **Packages** 基于 GMF-Pipeline 实现的 High Level 功能的组件示例，比如 **ESP Audio Simple Player** 是一个简单音频解码播放器。
+- **GMF-Examples** 提供如何使用 GMF-Pipeline 实现简单功能的示例，比如播放 flash 或 SD 卡中的音乐。
 
 # ESP-GMF 组件介绍
 
-ESP-GMF 各个功能模块以组件的形式存在，目前包含 [GMF-Core](./gmf_core/README_CN.md)、[GMF-Audio](./elements/gmf_audio/README_CN.md)、ESP-GMF-Image、[GMF-Misc](./elements/gmf_misc/README_CN.md)、[GMF-IO](./elements/gmf_io/README_CN.md)、 [GMF-AI-Audio](./elements/gmf_ai_audio/README_CN.md) 和 [GMF-Video](./elements/gmf_video/README_CN.md)。
+ESP-GMF 各个模块以组件的形式存在，组件又按功能分为**原子组件**、**基础组件**和**高级组件**。在开发项目时，推荐使用官方仓库的 elements 和 IOs 组件进行开发，也可以自行创建 element 和 IO 组件来扩展其应用场景。
+
+## 原子组件
+
+原子组件是 ESP-GMF 不可或缺的、核心的基础构建单元。
 
 |  组件名称 |  功能 | 依赖的组件  |
 | :------------: | :------------:|:------------ |
 |  [gmf_core](./gmf_core) | GMF 基础框架  |  无 |
+
+## 基础组件
+
+基础组件是 ESP-GMF 中的中间层模块，承担数据处理和音视频流编解码等核心能力。这些组件具备清晰的输入/输出接口，专注于一个具体的任务，具有复用性和可组合性。它们既可以单独使用，也常用于构建复杂应用程序。
+
+|  组件名称 |  功能 | 依赖的组件  |
+| :------------: | :------------:|:------------ |
 |  [gmf_audio](./elements/gmf_audio) | GMF 音频编解码和<br>音效处理 element  | - `gmf_core`<br>- `esp_audio_effects`<br> - `esp_audio_codec` |
 |  [gmf_misc](./elements/gmf_misc) | 工具类 element   | 无  |
 |  [gmf_io](./elements/gmf_io) | 文件、flash、HTTP 输入输出  | - `gmf_core`<br>- `esp_codec_dev`  |
 |  [gmf_ai_audio](./elements/gmf_ai_audio) | 智能语音算法和<br>语音识别 element | - `esp-sr`<br>- `gmf_core` |
 |  [gmf_video](./elements/gmf_video) | GMF 视频编解码和<br>视频效果处理 element  | - `gmf_core`<br>- `esp_video_codec` |
 
-在开发项目时，推荐使用官方 GMF-Elements 仓库的 elements 和 IOs 组件进行开发，也可以自行创建 element 和 IO 组件来扩展其应用场景。
+## 高级组件
+
+高级组件是 ESP-GMF 中面向特定应用场景的封装模块，通常由多个基础功能组件甚至原子组件组合而成。它们封装了常见的多媒体业务流程，隐藏了底层的 pipeline 构建和组件配置逻辑，提供简单易用的接口，帮助用户快速实现复杂的功能，以简化用户开发流程，便于快速集成。该分类还包括一些工具类模块和示例集合。
+
+|  组件名称 |  功能 | 依赖的组件  |
+| :------------: | :------------:|:------------ |
+|  [esp_audio_simple_player](./packages/esp_audio_simple_player) | 简单的音频播放器 | - `gmf_audio`<br>- `gmf_io` |
 
 # ESP-GMF 使用说明
 
-GMF-Core API 的简单示例代码请参考 [test_apps](./gmf_core/test_apps/main/cases/gmf_pool_test.c)，GMF-Elements 实际应用示例请参考 GMF_Elements 下的 [ examples ](./gmf_examples/basic_examples/)。
+GMF-Core API 的简单示例代码请参考 [test_apps](./gmf_core/test_apps/main/cases/gmf_pool_test.c)，Elements 实际应用示例请参考 [ examples ](./gmf_examples/basic_examples/)。
 
 # 常见问题
 
