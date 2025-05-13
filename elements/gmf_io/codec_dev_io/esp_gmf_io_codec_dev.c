@@ -159,3 +159,15 @@ _codec_dev_fail:
     esp_gmf_obj_delete(obj);
     return ret;
 }
+
+esp_gmf_err_t esp_gmf_io_codec_dev_set_dev(esp_gmf_io_handle_t io, esp_codec_dev_handle_t dev)
+{
+    codec_dev_io_stream_t *codec_dev_io = (codec_dev_io_stream_t *)io;
+    ESP_GMF_NULL_CHECK(TAG, codec_dev_io, return ESP_GMF_ERR_INVALID_ARG;);
+
+    codec_dev_io_cfg_t *cfg = (codec_dev_io_cfg_t *)OBJ_GET_CFG(codec_dev_io);
+    ESP_GMF_NULL_CHECK(TAG, cfg, return ESP_GMF_ERR_INVALID_STATE;);
+
+    cfg->dev = dev;
+    return ESP_GMF_ERR_OK;
+}

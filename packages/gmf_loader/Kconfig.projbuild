@@ -1,0 +1,7 @@
+menu "ESP GMF Loader"
+
+    rsource "Kconfigs/kconfig.io"
+    rsource "Kconfigs/kconfig.audio"
+    rsource "Kconfigs/kconfig.video"
+
+endmenu

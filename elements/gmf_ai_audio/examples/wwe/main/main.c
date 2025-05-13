@@ -9,19 +9,16 @@
 
 #include "esp_err.h"
 #include "esp_log.h"
-#include "esp_check.h"
-#include "esp_vad.h"
 
 #include "esp_gmf_io.h"
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_pool.h"
 #include "esp_gmf_setup_peripheral.h"
-#include "esp_gmf_setup_pool.h"
 
-#include "esp_afe_config.h"
-#include "esp_gmf_afe_manager.h"
 #include "esp_gmf_afe.h"
+#include "esp_gmf_io_codec_dev.h"
 #include "cli.h"
+#include "gmf_loader_setup_defaults.h"
 
 #define VOICE2FILE     (true)
 #define WAKENET_ENABLE (true)
@@ -198,28 +195,8 @@ void app_main(void)
 
     esp_gmf_pool_handle_t pool = NULL;
     esp_gmf_pool_init(&pool);
-    pool_register_io(pool);
-    pool_register_audio_codecs(pool);
-    pool_register_audio_effects(pool);
-    pool_register_codec_dev_io(pool, NULL, record_dev);
+    gmf_loader_setup_all_defaults(pool);
 
-    esp_gmf_afe_manager_handle_t afe_manager = NULL;
-    srmodel_list_t *models = esp_srmodel_init("model");
-    const char *ch_format = INPUT_CH_ALLOCATION;
-    afe_config_t *afe_cfg = afe_config_init(ch_format, models, AFE_TYPE_SR, AFE_MODE_HIGH_PERF);
-    afe_cfg->vad_init = VAD_ENABLE;
-    afe_cfg->vad_mode = VAD_MODE_3;
-    afe_cfg->vad_min_speech_ms = 64;
-    afe_cfg->vad_min_noise_ms = 1000;
-    afe_cfg->wakenet_init = WAKENET_ENABLE;
-    afe_cfg->aec_init = AEC_ENABLE;
-    esp_gmf_afe_manager_cfg_t afe_manager_cfg = DEFAULT_GMF_AFE_MANAGER_CFG(afe_cfg, NULL, NULL, NULL, NULL);
-    ESP_GOTO_ON_ERROR(esp_gmf_afe_manager_create(&afe_manager_cfg, &afe_manager), __quit, TAG, "AFE Manager Create failed");
-    esp_gmf_element_handle_t gmf_afe = NULL;
-    esp_gmf_afe_cfg_t gmf_afe_cfg = DEFAULT_GMF_AFE_CFG(afe_manager, esp_gmf_afe_event_cb, NULL, models);
-    gmf_afe_cfg.vcmd_detect_en = VCMD_ENABLE;
-    esp_gmf_afe_init(&gmf_afe_cfg, &gmf_afe);
-    esp_gmf_pool_register_element(pool, gmf_afe, NULL);
     esp_gmf_pipeline_handle_t pipe = NULL;
     const char *name[] = {"gmf_afe"};
     esp_gmf_pool_new_pipeline(pool, "codec_dev_rx", name, sizeof(name) / sizeof(char *), NULL, &pipe);
@@ -227,6 +204,10 @@ void app_main(void)
         ESP_LOGE(TAG, "There is no pipeline");
         goto __quit;
     }
+    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_IN_INSTANCE(pipe), record_dev);
+    esp_gmf_element_handle_t afe = NULL;
+    esp_gmf_pipeline_get_el_by_name(pipe, "gmf_afe", &afe);
+    esp_gmf_afe_set_event_cb(afe, esp_gmf_afe_event_cb, NULL);
     esp_gmf_port_handle_t outport = NEW_ESP_GMF_PORT_OUT_BYTE(outport_acquire_write,
                                                               outport_release_write,
                                                               NULL,
@@ -262,11 +243,8 @@ __quit:
     esp_gmf_pipeline_stop(pipe);
     esp_gmf_task_deinit(task);
     esp_gmf_pipeline_destroy(pipe);
-    afe_config_free(afe_cfg);
-    esp_gmf_afe_manager_destroy(afe_manager);
-    pool_unregister_audio_codecs();
+    gmf_loader_teardown_all_defaults(pool);
     esp_gmf_pool_deinit(pool);
-    esp_gmf_teardown_periph_codec(NULL, record_dev);
     esp_gmf_teardown_periph_i2c(0);
     esp_gmf_teardown_periph_sdmmc(card);
     vEventGroupDelete(g_event_group);

@@ -1,5 +1,11 @@
 # Changelog
 
+## *Unreleased*
+
+### Features
+
+- Add API `esp_gmf_afe_set_event_cb` to set AFE element event callback
+
 ## v0.6.2
 
 ### Features

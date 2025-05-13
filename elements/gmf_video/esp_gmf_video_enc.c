@@ -509,7 +509,8 @@ esp_gmf_err_t esp_gmf_video_enc_init(esp_gmf_video_enc_cfg_t *cfg, esp_gmf_eleme
     if (cfg) {
         esp_gmf_video_enc_cfg_t *enc_cfg = (esp_gmf_video_enc_cfg_t *) calloc(1, sizeof(esp_gmf_video_enc_cfg_t));
         ESP_GMF_MEM_CHECK(TAG, enc_cfg, { goto VENC_FAIL; });
-        esp_gmf_obj_set_config((esp_gmf_obj_handle_t*)handle, cfg, sizeof(esp_gmf_video_enc_cfg_t));
+        memcpy(enc_cfg, cfg, sizeof(esp_gmf_video_enc_cfg_t));
+        esp_gmf_obj_set_config((esp_gmf_obj_handle_t*)obj, enc_cfg, sizeof(esp_gmf_video_enc_cfg_t));
     }
     ESP_GMF_ELEMENT_GET(venc)->ops.open = venc_el_open;
     ESP_GMF_ELEMENT_GET(venc)->ops.process = venc_el_process;

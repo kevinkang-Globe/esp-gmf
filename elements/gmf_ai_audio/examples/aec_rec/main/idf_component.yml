@@ -12,4 +12,5 @@ dependencies:
     version: "^0.6"
   espressif/gmf_ai_audio:
     override_path: ../../../../gmf_ai_audio
-
+  espressif/gmf_loader:
+    version: "^0.6"

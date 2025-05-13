@@ -7,25 +7,26 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "esp_gmf_err.h"
-#include "esp_gmf_obj.h"
-#include "esp_gmf_payload.h"
-#include "esp_gmf_port.h"
-
 #include "esp_err.h"
 #include "esp_log.h"
 
+#include "esp_codec_dev.h"
+#include "esp_gmf_err.h"
+#include "esp_gmf_io_codec_dev.h"
+#include "esp_gmf_obj.h"
+#include "esp_gmf_payload.h"
+#include "esp_gmf_port.h"
 #include "esp_gmf_aec.h"
 #include "esp_gmf_element.h"
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_pool.h"
 #include "esp_gmf_setup_peripheral.h"
-#include "esp_gmf_setup_pool.h"
 #include "esp_gmf_rate_cvt.h"
 #include "esp_gmf_bit_cvt.h"
 #include "esp_gmf_ch_cvt.h"
 #include "esp_gmf_audio_helper.h"
 #include "cli.h"
+#include "gmf_loader_setup_defaults.h"
 
 #define BOARD_LYRAT_MINI (0)
 #define BOARD_KORVO_2    (1)
@@ -127,20 +128,7 @@ void app_main(void)
 
     esp_gmf_pool_handle_t pool = NULL;
     esp_gmf_pool_init(&pool);
-    pool_register_io(pool);
-    pool_register_audio_codecs(pool);
-    pool_register_audio_effects(pool);
-    pool_register_codec_dev_io(pool, play_dev, record_dev);
-
-    esp_gmf_element_handle_t gmf_aec_handle = NULL;
-    esp_gmf_aec_cfg_t gmf_aec_cfg = {
-        .filter_len = 4,
-        .type = AFE_TYPE_VC,
-        .mode = AFE_MODE_HIGH_PERF,
-        .input_format = INPUT_CH_ALLOCATION,
-    };
-    esp_gmf_aec_init(&gmf_aec_cfg, &gmf_aec_handle);
-    esp_gmf_pool_register_element(pool, gmf_aec_handle, NULL);
+    gmf_loader_setup_all_defaults(pool);
 
     ESP_GMF_POOL_SHOW_ITEMS(pool);
     esp_gmf_pipeline_handle_t read_pipe = NULL;
@@ -155,6 +143,8 @@ void app_main(void)
         ESP_LOGE(TAG, "There is no pipeline");
         return;
     }
+    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_IN_INSTANCE(read_pipe), record_dev);
+
     esp_gmf_port_handle_t out_port = NEW_ESP_GMF_PORT_OUT_BYTE(pcm_buf_acq_write, pcm_buf_release_write, NULL, NULL, 1024, portMAX_DELAY);
     esp_gmf_element_register_out_port(read_pipe->last_el, out_port);
     esp_gmf_obj_handle_t rate_cvt = NULL;
@@ -188,6 +178,8 @@ void app_main(void)
         ESP_LOGE(TAG, "There is no play pipeline");
         return;
     }
+    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_OUT_INSTANCE(play_pipe), play_dev);
+
     esp_gmf_obj_handle_t bit_cvt = NULL;
     esp_gmf_pipeline_get_el_by_name(play_pipe, "bit_cvt", &bit_cvt);
     esp_gmf_bit_cvt_set_dest_bits(bit_cvt, DAC_I2S_BITS);
@@ -226,11 +218,11 @@ void app_main(void)
     }
     heap_caps_free(pcm_buffer);
 
-    pool_unregister_audio_codecs();
     esp_gmf_task_deinit(read_task);
     esp_gmf_task_deinit(play_task);
     esp_gmf_pipeline_destroy(read_pipe);
     esp_gmf_pipeline_destroy(play_pipe);
+    gmf_loader_teardown_all_defaults(pool);
     esp_gmf_pool_deinit(pool);
     esp_gmf_teardown_periph_codec(play_dev, record_dev);
     esp_gmf_teardown_periph_i2c(0);
