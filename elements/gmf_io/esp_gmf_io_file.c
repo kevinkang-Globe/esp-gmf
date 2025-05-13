@@ -179,6 +179,15 @@ static esp_gmf_err_t _file_seek(esp_gmf_io_handle_t io, uint64_t seek_byte_pos)
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _file_reset(esp_gmf_io_handle_t io)
+{
+    file_io_stream_t *file_io = (file_io_stream_t *)io;
+    if (file_io->file != 0) {
+        lseek(file_io->file, 0, SEEK_SET);
+    }
+    return ESP_GMF_ERR_OK;
+}
+
 static esp_gmf_err_t _file_close(esp_gmf_io_handle_t io)
 {
     file_io_stream_t *file_io = (file_io_stream_t *)io;
@@ -230,6 +239,7 @@ esp_gmf_err_t esp_gmf_io_file_init(file_io_cfg_t *config, esp_gmf_io_handle_t *i
     file_io->base.close = _file_close;
     file_io->base.open = _file_open;
     file_io->base.seek = _file_seek;
+    file_io->base.reset = _file_reset;
     file_io_cfg_t *fat_cfg = (file_io_cfg_t *)config;
     esp_gmf_io_init(obj, NULL);
     if (fat_cfg->dir == ESP_GMF_IO_DIR_WRITER) {

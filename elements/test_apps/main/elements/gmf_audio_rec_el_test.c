@@ -293,7 +293,7 @@ static const char *recoding_file_path[] = {
 TEST_CASE("Record file for playback, multiple files with One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
     esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
     void *sdcard = NULL;

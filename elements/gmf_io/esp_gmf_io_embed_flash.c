@@ -147,6 +147,7 @@ esp_gmf_err_t esp_gmf_io_embed_flash_init(embed_flash_io_cfg_t *config, esp_gmf_
     embed_flash->base.open = _embed_flash_open;
     embed_flash->base.close = _embed_flash_close;
     embed_flash->base.seek = NULL;
+    embed_flash->base.reset = NULL;
     esp_gmf_io_init(obj, NULL);
     if (embed_flash->base.dir == ESP_GMF_IO_DIR_READER) {
         embed_flash->base.acquire_read = _embed_flash_acquire_read;

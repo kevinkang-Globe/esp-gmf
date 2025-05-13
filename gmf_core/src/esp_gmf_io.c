@@ -242,3 +242,24 @@ esp_gmf_err_t esp_gmf_io_get_type(esp_gmf_io_handle_t handle, esp_gmf_io_type_t 
     }
     return ESP_GMF_ERR_INVALID_ARG;
 }
+
+esp_gmf_err_t esp_gmf_io_reset(esp_gmf_io_handle_t handle)
+{
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
+    esp_gmf_io_t *io = (esp_gmf_io_t *)handle;
+
+    esp_gmf_io_set_pos(handle, 0);
+    esp_gmf_io_set_size(handle, 0);
+
+    if (io->reset) {
+        io->reset(io);
+    }
+    int ret = ESP_GMF_ERR_OK;
+    if (io->task_hd) {
+        esp_gmf_task_reset(io->task_hd);
+        char name[ESP_GMF_JOB_LABLE_MAX_LEN] = "";
+        esp_gmf_job_str_cat(name, ESP_GMF_JOB_LABLE_MAX_LEN, OBJ_GET_TAG(io), ESP_GMF_JOB_STR_PROCESS, strlen(ESP_GMF_JOB_STR_PROCESS));
+        ret = esp_gmf_task_register_ready_job(io->task_hd, name, io->process, ESP_GMF_JOB_TIMES_INFINITE, handle, true);
+    }
+    return ret;
+}

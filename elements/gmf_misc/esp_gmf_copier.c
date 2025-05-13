@@ -43,16 +43,16 @@ static esp_gmf_job_err_t esp_gmf_copier_process(esp_gmf_element_handle_t self, v
     int idx = 0;
     esp_gmf_err_io_t load_ret = esp_gmf_port_acquire_in(in, &in_load, in->data_length, ESP_GMF_MAX_DELAY);
     ESP_GMF_PORT_ACQUIRE_IN_CHECK(TAG, load_ret, out_len, { goto __copy_release;});
-    in->data_length = in_load->valid_size > 0 ? in_load->valid_size : in_load->buf_length;
+    int out_data_length = in_load->valid_size > 0 ? in_load->valid_size : in_load->buf_length;
     while (out) {
         out_load = NULL;
         if (out != ESP_GMF_ELEMENT_GET(hd)->out) {
-            load_ret = esp_gmf_port_acquire_out(out, &out_load, in->data_length, 0);
+            load_ret = esp_gmf_port_acquire_out(out, &out_load, out_data_length, 0);
             ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, load_ret, out_len, { goto __copy_release;});
             esp_gmf_payload_copy_data(in_load, out_load);
         } else {
             out_load = in_load;
-            load_ret = esp_gmf_port_acquire_out(out, &out_load, in->data_length, 0);
+            load_ret = esp_gmf_port_acquire_out(out, &out_load, out_data_length, 0);
             ESP_GMF_PORT_ACQUIRE_OUT_CHECK(TAG, load_ret, out_len, { goto __copy_release;});
             out_load->is_done = in_load->is_done;
             out_load->valid_size = in_load->valid_size;
