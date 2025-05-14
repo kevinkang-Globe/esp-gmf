@@ -52,3 +52,5 @@ For a basic example of GMF-Core API usage, see [test_apps](./gmf_core/test_apps/
 - **What is the difference between ESP-GMF and ESP-ADF?**
 
    ESP-ADF is a functional repository that includes many modules, such as `audio_pipeline`, `services`, `peripherals`, and `audio boards`. It is commonly used for more complex projects. ESP-GMF is an extension of the `audio_pipeline` module, designed to support applications for streaming audio, video, and image data. ESP-GMF offers a more modular structure than ESP-ADF's `audio_pipeline` by organizing functionality into different components, making it more flexible. For example, it is suitable for simple data streaming, such as playing audio from SD card/flash, or combining multiple components to provide more complex modules (e.g., audio player `esp_audio_simple_player`). Future versions of ESP-ADF will replace the `audio_pipeline` module with ESP-GMF.
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/kevinkang-Globe/esp-gmf)
