@@ -156,6 +156,9 @@ static bool check_2ddma_supported(gmf_video_ppa_t *vid_cvt)
 static bool check_ppa_supported(gmf_video_ppa_t *vid_cvt)
 {
     esp_gmf_info_video_t *src_info = &vid_cvt->parent.src_info;
+    if (src_info->format_id == vid_cvt->dst_format) {
+        return true;
+    }
     if ((src_info->format_id == ESP_FOURCC_RGB16_BE && vid_cvt->dst_format == ESP_FOURCC_RGB16) ||
        (src_info->format_id == ESP_FOURCC_RGB16 && vid_cvt->dst_format == ESP_FOURCC_RGB16_BE)) {
         vid_cvt->ppa_config.byte_swap = 1;
@@ -531,6 +534,7 @@ static esp_gmf_job_err_t gmf_video_ppa_open(esp_gmf_element_handle_t self, void 
             return ESP_GMF_JOB_ERR_FAIL;
         }
     }
+    vid_cvt->bypass = false;
     if (vid_cvt->dst_width == src_info->width && vid_cvt->dst_height == src_info->height && vid_cvt->dst_format == src_info->format_id) {
         vid_cvt->bypass = true;
     }

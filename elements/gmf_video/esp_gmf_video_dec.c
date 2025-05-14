@@ -85,9 +85,7 @@ static esp_gmf_job_err_t vdec_el_open(esp_gmf_video_element_handle_t self, void 
 {
     vdec_t *vdec = (vdec_t *)self;
     esp_gmf_info_video_t *src_info = &vdec->parent.src_info;
-    if (src_info->format_id == vdec->out_format) {
-        vdec->vdec_bypass = true;
-    }
+    vdec->vdec_bypass = (src_info->format_id == vdec->out_format);
     if (vdec->vdec_bypass) {
         // Report video info to next element directly
         esp_gmf_element_notify_vid_info(self, src_info);
