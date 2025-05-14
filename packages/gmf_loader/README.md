@@ -47,6 +47,10 @@ The GMF Loader is a helper component that allows users to easily customize their
   - Video PPA (Pixel Processing Accelerator)
   - FPS Conversion
   - Video Overlay
+  - Video Crop
+  - Video Scale
+  - video Rotate
+  - Video Color Convert
 
 ## Configuration
 
@@ -132,7 +136,11 @@ ESP GMF Loader
     └── GMF Video Effects
         ├── Video PPA [N]
         ├── Video FPS Convert [N]
-        └── Video Overlay [N]
+        ├── Video Overlay [N]
+        ├── Video Crop [N]
+        ├── Video Scale [N]
+        ├── Video Rotate [N]
+        └── Video Color Convert [N]
 ```
 
 ## Usage

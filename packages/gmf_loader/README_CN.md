@@ -47,6 +47,10 @@ GMF Loader 是一个帮助组件，允许用户通过 menuconfig 轻松自定义
   - 视频像素加速器 (PPA)
   - 帧率转换
   - 视频叠加
+  - 视频裁剪
+  - 视频缩放
+  - 视频旋转
+  - 视频颜色转换
 
 ## 配置
 
@@ -132,7 +136,11 @@ ESP GMF Loader
     └── GMF Video Effects
         ├── Video PPA [N]
         ├── Video FPS Convert [N]
-        └── Video Overlay [N]
+        ├── Video Overlay [N]
+        ├── Video Crop [N]
+        ├── Video Scale [N]
+        ├── Video Rotate [N]
+        └── Video Color Convert [N]       
 ```
 
 ## 使用方法
