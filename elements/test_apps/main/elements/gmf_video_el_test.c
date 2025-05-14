@@ -21,13 +21,10 @@
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
-
-#ifdef VIDEO_SW_PROCESS
 #include "esp_gmf_video_scale.h"
 #include "esp_gmf_video_crop.h"
 #include "esp_gmf_video_rotate.h"
 #include "esp_gmf_video_color_convert.h"
-#endif
 
 #define TAG "VID_EL_TEST"
 
@@ -39,7 +36,7 @@
 #define TEST_PATTERN_HEIGHT (240)
 #endif
 #define TEST_PATTERN_VERTICAL  (false)
-#define TEST_PATTERN_BAR_COUNT (16)
+#define TEST_PATTERN_BAR_COUNT (8)
 #define TEST_VIDEO_ALIGNMENT   (128)
 
 #define SAFE_FREE(ptr) if (ptr) {   \
@@ -105,14 +102,13 @@ static void pool_register_video_effect(esp_gmf_pool_handle_t pool)
 
 static void pool_register_sw_video_effect(esp_gmf_pool_handle_t pool)
 {
-#ifdef VIDEO_SW_PROCESS
     esp_gmf_element_handle_t element;
 
     esp_imgfx_scale_cfg_t scale_cfg = {
         .in_pixel_fmt = ESP_IMGFX_PIXEL_FMT_RGB888,
         .in_res = {640, 480},
         .scale_res = {320, 240},
-        .filter_type = ESP_IMGFX_SCALE_FILTER_TYPE_BILINEAR
+        .filter_type = ESP_IMGFX_SCALE_FILTER_TYPE_DOWN_RESAMPLE,
     };
     element = NULL;
     esp_gmf_video_scale_init(&scale_cfg, &element);
@@ -147,7 +143,6 @@ static void pool_register_sw_video_effect(esp_gmf_pool_handle_t pool)
     element = NULL;
     esp_gmf_video_color_convert_init(&clr_cvt_cfg, &element);
     esp_gmf_pool_register_element(pool, element, NULL);
-#endif
 }
 
 static void pool_register_video_codec(esp_gmf_pool_handle_t pool)
@@ -416,7 +411,6 @@ static int test_color_convert(convert_res_t *res, uint32_t convert_pair[][2], in
         esp_gmf_element_handle_t convert_hd;
         convert_hd = get_element_by_caps_from_pipe(res->pipe, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
         esp_gmf_video_param_set_dst_format(convert_hd, convert_pair[i][1]);
-        // esp_gmf_video_ppa_set_dst_format(convert_hd, convert_pair[i][1]);
         esp_gmf_pipeline_report_info(res->pipe, ESP_GMF_INFO_VIDEO, &info, sizeof(info));
         TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(res->pipe));
         vTaskDelay(1000 / portTICK_RATE_MS);
@@ -483,6 +477,7 @@ TEST_CASE("Color convert SW", "ESP_GMF_VIDEO")
     uint32_t convert_pair[][2] = {
         { ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY },
         { ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16 },
+        { ESP_FOURCC_RGB16, ESP_FOURCC_BGR16 },
         { ESP_FOURCC_RGB16, ESP_FOURCC_RGB24 },
     };
     test_color_convert(&res, convert_pair, ELEMS(convert_pair));
@@ -502,15 +497,13 @@ static int test_scale(convert_res_t *res, uint32_t convert_pair[][2], int n)
         // Gen pattern
         allocate_src_pattern(convert_pair[i][0], false);
         video_el_inst.out_res.width = video_el_inst.src_res.width >> 1;
-        video_el_inst.out_res.height = video_el_inst.src_res.width >> 1;
+        video_el_inst.out_res.height = video_el_inst.src_res.height >> 1;
         video_el_inst.out_codec = convert_pair[i][1];
         esp_gmf_element_handle_t convert_hd;
         convert_hd = get_element_by_caps_from_pipe(res->pipe, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
         esp_gmf_video_param_set_dst_format(convert_hd, convert_pair[i][1]);
-        // esp_gmf_video_ppa_set_dst_format(convert_hd, convert_pair[i][1]);
         esp_gmf_element_handle_t scale_hd;
         scale_hd = get_element_by_caps_from_pipe(res->pipe, ESP_GMF_CAPS_VIDEO_SCALE);
-        // esp_gmf_video_ppa_set_dst_resolution(scale_hd, &video_el_inst.out_res);
         esp_gmf_video_param_set_dst_resolution(scale_hd, &video_el_inst.out_res);
 
         esp_gmf_info_video_t info = {
