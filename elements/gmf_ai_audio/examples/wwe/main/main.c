@@ -14,10 +14,10 @@
 #include "esp_gmf_io.h"
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_pool.h"
-#include "esp_gmf_setup_peripheral.h"
+#include "esp_gmf_app_setup_peripheral.h"
 
 #include "esp_gmf_io_codec_dev.h"
-#include "cli.h"
+#include "esp_gmf_app_cli.h"
 #include "gmf_loader_setup_defaults.h"
 
 #if SOC_SDMMC_HOST_SUPPORTED == 1
@@ -229,19 +229,14 @@ void app_main(void)
 {
     int ret = 0;
     esp_log_level_set("*", ESP_LOG_INFO);
-
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info audio_info = {
-        .sample_rate = 16000,
-        .channel = ADC_I2S_CH,
-        .bits_per_sample = ADC_I2S_BITS,
-        .port_num = ADC_I2S_PORT,
-    };
-    void *record_dev = NULL;
-    ret = esp_gmf_setup_periph_codec(NULL, &audio_info, NULL, &record_dev);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, { return;}, "Failed to setup audio codec");
+    esp_gmf_app_codec_info_t codec_info = ESP_GMF_APP_CODEC_INFO_DEFAULT();
+    codec_info.record_info.sample_rate = 16000;
+    codec_info.record_info.channel = ADC_I2S_CH;
+    codec_info.record_info.bits_per_sample = ADC_I2S_BITS;
+    codec_info.play_info.sample_rate = codec_info.record_info.sample_rate;
+    esp_gmf_app_setup_codec_dev(&codec_info);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
     g_event_group = xEventGroupCreate();
 
     esp_gmf_pool_handle_t pool = NULL;
@@ -259,8 +254,7 @@ void app_main(void)
         ESP_LOGE(TAG, "There is no pipeline");
         goto __quit;
     }
-    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_IN_INSTANCE(pipe), record_dev);
-#if WITH_AFE == true
+    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_IN_INSTANCE(pipe), esp_gmf_app_get_record_handle());
     esp_gmf_element_handle_t afe = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "gmf_afe", &afe);
     esp_gmf_afe_set_event_cb(afe, esp_gmf_afe_event_cb, NULL);
@@ -297,7 +291,7 @@ void app_main(void)
     esp_gmf_pipeline_set_event(pipe, _pipeline_event, NULL);
     esp_gmf_pipeline_run(pipe);
 
-    cli_init("Audio >");
+    esp_gmf_app_cli_init("Audio >", NULL);
 
     while (1) {
         EventBits_t bits = xEventGroupWaitBits(g_event_group, QUIT_CMD_FOUND, pdTRUE, pdFALSE, portMAX_DELAY);
@@ -313,8 +307,8 @@ __quit:
     esp_gmf_pipeline_destroy(pipe);
     gmf_loader_teardown_all_defaults(pool);
     esp_gmf_pool_deinit(pool);
-    esp_gmf_teardown_periph_i2c(0);
-    esp_gmf_teardown_periph_sdmmc(card);
+    esp_gmf_app_teardown_codec_dev();
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
     vEventGroupDelete(g_event_group);
     ESP_LOGW(TAG, "Wake word engine demo finished");
 }

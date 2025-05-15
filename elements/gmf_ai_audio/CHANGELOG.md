@@ -12,6 +12,8 @@
 
 - Fixed an issue where the output attribute of the `esp_gmf_afe` element was not set correctly
 - Fixed a build error occurring when SPIRAM is disabled
+- Integrated gmf_app_utils package for peripheral and system management
+- Migrated common utilities to gmf_app_utils package
 
 ## v0.6.2
 

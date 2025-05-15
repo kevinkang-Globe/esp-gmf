@@ -20,7 +20,7 @@
 
 #include "esp_audio_simple_player.h"
 #include "esp_audio_simple_player_advance.h"
-#include "esp_gmf_setup_peripheral.h"
+#include "esp_gmf_app_setup_peripheral.h"
 #include "esp_codec_dev.h"
 #include "esp_gmf_app_sys.h"
 #include "esp_embed_tone.h"
@@ -123,24 +123,15 @@ TEST_CASE("Create and delete multiple instances for playback, stop", "[Simple_Pl
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
 
     esp_asp_cfg_t cfg = {
         .in.cb = NULL,
         .in.user_ctx = NULL,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
@@ -179,10 +170,8 @@ TEST_CASE("Create and delete multiple instances for playback, stop", "[Simple_Pl
         TEST_ASSERT_EQUAL(ESP_OK, err);
     }
     ESP_GMF_MEM_SHOW(TAG);
-
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     ESP_GMF_MEM_SHOW(TAG);
 }
 
@@ -190,24 +179,15 @@ TEST_CASE("Repeat playback same URI", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
 
     esp_asp_cfg_t cfg = {
         .in.cb = NULL,
         .in.user_ctx = NULL,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
@@ -239,10 +219,8 @@ TEST_CASE("Repeat playback same URI", "[Simple_Player]")
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
     ESP_GMF_MEM_SHOW(TAG);
-
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     ESP_GMF_MEM_SHOW(TAG);
 }
 
@@ -250,18 +228,9 @@ TEST_CASE("Playback with raw MP3 data", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
     FILE *in_file = fopen("/sdcard/test.mp3", "rb");
     if (in_file == NULL) {
         ESP_LOGE(TAG, "Open the source file failed, in:%p", in_file);
@@ -271,7 +240,7 @@ TEST_CASE("Playback with raw MP3 data", "[Simple_Player]")
         .in.cb = in_data_callback,
         .in.user_ctx = in_file,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
@@ -303,9 +272,8 @@ TEST_CASE("Playback with raw MP3 data", "[Simple_Player]")
 
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }
@@ -328,24 +296,15 @@ TEST_CASE("Playback embed flash tone", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
 
     esp_asp_cfg_t cfg = {
         .in.cb = NULL,
         .in.user_ctx = NULL,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
         .prev = embed_flash_io_set,
         .prev_ctx = NULL,
@@ -378,9 +337,8 @@ TEST_CASE("Playback embed flash tone", "[Simple_Player]")
 
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }
@@ -391,24 +349,15 @@ TEST_CASE("Play, Advance API run and stop", "[Simple_Player]")
     // esp_log_level_set("ESP_GMF_ASMP_DEC", ESP_LOG_DEBUG);
     // esp_log_level_set("ESP_GMF_PORT", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
 
     esp_asp_cfg_t cfg = {
         .in.cb = NULL,
         .in.user_ctx = NULL,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
@@ -453,9 +402,8 @@ TEST_CASE("Play, Advance API run and stop", "[Simple_Player]")
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
 
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }
@@ -464,24 +412,15 @@ TEST_CASE("Play, pause,resume", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
 
     esp_asp_cfg_t cfg = {
         .in.cb = NULL,
         .in.user_ctx = NULL,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
@@ -520,9 +459,8 @@ TEST_CASE("Play, pause,resume", "[Simple_Player]")
 
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }
@@ -531,24 +469,15 @@ TEST_CASE("Play, play-multitask", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
 
     esp_asp_cfg_t cfg = {
         .in.cb = NULL,
         .in.user_ctx = NULL,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
@@ -568,40 +497,30 @@ TEST_CASE("Play, play-multitask", "[Simple_Player]")
 
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, Multiple-file Sync Playing", "[Simple_Player][leaks=13000]")
+TEST_CASE("Play, Multiple-file Sync Playing", "[Simple_Player][leaks=17000]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_wifi();
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
+    esp_gmf_app_wifi_connect();
     esp_gmf_app_sys_monitor_start();
 
     ESP_GMF_MEM_SHOW(TAG);
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
 
     esp_asp_cfg_t cfg = {
         .in.cb = NULL,
         .in.user_ctx = NULL,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
@@ -623,39 +542,27 @@ TEST_CASE("Play, Multiple-file Sync Playing", "[Simple_Player][leaks=13000]")
 
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
-
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     ESP_GMF_MEM_SHOW(TAG);
 
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
-    esp_gmf_teardown_periph_wifi();
+    esp_gmf_app_wifi_disconnect();
     esp_gmf_app_sys_monitor_stop();
 
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, Multiple-file Async Playing", "[Simple_Player][leaks=13000]")
+TEST_CASE("Play, Multiple-file Async Playing", "[Simple_Player][leaks=17000]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_wifi();
+    esp_gmf_app_setup_codec_dev(NULL);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
+    esp_gmf_app_wifi_connect();
 
     ESP_GMF_MEM_SHOW(TAG);
-
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    esp_codec_dev_handle_t play_dev = NULL;
-    esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-    TEST_ASSERT_NOT_NULL(play_dev);
 
     SemaphoreHandle_t semph_event = xSemaphoreCreateBinary();
     TEST_ASSERT_NOT_NULL(semph_event);
@@ -665,7 +572,7 @@ TEST_CASE("Play, Multiple-file Async Playing", "[Simple_Player][leaks=13000]")
         .in.cb = NULL,
         .in.user_ctx = NULL,
         .out.cb = out_data_callback,
-        .out.user_ctx = play_dev,
+        .out.user_ctx = esp_gmf_app_get_playback_handle(),
         .task_prio = 5,
     };
     esp_asp_handle_t handle = NULL;
@@ -688,12 +595,10 @@ TEST_CASE("Play, Multiple-file Async Playing", "[Simple_Player][leaks=13000]")
 
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
-    esp_gmf_teardown_periph_codec(play_dev, NULL);
-
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
+    esp_gmf_app_teardown_codec_dev();
     ESP_GMF_MEM_SHOW(TAG);
-    esp_gmf_teardown_periph_sdmmc(card);
-    esp_gmf_teardown_periph_i2c(0);
-    esp_gmf_teardown_periph_wifi();
+    esp_gmf_app_wifi_disconnect();
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     ESP_GMF_MEM_SHOW(TAG);
 }

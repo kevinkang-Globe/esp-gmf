@@ -19,6 +19,7 @@
 ### Bug Fixes
 
 - Fixed `gmf_audio_enc` process blocked due to forget release of in_load when truncate is returned
+- Fixed parameter mismatch in `audio_dec_reconfig_dec_by_sound_info`
 
 ## v0.6.3
 

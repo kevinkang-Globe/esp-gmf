@@ -1,16 +1,24 @@
 /*
  * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO., LTD
+ * SPDX-License-Identifier: LicenseRef-Espressif-Modified-MIT
  *
- * SPDX-License-Identifier: Apache-2.0
+ * See LICENSE file for details.
  */
 
-#include "esp_console.h"
-#include "esp_log.h"
-#include "esp_system.h"
-#include "esp_gmf_oal_sys.h"
-#include "driver/gpio.h"
-
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "argtable3/argtable3.h"
+#include "driver/gpio.h"
+#include "esp_system.h"
+#include "esp_console.h"
+#include "esp_err.h"
+#include "esp_log.h"
+#include "esp_gmf_oal_sys.h"
+#include "esp_gmf_app_cli.h"
+
+static bool is_app_cli_initialized = false;
 
 #ifdef CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS
 #define WITH_TASKS_INFO 1
@@ -47,7 +55,7 @@ static struct {
     struct arg_end *end;
 } log_args;
 
-static char *log_lvl_2_str(int lvl)
+const static char *log_lvl_2_str(int lvl)
 {
     switch (lvl) {
         case ESP_LOG_NONE:
@@ -79,7 +87,7 @@ static int log_set(int argc, char **argv)
         return 2;
     }
     printf("Set log [%s] : %s\n", log_args.tag->sval[0], log_lvl_2_str(log_args.lvl->ival[0]));
-    if (log_args.lvl->ival[0] <= ESP_LOG_VERBOSE) {
+    if (log_args.lvl->ival[0] <= ESP_LOG_VERBOSE && log_args.lvl->ival[0] >= ESP_LOG_NONE) {
         esp_log_level_set(log_args.tag->sval[0], log_args.lvl->ival[0]);
     } else {
         return 3;
@@ -106,6 +114,17 @@ static int io_set(int argc, char **argv)
     }
     printf("Set IO [%d] - [%d]\n", io_args.io->ival[0], io_args.lvl->ival[0]);
     if (io_args.lvl->ival[0] == 0 || io_args.lvl->ival[0] == 1) {
+        gpio_config_t io_conf = {
+            .pin_bit_mask = (1ULL << io_args.io->ival[0]),
+            .mode = GPIO_MODE_OUTPUT,
+            .pull_up_en = GPIO_PULLUP_DISABLE,
+            .pull_down_en = GPIO_PULLDOWN_ENABLE,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        if (gpio_config(&io_conf) != ESP_OK) {
+            ESP_LOGE("GPIO", "Failed to configure pin %d", io_args.io->ival[0]);
+            return 3;
+        }
         gpio_set_level(io_args.io->ival[0], io_args.lvl->ival[0]);
     } else {
         return 3;
@@ -162,4 +181,40 @@ void cli_register_sys()
     for (int i = 0; i < sizeof(cmds) / sizeof(esp_console_cmd_t); i++) {
         ESP_ERROR_CHECK(esp_console_cmd_register(&cmds[i]));
     }
+}
+
+esp_err_t esp_gmf_app_cli_init(const char *prompt, console_cmds_register cmds)
+{
+    if (is_app_cli_initialized) {
+        ESP_LOGW("GMF_APP_CLI", "CLI already initialized. Your commands may not be registered.");
+        return ESP_OK;
+    }
+
+    esp_console_repl_t *repl = NULL;
+    esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+
+    repl_config.prompt = prompt;
+
+    // init console REPL environment
+#if CONFIG_ESP_CONSOLE_UART
+    esp_console_dev_uart_config_t uart_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
+#elif CONFIG_ESP_CONSOLE_USB_CDC
+    esp_console_dev_usb_cdc_config_t cdc_config = ESP_CONSOLE_DEV_CDC_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_usb_cdc(&cdc_config, &repl_config, &repl));
+#elif CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+    esp_console_dev_usb_serial_jtag_config_t usbjtag_config = ESP_CONSOLE_DEV_USB_SERIAL_JTAG_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_console_new_repl_usb_serial_jtag(&usbjtag_config, &repl_config, &repl));
+#endif  /* CONFIG_ESP_CONSOLE_UART */
+
+    cli_register_sys();
+
+    // start console REPL
+    ESP_ERROR_CHECK(esp_console_start_repl(repl));
+    if (cmds) {
+        cmds();
+    }
+    is_app_cli_initialized = true;
+
+    return ESP_OK;
 }

@@ -22,3 +22,6 @@ dependencies:
       - if: "target in [esp32p4]"
   espressif/gmf_loader:
     override_path: ../../../packages/gmf_loader
+  espressif/gmf_app_utils:
+    override_path: ../../../packages/gmf_app_utils
+

@@ -72,7 +72,7 @@ static esp_gmf_err_t _file_open(esp_gmf_io_handle_t io)
     }
     if (((file_io_cfg_t *)file_io->base.parent.cfg)->dir == ESP_GMF_IO_DIR_READER) {
         file_io->file = open(path, O_RDONLY);
-        if (file_io->file == 0) {
+        if (file_io->file <= 0) {
             ESP_LOGE(TAG, "Failed to open on read, path: %s, err: %s", path, strerror(errno));
             return ESP_GMF_ERR_FAIL;
         }

@@ -52,6 +52,9 @@ The GMF Loader is a helper component that allows users to easily customize their
   - video Rotate
   - Video Color Convert
 
+- Miscellaneous elements configuration:
+  - Copier: Copy data between elements with configurable number of copies
+
 ## Configuration
 
 The configuration options are organized into the following sections:
@@ -59,6 +62,7 @@ The configuration options are organized into the following sections:
 - GMF IO Configurations: Configure IO readers and writers
 - GMF Audio Configurations: Configure audio codecs, effects, and AI features
 - GMF Video Configurations: Configure video codecs and effects
+- GMF Miscellaneous Configurations: Configure misc elements
 
 The following shows the configuration menu details:
 
@@ -119,28 +123,31 @@ ESP GMF Loader
 │       ├── Audio Echo Cancellation (AEC) [Y]
 │       └── Audio Front End (AFE) [N]
 │
-└── GMF Video Configurations
-    ├── GMF Video Codec
-    │   ├── Decoders [N]
-    │   │   ├── Auto [Y]
-    │   │   ├── Software H264
-    │   │   ├── Software MJPEG
-    │   │   └── Hardware MJPEG
-    │   └── Encoders [N]
-    │       ├── Auto [Y]
-    │       ├── Software H264
-    │       ├── Hardware H264
-    │       ├── Software MJPEG
-    │       └── Hardware MJPEG
-    │
-    └── GMF Video Effects
-        ├── Video PPA [N]
-        ├── Video FPS Convert [N]
-        ├── Video Overlay [N]
-        ├── Video Crop [N]
-        ├── Video Scale [N]
-        ├── Video Rotate [N]
-        └── Video Color Convert [N]
+│── GMF Video Configurations     
+│   ├── GMF Video Codec
+│   │   ├── Decoders [N]
+│   │   │   ├── Auto [Y]
+│   │   │   ├── Software H264
+│   │   │   ├── Software MJPEG
+│   │   │   └── Hardware MJPEG
+│   │   └── Encoders [N]
+│   │       ├── Auto [Y]
+│   │       ├── Software H264
+│   │       ├── Hardware H264
+│   │       ├── Software MJPEG
+│   │       └── Hardware MJPEG
+│   │
+│   └── GMF Video Effects
+│       ├── Video PPA [N]
+│       ├── Video FPS Convert [N]
+│       ├── Video Overlay [N]
+│       ├── Video Crop [N]
+│       ├── Video Scale [N]
+│       ├── Video Rotate [N]
+│       └── Video Color Convert [N]
+│
+└── GMF Miscellaneous Configurations
+    └── Copier [N]
 ```
 
 ## Usage

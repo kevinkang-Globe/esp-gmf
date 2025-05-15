@@ -63,17 +63,6 @@ esp_gmf_aec_init(&gmf_aec_cfg, &gmf_aec_handle);
 
 本例程支持 IDF release/v5.3 及以后的分支
 
-### 配置
-
-本例程支持 ESP32-LyraT-Mini, ESP32s3_Korvo_2 板子。其他板子支持需要修改[ gmf_setup ](../common/gmf_setup) 文件夹中的以下内容：
-
-| 配置内容 | 相关文件 |  相关函数   |
-|:----:| :-----: | :----: |
-|I2S 端口和 I2S 格式| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `setup_periph_create_i2s` |
-|I2C 端口| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `esp_gmf_setup_periph_i2c` |
-|Codec 类型和格式|`esp_gmf_setup_peripheral.c` |`setup_periph_new_play_codec`  |
-|PA 端口| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `setup_periph_new_play_codec` |
-
 ### 编译和下载
 
 编译本例程前需要先确保已配置 ESP-IDF 的环境，如果已配置可跳到下一项配置，如果未配置需要先在 ESP-IDF 根目录运行下面脚本设置编译环境，有关配置和使用 ESP-IDF 完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/index.html)
@@ -95,6 +84,12 @@ cd gmf_ai_audio/examples/aec_rec
 
 ```
 idf.py set-target esp32s3
+```
+- 选择编译目标板，以 ESP32-S3-Korvo V2 为例：
+
+```
+idf.py menuconfig
+在 `menuconfig` 中选择 `GMF APP Configuration` -> `Audio Board` -> `ESP32-S3-Korvo V2`，然后保存退出
 ```
 
 - 编译例子程序

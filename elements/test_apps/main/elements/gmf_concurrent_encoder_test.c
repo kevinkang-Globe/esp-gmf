@@ -16,14 +16,13 @@
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_pool.h"
 #include "esp_gmf_port.h"
-#include "esp_gmf_setup_peripheral.h"
-#include "esp_gmf_setup_pool.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/queue.h"
 #include "unity.h"
 #include <string.h>
+#include "gmf_audio_play_com.h"
 
 static const char *TAG = "CONCURRENT_ENCODER_TEST";
 
@@ -240,7 +239,7 @@ TEST_CASE("Test concurrent encoder pipelines with shared buffer", "[ESP_GMF_Effe
     esp_gmf_pool_handle_t pool = NULL;
     esp_gmf_pool_init(&pool);
     TEST_ASSERT_NOT_NULL(pool);
-    pool_register_audio_codecs(pool);
+    gmf_register_audio_all(pool);
     // Create shared input buffer
     ae_task_hd_t *shared_ctx = NULL;
     TEST_ASSERT_EQUAL(ESP_OK, create_shared_handle(&shared_ctx));
@@ -256,8 +255,8 @@ TEST_CASE("Test concurrent encoder pipelines with shared buffer", "[ESP_GMF_Effe
         .format_id = ESP_AUDIO_TYPE_AAC,
     };
     // Prepare two encoder pipelines
-    encoder_res_t res1 = { 0 };
-    encoder_res_t res2 = { 0 };
+    encoder_res_t res1 = {0};
+    encoder_res_t res2 = {0};
     TEST_ASSERT_EQUAL(ESP_OK, prepare_encoder_pipeline(pool, &info, &res1, shared_ctx->queue1, shared_ctx->queue2));
     TEST_ASSERT_EQUAL(ESP_OK, prepare_encoder_pipeline(pool, &info, &res2, shared_ctx->queue3, shared_ctx->queue4));
     // Start both pipelines
@@ -274,6 +273,6 @@ TEST_CASE("Test concurrent encoder pipelines with shared buffer", "[ESP_GMF_Effe
     vTaskDelete(task_handle);
     TEST_ASSERT_EQUAL(ESP_OK, delete_shared_handle(shared_ctx));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
-    pool_unregister_audio_codecs();
+    gmf_unregister_audio_all(pool);
     ESP_GMF_MEM_SHOW(TAG);
 }
