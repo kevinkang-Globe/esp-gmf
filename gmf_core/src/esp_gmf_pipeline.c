@@ -523,6 +523,12 @@ esp_gmf_err_t esp_gmf_pipeline_reset(esp_gmf_pipeline_handle_t pipeline)
     int ret = ESP_GMF_ERR_OK;
     pipeline->state = ESP_GMF_EVENT_STATE_NONE;
     ret = esp_gmf_task_reset(pipeline->thread);
+    if (pipeline->in) {
+        esp_gmf_io_reset(pipeline->in);
+    }
+    if (pipeline->out) {
+        esp_gmf_io_reset(pipeline->out);
+    }
     esp_gmf_element_handle_t next_el = pipeline->head_el;
     do {
         esp_gmf_element_reset_state(next_el);

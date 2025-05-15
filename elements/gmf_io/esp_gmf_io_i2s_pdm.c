@@ -125,6 +125,11 @@ static esp_gmf_err_t _i2s_pdm_seek(esp_gmf_io_handle_t io, uint64_t seek_byte_po
     return ESP_GMF_ERR_OK;
 }
 
+static esp_gmf_err_t _i2s_pdm_reset(esp_gmf_io_handle_t io)
+{
+    return ESP_GMF_ERR_OK;
+}
+
 static esp_gmf_err_t _i2s_pdm_close(esp_gmf_io_handle_t io)
 {
     i2s_pdm_io_stream_t *i2s_pdm_io = (i2s_pdm_io_stream_t *)io;
@@ -185,6 +190,7 @@ esp_gmf_err_t esp_gmf_io_i2s_pdm_init(i2s_pdm_io_cfg_t *config, esp_gmf_io_handl
     i2s_pdm_io->base.close = _i2s_pdm_close;
     i2s_pdm_io->base.open = _i2s_pdm_open;
     i2s_pdm_io->base.seek = _i2s_pdm_seek;
+    i2s_pdm_io->base.reset = _i2s_pdm_reset;
     esp_gmf_io_init(obj, NULL);
     if (cfg->dir == ESP_GMF_IO_DIR_WRITER) {
         i2s_pdm_io->base.acquire_write = _i2s_pdm_acquire_write;

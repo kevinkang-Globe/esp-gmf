@@ -43,10 +43,9 @@ typedef enum {
 typedef struct {
     http_stream_event_id_t event_id;    /*!< Event ID */
     void                  *http_client; /*!< Reference to HTTP Client using by this HTTP Stream */
-    void                  *buffer;      /*!< Reference to Buffer using by the Audio Element */
+    void                  *buffer;      /*!< Reference to Buffer using by the IO */
     int                    buffer_len;  /*!< Length of buffer */
     void                  *user_data;   /*!< User data context, from `http_io_cfg_t` */
-    esp_gmf_io_handle_t    el;          /*!< Audio element context */
 } http_stream_event_msg_t;
 
 typedef int (*http_io_event_handle_t)(http_stream_event_msg_t *msg);
@@ -83,10 +82,10 @@ typedef struct {
 }
 
 /**
- * @brief  Initialize the HTTP stream I/O element with the specified configuration
+ * @brief  Initialize the HTTP stream I/O with the specified configuration
  *
  * @param[in]   config  Pointer to an `http_io_cfg_t` structure containing the configuration
- *                      settings for the HTTP I/O element
+ *                      settings for the HTTP I/O
  * @param[out]  io      Pointer to a `esp_gmf_io_handle_t` where the initialized I/O object
  *                      handle will be stored
  *
@@ -100,29 +99,42 @@ esp_gmf_err_t esp_gmf_io_http_init(http_io_cfg_t *config, esp_gmf_io_handle_t *i
 /**
  * @brief  Reset http information.
  *
- *         This function can be used in event_handler of http_stream.
+ *         This function can be used in event_handler of http IO.
  *         User can call this function to connect to next track in playlist when he/she gets `HTTP_STREAM_FINISH_TRACK` event
  *
- * @param  el  The http_stream element handle
+ * @param  handle  The http IO handle
  *
  * @return
- *       - ESP_GMF_ERR_OK    on success
- *       - ESP_GMF_ERR_FAIL  on errors
+ *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument
  */
-esp_gmf_err_t esp_gmf_io_http_reset(esp_gmf_io_handle_t el);
+esp_gmf_err_t esp_gmf_io_http_reset(esp_gmf_io_handle_t handle);
 
 /**
  * @brief  Set SSL server certification
  *
  * @note  PEM format as string, if the client requires to verify server
  *
- * @param  el    The http_stream element handle
- * @param  cert  server certification
+ * @param  handle  The http IO handle
+ * @param  cert    Server certification
  *
  * @return
- *       - ESP_GMF_ERR_OK  on success
+ *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument
  */
-esp_gmf_err_t esp_gmf_io_http_set_server_cert(esp_gmf_io_handle_t el, const char *cert);
+esp_gmf_err_t esp_gmf_io_http_set_server_cert(esp_gmf_io_handle_t handle, const char *cert);
+
+/**
+ * @brief  Set the event handle for the HTTP IO
+ *
+ * @param  handle          The http IO handle
+ * @param  event_callback  The event callback handle
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           on success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument
+ */
+esp_gmf_err_t esp_gmf_io_http_set_event_callback(esp_gmf_io_handle_t handle, http_io_event_handle_t event_callback);
 
 #ifdef __cplusplus
 }

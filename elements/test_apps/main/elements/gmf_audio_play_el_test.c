@@ -23,6 +23,7 @@
 #include "esp_gmf_setup_pool.h"
 #include "esp_gmf_audio_helper.h"
 #include "gmf_audio_play_com.h"
+#include "esp_gmf_io_http.h"
 
 #ifdef MEDIA_LIB_MEM_TEST
 #include "media_lib_adapter.h"
@@ -45,6 +46,8 @@ static const char *wav_file_path[] = {
 };
 
 static const char *dec_file_path[] = {
+    // Two same ts file to test the reset function
+    "/sdcard/test.ts",
     "/sdcard/test.ts",
     "/sdcard/test.aac",
     "/sdcard/test.mp3",
@@ -236,7 +239,7 @@ TEST_CASE("Audio Play, One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
 TEST_CASE("Audio Play, multiple file with One Pipe, [FILE->dec->resample->IIS]", "ESP_GMF_POOL")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
     esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
 
@@ -449,8 +452,7 @@ TEST_CASE("Audio Play, two in pipe use same task, [file->dec]->rb->[resample+IIS
 TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
-    // esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
     esp_gmf_setup_periph_wifi();
     esp_gmf_setup_periph_i2c(0);
@@ -464,6 +466,8 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL));
 
 #ifdef MEDIA_LIB_MEM_TEST
+    void *sdcard = NULL;
+    esp_gmf_setup_periph_sdmmc(&sdcard);
     media_lib_add_default_adapter();
 #endif /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
@@ -478,8 +482,63 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
     ESP_GMF_POOL_SHOW_ITEMS(pool);
     esp_gmf_info_sound_t info = {0};
 
-    for (int i = 0; i < 10; ++i) {
+    ESP_LOGI(TAG, "---- Test 1 for HTTP pipeline reset playing ----");
+    // Create the new elements
+    esp_gmf_pipeline_handle_t pipe = NULL;
+    const char *uri = "https://dl.espressif.com/dl/audio/gs-16b-2c-44100hz.mp3";
+    const char *name[] = {"aud_simp_dec", "rate_cvt", "ch_cvt"};
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_new_pipeline(pool, "http", name, sizeof(name) / sizeof(char *), "codec_dev_tx", &pipe));
+    TEST_ASSERT_NOT_NULL(pipe);
+    EventGroupHandle_t pipe_sync_evt = xEventGroupCreate();
+    ESP_GMF_NULL_CHECK(TAG, pipe_sync_evt, return);
+    esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
+    cfg.ctx = NULL;
+    cfg.cb = NULL;
+    esp_gmf_task_handle_t work_task = NULL;
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task));
+    TEST_ASSERT_NOT_NULL(pipe);
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_bind_task(pipe, work_task));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe, _pipeline_event, pipe_sync_evt));
+
+    ESP_GMF_MEM_SHOW(TAG);
+
+    for (int i = 0; i < 3; ++i) {
         printf("\r\nIndex:%d\r\n", i);
+        ESP_GMF_MEM_SHOW(TAG);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe));
+
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe, uri));
+        esp_gmf_element_handle_t dec_el = NULL;
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
+        esp_gmf_audio_helper_reconfig_dec_by_uri(uri, &info, OBJ_GET_CFG(dec_el));
+
+        ESP_GMF_MEM_SHOW(TAG);
+        esp_gmf_task_set_timeout(pipe->thread, 5000);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));
+        esp_gmf_pipeline_list_el(pipe);
+        vTaskDelay(2000 / portTICK_RATE_MS);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_pause(pipe));
+        vTaskDelay(1000 / portTICK_RATE_MS);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_resume(pipe));
+
+        // Wait to finished or got error
+        xEventGroupWaitBits(pipe_sync_evt, PIPELINE_BLOCK_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe));
+
+        esp_gmf_pipeline_reset(pipe);
+    }
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(work_task));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_destroy(pipe));
+    vEventGroupDelete(pipe_sync_evt);
+    ESP_GMF_MEM_SHOW(TAG);
+
+    ESP_LOGI(TAG, "---- Test 2 for create destroy HTTP pipeline multiple times ----");
+
+    for (int i = 0; i < 3; ++i) {
+        printf("\r\nIndex:%d\r\n", i);
+        ESP_GMF_MEM_SHOW(TAG);
         EventGroupHandle_t pipe_sync_evt = xEventGroupCreate();
         ESP_GMF_NULL_CHECK(TAG, pipe_sync_evt, return);
 
@@ -523,12 +582,13 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
 
         vEventGroupDelete(pipe_sync_evt);
     }
+    pool_unregister_audio_codecs();
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
+    esp_gmf_teardown_periph_sdmmc(sdcard);
 #endif /* MEDIA_LIB_MEM_TEST */
-    pool_unregister_audio_codecs();
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
     esp_gmf_teardown_periph_codec(play_dev, NULL);
     esp_gmf_teardown_periph_i2c(0);
     esp_gmf_teardown_periph_wifi();
@@ -539,7 +599,7 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "ESP_GMF_POOL")
 TEST_CASE("Audio Play, Two Pipe, [HTTP->dec]--RB-->[resample->IIS]", "ESP_GMF_POOL")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
     esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
     esp_gmf_setup_periph_wifi();

@@ -151,7 +151,7 @@ static int ae_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int blo
 TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
 
 #ifdef MEDIA_LIB_MEM_TEST
@@ -409,7 +409,7 @@ TEST_CASE("Test methods for all effects", "ESP_GMF_Effects")
 TEST_CASE("Audio Effects Play, [FILE->dec->resample->bvt->cvt->alc->eq->fade->sonic->IIS]", "ESP_GMF_Effects")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
     esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
 
@@ -503,7 +503,7 @@ TEST_CASE("Audio Effects Play, [FILE->dec->resample->bvt->cvt->alc->eq->fade->so
 TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
 
     void *sdcard = NULL;
@@ -702,7 +702,7 @@ TEST_CASE("Audio Effects Data Weaver test", "ESP_GMF_Effects")
 TEST_CASE("Audio mixer Play", "ESP_GMF_Effects")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
-    esp_log_level_set("AUDIO_PIPELINE", ESP_LOG_DEBUG);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
     esp_log_level_set("ESP_GMF_POOL", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST

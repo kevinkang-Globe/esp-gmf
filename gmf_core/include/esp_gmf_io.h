@@ -54,6 +54,7 @@ typedef struct esp_gmf_io_ {
     esp_gmf_err_t (*open)(esp_gmf_io_handle_t obj);                 /*!< Open callback function */
     esp_gmf_err_t (*seek)(esp_gmf_io_handle_t obj, uint64_t data);  /*!< Seek callback function */
     esp_gmf_err_t (*close)(esp_gmf_io_handle_t obj);                /*!< Close callback function */
+    esp_gmf_err_t (*reset)(esp_gmf_io_handle_t obj);                /*!< Reset callback function */
 
     /*!< Previous close callback function
      *   For some block IO instances, this function can be called before the `close` operation
@@ -326,6 +327,17 @@ esp_gmf_err_t esp_gmf_io_get_size(esp_gmf_io_handle_t handle, uint64_t *total_si
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument
  */
 esp_gmf_err_t esp_gmf_io_get_type(esp_gmf_io_handle_t handle, esp_gmf_io_type_t *type);
+
+/**
+ * @brief  Reset IO will do reset the position and size, call the reset function if it is valid, then reset the task and reload IO process job
+ *
+ * @param[in]  handle  GMF I/O handle
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid argument
+ */
+esp_gmf_err_t esp_gmf_io_reset(esp_gmf_io_handle_t handle);
 
 #ifdef __cplusplus
 }

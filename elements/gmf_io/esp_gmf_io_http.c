@@ -77,7 +77,6 @@ static int dispatch_hook(esp_gmf_io_handle_t self, http_stream_event_id_t type, 
     msg.user_data = http_io_cfg->user_data;
     msg.buffer = buffer;
     msg.buffer_len = buffer_len;
-    msg.el = self;
     if (http_io_cfg->event_handle) {
         return http_io_cfg->event_handle(&msg);
     }
@@ -102,9 +101,8 @@ static esp_gmf_err_t _http_open(esp_gmf_io_handle_t self)
 {
     http_stream_t *http = (http_stream_t *)self;
     esp_gmf_err_t err;
-
     if (http->is_open) {
-        ESP_LOGW(TAG, "The HTTP already opened");
+        ESP_LOGW(TAG, "The HTTP already opened, %p", http);
         return ESP_GMF_ERR_OK;
     }
     http->_errno = 0;
@@ -228,10 +226,9 @@ static esp_gmf_err_t _http_prev_close(esp_gmf_io_handle_t self)
 static esp_gmf_err_t _http_close(esp_gmf_io_handle_t self)
 {
     http_stream_t *http = (http_stream_t *)self;
-    ESP_LOGD(TAG, "_http_close");
+    ESP_LOGD(TAG, "_http_close, %p", http);
     http_io_cfg_t *http_io_cfg = (http_io_cfg_t *)OBJ_GET_CFG(http);
     while (http->is_open && (http_io_cfg->dir == ESP_GMF_IO_DIR_WRITER)) {
-        http->is_open = false;
         if (dispatch_hook(self, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
             break;
         }
@@ -242,6 +239,7 @@ static esp_gmf_err_t _http_close(esp_gmf_io_handle_t self)
             break;
         }
     }
+    http->is_open = false;
     if (http->gzip) {
         gzip_miniz_deinit(http->gzip);
         http->gzip = NULL;
@@ -437,22 +435,29 @@ static esp_gmf_err_io_t _http_release_write(esp_gmf_io_handle_t handle, void *pa
     return wlen;
 }
 
-esp_gmf_err_t esp_gmf_io_http_reset(esp_gmf_io_handle_t el)
+esp_gmf_err_t esp_gmf_io_http_reset(esp_gmf_io_handle_t handle)
 {
-    ESP_GMF_NULL_CHECK(TAG, el, return ESP_GMF_ERR_INVALID_ARG;);
-    http_stream_t *http = (http_stream_t *)el;
-    esp_gmf_io_set_pos(el, 0);
-    esp_gmf_io_set_size(el, 0);
-    http->is_open = false;
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG;);
+    http_stream_t *http = (http_stream_t *)handle;
+    esp_gmf_db_reset(http->data_bus);
+    ESP_LOGD(TAG, "Reset, %p", http);
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_io_http_set_server_cert(esp_gmf_io_handle_t el, const char *cert)
+esp_gmf_err_t esp_gmf_io_http_set_server_cert(esp_gmf_io_handle_t handle, const char *cert)
 {
-    ESP_GMF_NULL_CHECK(TAG, el, return ESP_GMF_ERR_INVALID_ARG;);
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG;);
     ESP_GMF_NULL_CHECK(TAG, cert, return ESP_GMF_ERR_INVALID_ARG);
-    http_io_cfg_t *http_io_cfg = (http_io_cfg_t *)OBJ_GET_CFG(el);
+    http_io_cfg_t *http_io_cfg = (http_io_cfg_t *)OBJ_GET_CFG(handle);
     http_io_cfg->cert_pem = cert;
+    return ESP_GMF_ERR_OK;
+}
+
+esp_gmf_err_t esp_gmf_io_http_set_event_callback(esp_gmf_io_handle_t handle, http_io_event_handle_t event_callback)
+{
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG;);
+    http_io_cfg_t *http_io_cfg = (http_io_cfg_t *)OBJ_GET_CFG(handle);
+    http_io_cfg->event_handle = event_callback;
     return ESP_GMF_ERR_OK;
 }
 
@@ -482,6 +487,7 @@ esp_gmf_err_t esp_gmf_io_http_init(http_io_cfg_t *config, esp_gmf_io_handle_t *i
     http->base.seek = _http_seek;
     http->base.prev_close = _http_prev_close;
     http->base.close = _http_close;
+    http->base.reset = esp_gmf_io_http_reset;
     if (config->dir == ESP_GMF_IO_DIR_WRITER) {
         http->base.acquire_write = _http_acquire_write;
         http->base.release_write = _http_release_write;

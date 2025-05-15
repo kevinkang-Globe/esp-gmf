@@ -4,7 +4,12 @@
 
 ### Features
 
-- Add API `esp_gmf_io_codec_dev_set_dev` to set audio codec device handle
+- Added `esp_gmf_io_codec_dev_set_dev` API to set the audio codec device handle
+- Added `esp_gmf_io_http_set_event_callback` API to set an HTTP event callback
+- Added basic reset functionality to each IO to properly clean up resources and reset state
+
+### Bug Fixes
+- Fixed an issue where HTTP IO did not reset the thread and databus properly
 
 ## v0.6.3
 
