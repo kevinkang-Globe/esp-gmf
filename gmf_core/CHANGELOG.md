@@ -16,6 +16,7 @@
 ### Bug Fixes
 
 - Fixed pause timeout caused by missing sync event when pause producer entered an error state
+- Fixed a thread safety issue with the gmf_task `running` flag
 
 ## v0.6.1
 
