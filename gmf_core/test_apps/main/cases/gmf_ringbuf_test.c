@@ -110,7 +110,7 @@ write_task_err:
     vTaskDelete(NULL);
 }
 
-TEST_CASE("Ringbuffer read and write on different task", "ESP_GMF_RINGBUF")
+TEST_CASE("Ringbuffer read and write on different task", "[ESP_GMF_RINGBUF]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_RINGBUF", ESP_LOG_VERBOSE);

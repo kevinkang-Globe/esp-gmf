@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 function add_ssh_keys() {
   local key_string="${1}"

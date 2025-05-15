@@ -1,6 +1,7 @@
 .pre_check_template:
   stage: pre_check
   image: "${CI_DOCKER_REGISTRY}/esp-env-v5.3:1"
+  interruptible: true
   tags:
     - host_test
   dependencies: []
@@ -31,7 +32,8 @@
   fi
 
 check_commit_format:
-  image: "$MULTIMEDIA_DOCKER_REGISTRY/pre_commit:1"
+  image: "$CI_DOCKER_IMAGE_REGISTRY/pre_commit:1"
+  interruptible: true
   stage: pre_check
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_LABELS !~ /^(?:[^,\n\r]+,)*skip_check(?:,[^,\n\r]+)*$/i'

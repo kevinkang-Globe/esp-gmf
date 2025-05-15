@@ -424,7 +424,7 @@ static int test_color_convert(convert_res_t *res, uint32_t convert_pair[][2], in
 }
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
-TEST_CASE("Color convert HW", "ESP_GMF_VIDEO")
+TEST_CASE("Color convert HW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -457,7 +457,7 @@ TEST_CASE("Color convert HW", "ESP_GMF_VIDEO")
 }
 #endif
 
-TEST_CASE("Color convert SW", "ESP_GMF_VIDEO")
+TEST_CASE("Color convert SW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -526,7 +526,7 @@ static int test_scale(convert_res_t *res, uint32_t convert_pair[][2], int n)
 }
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
-TEST_CASE("Scale HW", "ESP_GMF_VIDEO")
+TEST_CASE("Scale HW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -559,7 +559,7 @@ TEST_CASE("Scale HW", "ESP_GMF_VIDEO")
 }
 #endif
 
-TEST_CASE("Scale SW", "ESP_GMF_VIDEO")
+TEST_CASE("Scale SW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -632,7 +632,7 @@ static int test_rotate(convert_res_t *res, uint32_t convert_pair[][2], int n)
 }
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
-TEST_CASE("Rotate HW", "ESP_GMF_VIDEO")
+TEST_CASE("Rotate HW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -661,7 +661,7 @@ TEST_CASE("Rotate HW", "ESP_GMF_VIDEO")
 }
 #endif
 
-TEST_CASE("Rotate SW", "ESP_GMF_VIDEO")
+TEST_CASE("Rotate SW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -738,7 +738,7 @@ static int test_crop(convert_res_t *res, uint32_t convert_pair[][2], int n)
 }
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
-TEST_CASE("Crop HW", "ESP_GMF_VIDEO")
+TEST_CASE("Crop HW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -766,7 +766,7 @@ TEST_CASE("Crop HW", "ESP_GMF_VIDEO")
 }
 #endif
 
-TEST_CASE("Crop only SW", "ESP_GMF_VIDEO")
+TEST_CASE("Crop only SW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -799,7 +799,7 @@ TEST_CASE("Crop only SW", "ESP_GMF_VIDEO")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Encoder only", "ESP_GMF_VIDEO")
+TEST_CASE("Encoder only", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -854,7 +854,7 @@ TEST_CASE("Encoder only", "ESP_GMF_VIDEO")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("FPS convert only", "ESP_GMF_VIDEO")
+TEST_CASE("FPS convert only", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -899,7 +899,7 @@ TEST_CASE("FPS convert only", "ESP_GMF_VIDEO")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Overlay Test", "ESP_GMF_VIDEO")
+TEST_CASE("Overlay Test", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -982,7 +982,7 @@ TEST_CASE("Overlay Test", "ESP_GMF_VIDEO")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Encoder to Decode", "ESP_GMF_VIDEO")
+TEST_CASE("Encoder to Decode", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);

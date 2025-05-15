@@ -7,7 +7,7 @@
 #include "unity.h"
 #include "esp_gmf_uri_parser.h"
 
-TEST_CASE("URI, Parser test", "ESP_GMF_URI")
+TEST_CASE("URI, Parser test", "[ESP_GMF_URI]")
 {
     esp_gmf_uri_t *uri = NULL;
 

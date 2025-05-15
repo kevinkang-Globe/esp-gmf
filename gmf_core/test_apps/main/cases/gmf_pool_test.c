@@ -224,7 +224,7 @@ static inline void pool_register_dec_func5(esp_gmf_pool_handle_t pool)
     TEST_ASSERT_EQUAL(ESP_OK, esp_gmf_pool_register_element(pool, fake_dec, NULL));
 }
 
-TEST_CASE("Create and destroy pipeline", "ELEMENT_POOL")
+TEST_CASE("Create and destroy pipeline", "[ELEMENT_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -248,7 +248,7 @@ TEST_CASE("Create and destroy pipeline", "ELEMENT_POOL")
     esp_gmf_pool_deinit(pool);
 }
 
-TEST_CASE("One Pipe, [FILE->dec->dec->dec->FILE]", "ELEMENT_POOL")
+TEST_CASE("One Pipe, [FILE->dec->dec->dec->FILE]", "[ELEMENT_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -296,7 +296,7 @@ TEST_CASE("One Pipe, [FILE->dec->dec->dec->FILE]", "ELEMENT_POOL")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
 }
 
-TEST_CASE("One Pipe, [FILE->dec->FILE]", "ELEMENT_POOL")
+TEST_CASE("One Pipe, [FILE->dec->FILE]", "[ELEMENT_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -340,7 +340,7 @@ TEST_CASE("One Pipe, [FILE->dec->FILE]", "ELEMENT_POOL")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
 }
 
-TEST_CASE("IN-OUT Different payload, [FILE->dec->FILE]", "ELEMENT_PORT")
+TEST_CASE("IN-OUT Different payload, [FILE->dec->FILE]", "[ELEMENT_PORT]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -389,7 +389,7 @@ TEST_CASE("IN-OUT Different payload, [FILE->dec->FILE]", "ELEMENT_PORT")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
 }
 
-TEST_CASE("ALL element IN-OUT SAME, [FILE->dec->FILE]", "ELEMENT_PORT")
+TEST_CASE("ALL element IN-OUT SAME, [FILE->dec->FILE]", "[ELEMENT_PORT]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -440,7 +440,7 @@ TEST_CASE("ALL element IN-OUT SAME, [FILE->dec->FILE]", "ELEMENT_PORT")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
 }
 
-TEST_CASE("The middle element IN-OUT SAME, [FILE->dec->FILE]", "ELEMENT_PORT")
+TEST_CASE("The middle element IN-OUT SAME, [FILE->dec->FILE]", "[ELEMENT_PORT]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -491,7 +491,7 @@ TEST_CASE("The middle element IN-OUT SAME, [FILE->dec->FILE]", "ELEMENT_PORT")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
 }
 
-TEST_CASE("The element IN-OUT SAME, [FILE->dec->FILE]", "ELEMENT_PORT")
+TEST_CASE("The element IN-OUT SAME, [FILE->dec->FILE]", "[ELEMENT_PORT]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -542,7 +542,7 @@ TEST_CASE("The element IN-OUT SAME, [FILE->dec->FILE]", "ELEMENT_PORT")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_deinit(pool));
 }
 
-TEST_CASE("Un-Shared port, Same payload, [FILE->dec->FILE]", "ELEMENT_PORT")
+TEST_CASE("Un-Shared port, Same payload, [FILE->dec->FILE]", "[ELEMENT_PORT]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);

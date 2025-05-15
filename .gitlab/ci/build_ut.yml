@@ -1,0 +1,82 @@
+variables:
+  DOCKER_IMAGE: ${CI_DOCKER_IMAGE_REGISTRY}/env_default:1
+  BASE_FRAMEWORK_PATH: "${IDF_PATH}"
+  BASE_FRAMEWORK: $IDF_REPOSITORY
+  IDF_TAG_FLAG: true
+
+.build_gmf_component:
+  interruptible: true
+  variables:
+    TEST_DIR: ${CI_PROJECT_DIR}/gmf_core
+  parallel:
+    matrix:
+      - IDF_VERSION_TAG: ['v5.4']
+        parallel: [ 1/1 ]
+  extends:
+    - .rules:build:protected-merge-requests-pipeline
+    - .build_template
+  artifacts:
+    paths:
+      - "${TEST_DIR}/test_apps/build*/size.json"
+      - "${TEST_DIR}/test_apps/build*/build_log.txt"
+      - "${TEST_DIR}/test_apps/build*/*.bin"
+      - "${TEST_DIR}/test_apps/build*/*.elf"
+      - "${TEST_DIR}/test_apps/build*/flasher_args.json"
+      - "${TEST_DIR}/test_apps/build*/flash_project_args"
+      - "${TEST_DIR}/test_apps/build*/config/sdkconfig.json"
+      - "${TEST_DIR}/test_apps/build*/sdkconfig"
+      - "${TEST_DIR}/test_apps/build*/bootloader/*.bin"
+      - "${TEST_DIR}/test_apps/build*/partition_table/*.bin"
+      - "${TEST_DIR}/test_apps/build*/srmodels/*.bin"
+      - "${TEST_DIR}/test_apps/*.py"
+    expire_in: 4 days
+  script:
+    - run_cmd python ${BASE_FRAMEWORK_PATH}/tools/ci/ci_build_apps.py ${TEST_DIR} -vv -t $IDF_TARGET --pytest-apps
+
+.build_ut_gmf_elements:
+  extends:
+    - .build_gmf_component
+  variables:
+    TEST_DIR: ${CI_PROJECT_DIR}/elements
+
+build_ut_gmf_core_esp32:
+  extends:
+    - .build_gmf_component
+  variables:
+    IDF_TARGET: esp32
+
+.build_ut_gmf_core_esp32c3:
+  extends:
+    - .build_gmf_component
+  variables:
+    IDF_TARGET: esp32c3
+
+build_ut_gmf_core_esp32s3:
+  extends:
+    - .build_gmf_component
+  variables:
+    IDF_TARGET: esp32s3
+
+.build_ut_gmf_core_esp32p4:
+  extends:
+    - .build_gmf_component
+  variables:
+    IDF_TARGET: esp32p4
+
+build_ut_gmf_elements_esp32:
+  extends:
+    - .build_ut_gmf_elements
+  variables:
+    IDF_TARGET: esp32
+
+build_ut_gmf_elements_esp32s3:
+  extends:
+    - .build_ut_gmf_elements
+  variables:
+    IDF_TARGET: esp32s3
+
+.build_ut_gmf_elements_esp32p4:
+  extends:
+    - .build_ut_gmf_elements
+  variables:
+    IDF_TARGET: esp32p4
