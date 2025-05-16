@@ -94,6 +94,7 @@ static inline void gmf_fourcc_to_str(uint32_t fourcc, char out[5]) {
 #define ESP_FOURCC_SBC              ESP_FOURCC_TO_INT('S', 'B', 'C', ' ') /* Sub-Band Codec */
 #define ESP_FOURCC_OPUS             ESP_FOURCC_TO_INT('O', 'P', 'U', 'S') /* Raw Opus */
 #define ESP_FOURCC_SPEEX            ESP_FOURCC_TO_INT('S', 'P', 'E', 'X') /* Speex Audio */
+#define ESP_FOURCC_PCM              ESP_FOURCC_TO_INT('P', 'C', 'M', ' ') /* PCM Audio Type*/
 
 
 /***************************************************************/

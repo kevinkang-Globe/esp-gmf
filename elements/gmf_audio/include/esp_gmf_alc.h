@@ -8,7 +8,7 @@
 #pragma once
 
 #include "esp_gmf_err.h"
-#include "esp_gmf_audio_element.h"
+#include "esp_gmf_element.h"
 #include "esp_ae_alc.h"
 
 #ifdef __cplusplus
@@ -32,7 +32,7 @@ extern "C" {
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
  *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
  */
-esp_gmf_err_t esp_gmf_alc_init(esp_ae_alc_cfg_t *config, esp_gmf_obj_handle_t *handle);
+esp_gmf_err_t esp_gmf_alc_init(esp_ae_alc_cfg_t *config, esp_gmf_element_handle_t *handle);
 
 /**
  * @brief  Set specific channel gain of the ALC handle.
@@ -52,7 +52,7 @@ esp_gmf_err_t esp_gmf_alc_init(esp_ae_alc_cfg_t *config, esp_gmf_obj_handle_t *h
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_alc_set_gain(esp_gmf_audio_element_handle_t handle, uint8_t idx, int8_t gain);
+esp_gmf_err_t esp_gmf_alc_set_gain(esp_gmf_element_handle_t handle, uint8_t idx, int8_t gain);
 
 /**
  * @brief  Get the gain for a specific channel from the ALC handle
@@ -65,7 +65,7 @@ esp_gmf_err_t esp_gmf_alc_set_gain(esp_gmf_audio_element_handle_t handle, uint8_
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_alc_get_gain(esp_gmf_audio_element_handle_t handle, uint8_t idx, int8_t *gain);
+esp_gmf_err_t esp_gmf_alc_get_gain(esp_gmf_element_handle_t handle, uint8_t idx, int8_t *gain);
 
 #ifdef __cplusplus
 }

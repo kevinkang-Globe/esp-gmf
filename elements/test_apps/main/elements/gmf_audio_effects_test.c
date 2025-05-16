@@ -42,7 +42,9 @@
 #include "esp_audio_dec_default.h"
 #include "esp_audio_dec_reg.h"
 #include "esp_gmf_audio_helper.h"
-
+#include "esp_gmf_audio_methods_def.h"
+#include "esp_gmf_method.h"
+#include "esp_gmf_audio_param.h"
 #ifdef MEDIA_LIB_MEM_TEST
 #include "media_lib_adapter.h"
 #include "media_lib_mem_trace.h"
@@ -146,6 +148,229 @@ static int ae_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int blo
 {
     ESP_LOGE(TAG, "%s-%d,file_release_write, %d,%p", __func__, __LINE__, blk->valid_size, blk);
     return blk->valid_size;
+}
+
+TEST_CASE("AUDIO CODEC METHOD TEST", "[ESP_GMF_Effects]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
+    ESP_GMF_MEM_SHOW(TAG);
+
+#ifdef MEDIA_LIB_MEM_TEST
+    media_lib_add_default_adapter();
+#endif /* MEDIA_LIB_MEM_TEST */
+
+    esp_gmf_port_handle_t in_port = NULL;
+    esp_gmf_port_handle_t out_port = NULL;
+
+    printf("\r\n///////////////////// ENC /////////////////////\r\n");
+    esp_audio_enc_register_default();
+
+    esp_audio_enc_config_t es_enc_cfg = DEFAULT_ESP_GMF_AUDIO_ENC_CONFIG();
+    esp_g711_enc_config_t g711_enc_cfg = ESP_G711_ENC_CONFIG_DEFAULT();
+    es_enc_cfg.type = ESP_AUDIO_TYPE_G711A;
+    es_enc_cfg.cfg = &g711_enc_cfg;
+    es_enc_cfg.cfg_sz = sizeof(esp_g711_enc_config_t);
+    esp_gmf_element_handle_t enc_handle = NULL;
+    esp_gmf_audio_enc_init(&es_enc_cfg, &enc_handle);
+
+    in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
+    esp_gmf_element_register_in_port(enc_handle, in_port);
+    out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
+    esp_gmf_element_register_out_port(enc_handle, out_port);
+
+    // use method
+    esp_gmf_method_t *method_head = NULL;
+    esp_gmf_method_t *method = NULL;
+    esp_gmf_element_get_method((esp_gmf_element_handle_t)enc_handle, (const esp_gmf_method_t **)&method_head);
+    uint8_t buf[100] = {0};
+
+    // reconfig_by_sound_info
+    esp_gmf_info_sound_t enc_info = {0};
+    enc_info.format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_LC3;
+    enc_info.sample_rates = ESP_AUDIO_SAMPLE_RATE_48K;
+    enc_info.channels = 2;
+    enc_info.bits = 16;
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_method_found(method_head, AMETHOD(ENCODER, RECONFIG_BY_SND_INFO), (const esp_gmf_method_t **)&method));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_args_set_value(method->args_desc, AMETHOD_ARG(ENCODER, RECONFIG_BY_SND_INFO, INFO), buf, (uint8_t *)&enc_info, sizeof(esp_gmf_info_sound_t)));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_exe_method((esp_gmf_element_handle_t)enc_handle, AMETHOD(ENCODER, RECONFIG_BY_SND_INFO), buf, sizeof(buf)));
+    esp_audio_enc_config_t *enccfg = OBJ_GET_CFG(enc_handle);
+    esp_lc3_enc_config_t *lc3_cfg = (esp_lc3_enc_config_t *)enccfg->cfg;
+    TEST_ASSERT_EQUAL(ESP_AUDIO_TYPE_LC3, enccfg->type);
+    TEST_ASSERT_EQUAL(ESP_AUDIO_SAMPLE_RATE_48K, lc3_cfg->sample_rate);
+    TEST_ASSERT_EQUAL(120, lc3_cfg->nbyte);
+
+    // reconfig
+    es_enc_cfg.type = ESP_AUDIO_TYPE_AAC;
+    esp_aac_enc_config_t aac_enc_cfg = ESP_AAC_ENC_CONFIG_DEFAULT();
+    es_enc_cfg.cfg = &aac_enc_cfg;
+    es_enc_cfg.cfg_sz = sizeof(esp_aac_enc_config_t);
+    method = NULL;
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_method_found(method_head, AMETHOD(ENCODER, RECONFIG), (const esp_gmf_method_t **)&method));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_args_set_value(method->args_desc, AMETHOD_ARG(ENCODER, RECONFIG, CFG), buf, (uint8_t *)&es_enc_cfg, sizeof(esp_audio_enc_config_t)));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_exe_method((esp_gmf_element_handle_t)enc_handle, AMETHOD(ENCODER, RECONFIG), buf, sizeof(buf)));
+    enccfg = OBJ_GET_CFG(enc_handle);
+    esp_aac_enc_config_t *aac_cfg = (esp_aac_enc_config_t *)enccfg->cfg;
+    TEST_ASSERT_EQUAL(ESP_AUDIO_TYPE_AAC, enccfg->type);
+    TEST_ASSERT_EQUAL(ESP_AUDIO_SAMPLE_RATE_44K, aac_cfg->sample_rate);
+
+    // get frame size by cfg
+    uint32_t insize_by_cfg = 0;
+    uint32_t outsize_by_cfg = 0;
+    esp_gmf_method_found(method_head, AMETHOD(ENCODER, GET_FRAME_SZ), (const esp_gmf_method_t **)&method);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_exe_method((esp_gmf_element_handle_t)enc_handle, AMETHOD(ENCODER, GET_FRAME_SZ), buf, sizeof(buf)));
+    esp_gmf_args_extract_value(method->args_desc, AMETHOD_ARG(ENCODER, GET_FRAME_SZ, INSIZE), buf, sizeof(buf), (uint32_t *)&insize_by_cfg);
+    esp_gmf_args_extract_value(method->args_desc, AMETHOD_ARG(ENCODER, GET_FRAME_SZ, OUTSIZE), buf, sizeof(buf), (uint32_t *)&outsize_by_cfg);
+
+    esp_gmf_element_process_open(enc_handle, NULL);
+    // test set config after process
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_FAIL, esp_gmf_element_exe_method((esp_gmf_element_handle_t)enc_handle, AMETHOD(ENCODER, RECONFIG), buf, sizeof(buf)));
+
+    esp_gmf_element_process_running(enc_handle, NULL);
+    // set bitrate
+    esp_gmf_method_found(method_head, AMETHOD(ENCODER, SET_BITRATE), (const esp_gmf_method_t **)&method);
+    uint32_t bitrate = 18000;
+    esp_gmf_args_set_value(method->args_desc, AMETHOD_ARG(ENCODER, SET_BITRATE, BITRATE), buf, (uint8_t *)&bitrate, sizeof(uint32_t));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_exe_method((esp_gmf_element_handle_t)enc_handle, AMETHOD(ENCODER, SET_BITRATE), buf, sizeof(buf)));
+    // get bitrate
+    uint32_t out_bitrate = 0;
+    esp_gmf_method_found(method_head, AMETHOD(ENCODER, GET_BITRATE), (const esp_gmf_method_t **)&method);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_exe_method((esp_gmf_element_handle_t)enc_handle, AMETHOD(ENCODER, GET_BITRATE), buf, sizeof(buf)));
+    esp_gmf_args_extract_value(method->args_desc, AMETHOD_ARG(ENCODER, GET_BITRATE, BITRATE), buf, sizeof(buf), (uint32_t *)&out_bitrate);
+    TEST_ASSERT_EQUAL(18000, out_bitrate);
+
+    // get frame size by handle
+    uint32_t insize_by_hd = 0;
+    uint32_t outsize_by_hd = 0;
+    esp_gmf_method_found(method_head, AMETHOD(ENCODER, GET_FRAME_SZ), (const esp_gmf_method_t **)&method);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_exe_method((esp_gmf_element_handle_t)enc_handle, AMETHOD(ENCODER, GET_FRAME_SZ), buf, sizeof(buf)));
+    esp_gmf_args_extract_value(method->args_desc, AMETHOD_ARG(ENCODER, GET_FRAME_SZ, INSIZE), buf, sizeof(buf), (uint32_t *)&insize_by_hd);
+    esp_gmf_args_extract_value(method->args_desc, AMETHOD_ARG(ENCODER, GET_FRAME_SZ, OUTSIZE), buf, sizeof(buf), (uint32_t *)&outsize_by_hd);
+    TEST_ASSERT_EQUAL(insize_by_cfg, insize_by_hd);
+    TEST_ASSERT_EQUAL(outsize_by_cfg, outsize_by_hd);
+
+    esp_gmf_element_process_close(enc_handle, NULL);
+    esp_gmf_obj_delete(enc_handle);
+
+    esp_audio_enc_unregister_default();
+
+    ESP_GMF_MEM_SHOW(TAG);
+    printf("\r\n///////////////////// DEC /////////////////////\r\n");
+    esp_audio_dec_register_default();
+    esp_audio_simple_dec_register_default();
+    esp_audio_simple_dec_cfg_t es_dec_cfg = DEFAULT_ESP_GMF_AUDIO_DEC_CONFIG();
+    esp_gmf_element_handle_t es_hd = NULL;
+    esp_gmf_audio_dec_init(&es_dec_cfg, &es_hd);
+    in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
+    esp_gmf_element_register_in_port(es_hd, in_port);
+    out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
+    esp_gmf_element_register_out_port(es_hd, out_port);
+    // use method
+    esp_gmf_element_get_method((esp_gmf_element_handle_t)es_hd, (const esp_gmf_method_t **)&method_head);
+
+    // reconfig_by_sound_info
+    esp_gmf_info_sound_t dec_info = {0};
+    dec_info.format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_SBC;
+    dec_info.sample_rates = ESP_AUDIO_SAMPLE_RATE_44K;
+    dec_info.channels = 2;
+    dec_info.bits = 16;
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_method_found(method_head, AMETHOD(DECODER, RECONFIG_BY_SND_INFO), (const esp_gmf_method_t **)&method));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_args_set_value(method->args_desc, AMETHOD_ARG(DECODER, RECONFIG_BY_SND_INFO, INFO), buf, (uint8_t *)&dec_info, sizeof(esp_gmf_info_sound_t)));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_exe_method((esp_gmf_element_handle_t)es_hd, AMETHOD(DECODER, RECONFIG_BY_SND_INFO), buf, sizeof(buf)));
+    esp_audio_simple_dec_cfg_t *deccfg = OBJ_GET_CFG(es_hd);
+    esp_sbc_dec_cfg_t *sbc_cfg = (esp_sbc_dec_cfg_t *)deccfg->dec_cfg;
+    TEST_ASSERT_EQUAL(ESP_AUDIO_SIMPLE_DEC_TYPE_SBC, deccfg->dec_type);
+    TEST_ASSERT_EQUAL(ESP_SBC_MODE_STD, sbc_cfg->sbc_mode);
+    TEST_ASSERT_EQUAL(2, sbc_cfg->ch_num);
+    // reconfig
+    es_dec_cfg.dec_type = ESP_AUDIO_TYPE_LC3;
+    esp_lc3_dec_cfg_t lc3_dec_cfg = ESP_LC3_DEC_CONFIG_DEFAULT();
+    es_dec_cfg.dec_cfg = &lc3_dec_cfg;
+    es_dec_cfg.cfg_size = sizeof(esp_lc3_dec_cfg_t);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_method_found(method_head, AMETHOD(DECODER, RECONFIG), (const esp_gmf_method_t **)&method));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_args_set_value(method->args_desc, AMETHOD_ARG(DECODER, RECONFIG, CFG), buf, (uint8_t *)&es_dec_cfg, sizeof(esp_audio_simple_dec_cfg_t)));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_element_exe_method((esp_gmf_element_handle_t)es_hd, AMETHOD(DECODER, RECONFIG), buf, sizeof(buf)));
+    deccfg = OBJ_GET_CFG(es_hd);
+    esp_lc3_dec_cfg_t *lc3_cfg2 = (esp_lc3_dec_cfg_t *)deccfg->dec_cfg;
+    TEST_ASSERT_EQUAL(ESP_AUDIO_TYPE_LC3, deccfg->dec_type);
+    TEST_ASSERT_EQUAL(120, lc3_cfg2->nbyte);
+
+    esp_gmf_element_process_open(es_hd, NULL);
+    esp_gmf_element_process_running(es_hd, NULL);
+    esp_gmf_element_process_close(es_hd, NULL);
+    esp_gmf_obj_delete(es_hd);
+}
+
+TEST_CASE("AUDIO EFFECTS PARAMETER TEST", "[ESP_GMF_Effects]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
+    ESP_GMF_MEM_SHOW(TAG);
+
+    esp_gmf_port_handle_t in_port = NULL;
+    esp_gmf_port_handle_t out_port = NULL;
+
+    printf("\r\n///////////////////// BIT CONVERT /////////////////////\r\n");
+    esp_ae_bit_cvt_cfg_t bit_cvt_cfg = DEFAULT_ESP_GMF_BIT_CVT_CONFIG();
+    esp_gmf_element_handle_t bit_hd = NULL;
+    esp_gmf_bit_cvt_init(&bit_cvt_cfg, &bit_hd);
+    uint8_t dest_bits = 24;
+    in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
+    esp_gmf_element_register_in_port(bit_hd, in_port);
+    out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
+    esp_gmf_element_register_out_port(bit_hd, out_port);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_param_set_dest_bits(bit_hd, dest_bits));
+    esp_ae_bit_cvt_cfg_t *bit_cvt_info = (esp_ae_bit_cvt_cfg_t *)OBJ_GET_CFG(bit_hd);
+    TEST_ASSERT_EQUAL(bit_cvt_info->dest_bits, dest_bits);
+    esp_gmf_element_process_open(bit_hd, NULL);
+    esp_gmf_element_process_running(bit_hd, NULL);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_param_set_dest_bits(bit_hd, 32));
+    bit_cvt_info = (esp_ae_bit_cvt_cfg_t *)OBJ_GET_CFG(bit_hd);
+    TEST_ASSERT_EQUAL(bit_cvt_info->dest_bits, 32);
+    esp_gmf_element_process_close(bit_hd, NULL);
+    esp_gmf_obj_delete(bit_hd);
+
+    printf("\r\n///////////////////// CH CONVERT /////////////////////\r\n");
+    esp_ae_ch_cvt_cfg_t ch_cvt_cfg = DEFAULT_ESP_GMF_CH_CVT_CONFIG();
+    esp_gmf_element_handle_t ch_hd = NULL;
+    esp_gmf_ch_cvt_init(&ch_cvt_cfg, &ch_hd);
+    uint8_t dest_ch = 3;
+    in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
+    esp_gmf_element_register_in_port(ch_hd, in_port);
+    out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
+    esp_gmf_element_register_out_port(ch_hd, out_port);
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_param_set_dest_ch(ch_hd, dest_ch));
+    esp_ae_ch_cvt_cfg_t *ch_cvt_info = (esp_ae_ch_cvt_cfg_t *)OBJ_GET_CFG(ch_hd);
+    TEST_ASSERT_EQUAL(ch_cvt_info->dest_ch, dest_ch);
+    esp_gmf_element_process_open(ch_hd, NULL);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_param_set_dest_ch(ch_hd, 6));
+    esp_gmf_element_process_running(ch_hd, NULL);
+    ch_cvt_info = (esp_ae_ch_cvt_cfg_t *)OBJ_GET_CFG(ch_hd);
+    TEST_ASSERT_EQUAL(ch_cvt_info->dest_ch, 6);
+    esp_gmf_element_process_close(ch_hd, NULL);
+    esp_gmf_obj_delete(ch_hd);
+
+    printf("\r\n///////////////////// RATE CVT /////////////////////\r\n");
+    esp_ae_rate_cvt_cfg_t rate_cvt_cfg = DEFAULT_ESP_GMF_RATE_CVT_CONFIG();
+    esp_gmf_element_handle_t rate_hd = NULL;
+    esp_gmf_rate_cvt_init(&rate_cvt_cfg, &rate_hd);
+    uint32_t rate = 24000;
+    in_port = NEW_ESP_GMF_PORT_IN_BYTE(ae_acquire_read, ae_release_read, NULL, NULL, 100, 100);
+    esp_gmf_element_register_in_port(rate_hd, in_port);
+    out_port = NEW_ESP_GMF_PORT_OUT_BYTE(ae_acquire_write, ae_release_write, NULL, NULL, 100, 100);
+    esp_gmf_element_register_out_port(rate_hd, out_port);
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_param_set_dest_rate(rate_hd, rate));
+    esp_ae_rate_cvt_cfg_t *rate_info = (esp_ae_rate_cvt_cfg_t *)OBJ_GET_CFG(rate_hd);
+    TEST_ASSERT_EQUAL(rate_info->dest_rate, rate);
+    esp_gmf_element_process_open(rate_hd, NULL);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_param_set_dest_rate(rate_hd, 32000));
+    esp_gmf_element_process_running(rate_hd, NULL);
+    rate_info = (esp_ae_rate_cvt_cfg_t *)OBJ_GET_CFG(rate_hd);
+    TEST_ASSERT_EQUAL(rate_info->dest_rate, 32000);
+    esp_gmf_element_process_close(rate_hd, NULL);
+    esp_gmf_obj_delete(rate_hd);
 }
 
 TEST_CASE("Test methods for all effects", "[ESP_GMF_Effects]")
@@ -462,8 +687,10 @@ TEST_CASE("Audio Effects Play, [FILE->dec->resample->bvt->cvt->alc->eq->fade->so
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe, "/sdcard/test.mp3"));
     esp_gmf_element_handle_t dec_el = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe, "aud_simp_dec", &dec_el));
-    esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test.mp3", &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_info_sound_t info = {
+        .format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3,
+    };
+    esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe));
 
@@ -546,8 +773,10 @@ TEST_CASE("Audio Effects Data Weaver test", "[ESP_GMF_Effects]")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe1, "/sdcard/test.mp3"));
     esp_gmf_element_handle_t dec_el = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe1, "aud_simp_dec", &dec_el));
-    esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test.mp3", &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_info_sound_t info = {
+        .format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3,
+    };
+    esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
 
     esp_gmf_pipeline_handle_t pipe2 = NULL;
     const char *name2[] = {"alc"};
@@ -743,8 +972,10 @@ TEST_CASE("Audio mixer Play", "[ESP_GMF_Effects]")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe1, "/sdcard/test1.mp3"));
     esp_gmf_element_handle_t dec_el = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe1, "aud_simp_dec", &dec_el));
-    esp_gmf_info_sound_t info = {0};
-    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test1.mp3", &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_info_sound_t info = {
+        .format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3,
+    };
+    esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
 
     esp_gmf_pipeline_handle_t pipe2 = NULL;
     const char *name2[] = {"aud_simp_dec", "rate_cvt", "ch_cvt", "bit_cvt"};
@@ -752,7 +983,7 @@ TEST_CASE("Audio mixer Play", "[ESP_GMF_Effects]")
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_in_uri(pipe2, "/sdcard/test.mp3"));
     dec_el = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe2, "aud_simp_dec", &dec_el));
-    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test.mp3", &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
 
     esp_gmf_pipeline_handle_t pipe3 = NULL;
     const char *name3[] = {"mixer"};

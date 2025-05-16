@@ -5,6 +5,7 @@
 ### Features
 
 - Add API `esp_gmf_afe_set_event_cb` to set AFE element event callback
+- Replaced the interface for decoding reconfig
 
 ## v0.6.2
 

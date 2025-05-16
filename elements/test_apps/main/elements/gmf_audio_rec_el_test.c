@@ -32,12 +32,13 @@ static const char *TAG = "AUDIO_REC_ELEMENT_TEST";
 
 static const char *test_enc_format[] = {
     "aac",
-    "amrnb",
-    "amrwb",
+    "amr",
+    "awb",
     "pcm",
     "opus",
     "adpcm",
-    "g711",
+    "g711a",
+    "g711u",
     "alac",
 };
 
@@ -115,15 +116,16 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->FILE]", "[ESP_GMF_POOL]")
     esp_gmf_pipeline_set_out_uri(pipe, uri);
     esp_gmf_element_handle_t enc_handle = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "encoder", &enc_handle);
-    esp_audio_type_t audio_type = 0;
+    uint32_t audio_type = 0;
     esp_gmf_audio_helper_get_audio_type_by_uri(uri, &audio_type);
     esp_gmf_info_sound_t info = {
         .sample_rates = I2S_REC_SAMPLE_RATE,
         .channels = 1,
         .bits = 16,
+        .bitrate = 90000,
+        .format_id = audio_type,
     };
-    esp_audio_enc_config_t *enc_cfg = (esp_audio_enc_config_t *)OBJ_GET_CFG(enc_handle);
-    esp_gmf_audio_helper_reconfig_enc_by_type (audio_type, &info, enc_cfg);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_enc_reconfig_by_sound_info(enc_handle, &info));
     esp_gmf_element_handle_t resp = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "rate_cvt", &resp);
     esp_ae_rate_cvt_cfg_t *resp_cfg = (esp_ae_rate_cvt_cfg_t *)OBJ_GET_CFG(resp);
@@ -220,14 +222,22 @@ TEST_CASE("Recorder, One Pipe recoding multiple format, [IIS->ENC->FILE]", "[ESP
         esp_gmf_element_handle_t enc_handle = NULL;
         esp_gmf_pipeline_get_el_by_name(pipe, "encoder", &enc_handle);
         esp_audio_enc_config_t *esp_gmf_enc_cfg = (esp_audio_enc_config_t *)OBJ_GET_CFG(enc_handle);
-        esp_audio_type_t audio_type = 0;
+        uint32_t audio_type = 0;
+        esp_gmf_audio_helper_get_audio_type_by_uri(uri, &audio_type);
         esp_gmf_info_sound_t info = {
             .sample_rates = I2S_REC_SAMPLE_RATE,
             .channels = 1,
             .bits = 16,
+            .format_id = audio_type,
         };
-        esp_gmf_audio_helper_get_audio_type_by_uri(uri, &audio_type);
-        esp_gmf_audio_helper_reconfig_enc_by_type (audio_type, &info, esp_gmf_enc_cfg);
+        if (audio_type == ESP_AUDIO_TYPE_AMRNB) {
+            info.bitrate = 12200;
+        } else if (audio_type == ESP_AUDIO_TYPE_AMRWB) {
+            info.bitrate = 19850;
+        } else {
+            info.bitrate = 90000;
+        }
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_enc_reconfig_by_sound_info(enc_handle, &info));
         esp_gmf_pipeline_report_info(pipe, ESP_GMF_INFO_SOUND, &info, sizeof(info));
 
         esp_gmf_element_handle_t resp = NULL;
@@ -285,8 +295,8 @@ TEST_CASE("Recorder, One Pipe recoding multiple format, [IIS->ENC->FILE]", "[ESP
 // Refer the 'esp_gmf_audio_rec_el_test.c' test_enc_format
 static const char *recoding_file_path[] = {
     "/sdcard/esp_gmf_rec_00.aac",
-    "/sdcard/esp_gmf_rec_01.amrnb",
-    "/sdcard/esp_gmf_rec_02.amrwb",
+    "/sdcard/esp_gmf_rec_01.amr",
+    "/sdcard/esp_gmf_rec_02.awb",
     "/sdcard/esp_gmf_rec_03.pcm",
 };
 
@@ -396,15 +406,16 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->HTTP]", "[ESP_GMF_POOL][ignore]")
 
     esp_gmf_element_handle_t enc_handle = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "encoder", &enc_handle);
-    esp_audio_enc_config_t *esp_gmf_enc_cfg = (esp_audio_enc_config_t *)OBJ_GET_CFG(enc_handle);
-    esp_audio_type_t audio_type = ESP_AUDIO_TYPE_AAC;
+    uint32_t audio_type = ESP_AUDIO_TYPE_AAC;
     esp_gmf_audio_helper_get_audio_type_by_uri(rec_type, &audio_type);
     esp_gmf_info_sound_t info = {
         .sample_rates = 16000,
         .channels = 1,
         .bits = 16,
+        .bitrate = 90000,
+        .format_id = audio_type,
     };
-    esp_gmf_audio_helper_reconfig_enc_by_type (audio_type, &info, esp_gmf_enc_cfg);
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_audio_enc_reconfig_by_sound_info(enc_handle, &info));
     esp_gmf_pipeline_report_info(pipe, ESP_GMF_INFO_SOUND, &info, sizeof(info));
 
     esp_gmf_io_handle_t http_out = NULL;

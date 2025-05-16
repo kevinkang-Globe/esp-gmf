@@ -77,8 +77,9 @@ void app_main(void)
         .sample_rates = 16000,
         .channels = 1,
         .bits = 16,
+        .format_id = ESP_AUDIO_TYPE_AAC,
     };
-    esp_gmf_audio_helper_reconfig_enc_by_type(ESP_AUDIO_TYPE_AAC, &info, (esp_audio_enc_config_t *)OBJ_GET_CFG(enc_el));
+    esp_gmf_audio_enc_reconfig_by_sound_info(enc_el, &info);
     esp_gmf_pipeline_report_info(pipe, ESP_GMF_INFO_SOUND, &info, sizeof(info));
 
     ESP_LOGI(TAG, "[ 3.3 ] Create gmf task, bind task to pipeline and load linked element jobs to the bind task");

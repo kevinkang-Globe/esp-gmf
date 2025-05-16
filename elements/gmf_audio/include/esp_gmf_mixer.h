@@ -9,7 +9,7 @@
 
 #include "esp_gmf_err.h"
 #include "esp_ae_mixer.h"
-#include "esp_gmf_audio_element.h"
+#include "esp_gmf_element.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,7 +39,7 @@ extern "C" {
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
  *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
  */
-esp_gmf_err_t esp_gmf_mixer_init(esp_ae_mixer_cfg_t *config, esp_gmf_obj_handle_t *handle);
+esp_gmf_err_t esp_gmf_mixer_init(esp_ae_mixer_cfg_t *config, esp_gmf_element_handle_t *handle);
 
 /**
  * @brief  Set the transit mode of a certain stream according to src_idx
@@ -53,12 +53,10 @@ esp_gmf_err_t esp_gmf_mixer_init(esp_ae_mixer_cfg_t *config, esp_gmf_obj_handle_
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_mixer_set_mode(esp_gmf_audio_element_handle_t handle, uint8_t src_idx, esp_ae_mixer_mode_t mode);
+esp_gmf_err_t esp_gmf_mixer_set_mode(esp_gmf_element_handle_t handle, uint8_t src_idx, esp_ae_mixer_mode_t mode);
 
 /**
  * @brief  Set audio information to the mixer handle
- *         Note: If the state of bit conversion is not in 'ESP_GMF_EVENT_STATE_NONE' or 'ESP_GMF_EVENT_STATE_INITIALIZED',
- *         the setting will return fail.
  *
  * @param[in]  handle       The mixer handle
  * @param[in]  sample_rate  The audio sample rate
@@ -70,7 +68,7 @@ esp_gmf_err_t esp_gmf_mixer_set_mode(esp_gmf_audio_element_handle_t handle, uint
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  *       - ESP_GMF_ERR_FAIL         Failed to set configuration
  */
-esp_gmf_err_t esp_gmf_mixer_set_audio_info(esp_gmf_audio_element_handle_t handle, uint32_t sample_rate,
+esp_gmf_err_t esp_gmf_mixer_set_audio_info(esp_gmf_element_handle_t handle, uint32_t sample_rate,
                                            uint8_t bits, uint8_t channel);
 
 #ifdef __cplusplus
