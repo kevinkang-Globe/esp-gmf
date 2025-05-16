@@ -148,7 +148,16 @@ esp_gmf_err_t gmf_loader_teardown_video_codec_default(esp_gmf_pool_handle_t pool
 /**
  * @brief  Register the video effect elements selected in sdkconfig into the GMF pool
  *
- * @param[in]   pool  Handle to the GMF pool
+ * @note  This function will initialize the following effects if enabled:
+ *        - PPA: Hardware Pixel Processing Accelerator
+ *        - FPS Convert: Frame rate conversion
+ *        - Overlay: Video overlay effects
+ *        - Color Convert: Convert between different color formats and spaces and it is implemented in software
+ *        - Rotate: Rotate video frames by any angle using software and it is implemented in software
+ *        - Scale: Resize video frames with different algorithms using software and it is implemented in software
+ *        - Crop: Extract regions from video frames using software and it is implemented in software
+ *
+ * @param[in]  pool  Handle to the GMF pool
  *
  * @return
  *       - ESP_GMF_ERR_OK           Success

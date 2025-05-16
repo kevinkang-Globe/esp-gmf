@@ -20,3 +20,5 @@ dependencies:
   espressif/esp_wifi_remote:
     rules:
       - if: "target in [esp32p4]"
+  espressif/gmf_loader:
+    override_path: ../../../packages/gmf_loader
