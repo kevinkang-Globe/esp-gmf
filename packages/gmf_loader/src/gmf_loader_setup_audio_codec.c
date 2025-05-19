@@ -15,9 +15,9 @@
 #include "esp_gmf_pool.h"
 #include "sdkconfig.h"
 
-static const char *TAG = "GMF_SETUP_AUD_CODEC";
-static int8_t _init_encoder_cnt = 0;
-static int8_t _init_decoder_cnt = 0;
+static const char *TAG               = "GMF_SETUP_AUD_CODEC";
+static int8_t      _init_encoder_cnt = 0;
+static int8_t      _init_decoder_cnt = 0;
 
 #if defined(CONFIG_GMF_AUDIO_CODEC_INIT_ENCODER)
 static esp_gmf_err_t gmf_loader_setup_default_enc(esp_gmf_pool_handle_t pool)
@@ -111,6 +111,35 @@ static esp_gmf_err_t gmf_loader_setup_default_enc(esp_gmf_pool_handle_t pool)
 #endif  /* CONFIG_GMF_AUDIO_CODEC_ENC_AMRWB_NO_FILE_HEADER */
     enc_cfg.cfg = &amr_enc_cfg;
     enc_cfg.cfg_sz = sizeof(esp_amrwb_enc_config_t);
+#elif defined(CONFIG_GMF_AUDIO_CODEC_ENCODER_TYPE_LC3)
+    enc_cfg.type = ESP_AUDIO_TYPE_LC3;
+    esp_lc3_enc_config_t lc3_enc_cfg = ESP_LC3_ENC_CONFIG_DEFAULT();
+    lc3_enc_cfg.sample_rate = CONFIG_GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE;
+    lc3_enc_cfg.channel = CONFIG_GMF_AUDIO_CODEC_ENC_LC3_CHANNEL;
+    lc3_enc_cfg.bits_per_sample = CONFIG_GMF_AUDIO_CODEC_ENC_LC3_BITS_PER_SAMPLE;
+    lc3_enc_cfg.frame_dms = CONFIG_GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION;
+    lc3_enc_cfg.nbyte = CONFIG_GMF_AUDIO_CODEC_ENC_LC3_BYTES_PER_FRAME;
+#ifdef CONFIG_GMF_AUDIO_CODEC_ENC_LC3_LEN_PREFIXED
+    lc3_enc_cfg.len_prefixed = true;
+#else
+    lc3_enc_cfg.len_prefixed = false;
+#endif  /* CONFIG_GMF_AUDIO_CODEC_ENC_LC3_LEN_PREFIXED */
+    enc_cfg.cfg = &lc3_enc_cfg;
+    enc_cfg.cfg_sz = sizeof(esp_lc3_enc_config_t);
+#elif defined(CONFIG_GMF_AUDIO_CODEC_ENCODER_TYPE_SBC)
+    enc_cfg.type = ESP_AUDIO_TYPE_SBC;
+    esp_sbc_enc_config_t sbc_enc_cfg = ESP_SBC_MSBC_ENC_CONFIG_DEFAULT();
+    sbc_enc_cfg.sbc_mode = CONFIG_GMF_AUDIO_CODEC_ENC_SBC_MODE;
+#if (CONFIG_GMF_AUDIO_CODEC_ENC_SBC_MODE == ESP_SBC_MODE_STD)
+    sbc_enc_cfg.ch_mode = CONFIG_GMF_AUDIO_CODEC_ENC_SBC_CH_MODE;
+    sbc_enc_cfg.sample_rate = CONFIG_GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE;
+    sbc_enc_cfg.block_length = CONFIG_GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH;
+    sbc_enc_cfg.subbands = CONFIG_GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS;
+    sbc_enc_cfg.alloc_method = CONFIG_GMF_AUDIO_CODEC_ENC_SBC_ALLOC_METHOD;
+    sbc_enc_cfg.bitpool = CONFIG_GMF_AUDIO_CODEC_ENC_SBC_BITPOOL;
+#endif  /* (CONFIG_GMF_AUDIO_CODEC_ENC_SBC_MODE == ESP_SBC_MODE_STD) */
+    enc_cfg.cfg = &sbc_enc_cfg;
+    enc_cfg.cfg_sz = sizeof(esp_sbc_enc_config_t);
 #else   /*CONFIG_GMF_AUDIO_CODEC_ENCODER_TYPE_AAC*/
     enc_cfg.type = ESP_AUDIO_TYPE_UNSUPPORT;
     enc_cfg.cfg = NULL;
@@ -198,6 +227,43 @@ static esp_gmf_err_t gmf_loader_setup_default_dec(esp_gmf_pool_handle_t pool)
     adpcm_dec_cfg.bits_per_sample = 4;  // IMA-ADPCM only supports 4-bit
     dec_cfg.dec_cfg = &adpcm_dec_cfg;
     dec_cfg.cfg_size = sizeof(esp_adpcm_dec_cfg_t);
+#elif defined(CONFIG_GMF_AUDIO_CODEC_DECODER_TYPE_LC3)
+    dec_cfg.dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_LC3;
+    esp_lc3_dec_cfg_t lc3_dec_cfg = {0};
+    lc3_dec_cfg.sample_rate = CONFIG_GMF_AUDIO_CODEC_DEC_LC3_SAMPLE_RATE;
+    lc3_dec_cfg.channel = CONFIG_GMF_AUDIO_CODEC_DEC_LC3_CHANNEL;
+    lc3_dec_cfg.bits_per_sample = CONFIG_GMF_AUDIO_CODEC_DEC_LC3_BITS_PER_SAMPLE;
+    lc3_dec_cfg.frame_dms = CONFIG_GMF_AUDIO_CODEC_DEC_LC3_FRAME_DURATION;
+    lc3_dec_cfg.nbyte = CONFIG_GMF_AUDIO_CODEC_DEC_LC3_BYTES_PER_FRAME;
+#ifdef CONFIG_GMF_AUDIO_CODEC_DEC_LC3_IS_CBR
+    lc3_dec_cfg.is_cbr = true;
+#else
+    lc3_dec_cfg.is_cbr = false;
+#endif  /* CONFIG_GMF_AUDIO_CODEC_DEC_LC3_IS_CBR */
+#ifdef CONFIG_GMF_AUDIO_CODEC_DEC_LC3_LEN_PREFIXED
+    lc3_dec_cfg.len_prefixed = true;
+#else
+    lc3_dec_cfg.len_prefixed = false;
+#endif  /* CONFIG_GMF_AUDIO_CODEC_DEC_LC3_LEN_PREFIXED */
+#ifdef CONFIG_GMF_AUDIO_CODEC_DEC_LC3_ENABLE_PLC
+    lc3_dec_cfg.enable_plc = true;
+#else
+    lc3_dec_cfg.enable_plc = false;
+#endif  /* CONFIG_GMF_AUDIO_CODEC_DEC_LC3_ENABLE_PLC */
+    dec_cfg.dec_cfg = &lc3_dec_cfg;
+    dec_cfg.cfg_size = sizeof(esp_lc3_dec_cfg_t);
+#elif defined(CONFIG_GMF_AUDIO_CODEC_DECODER_TYPE_SBC)
+    dec_cfg.dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_SBC;
+    esp_sbc_dec_cfg_t sbc_dec_cfg = {0};
+    sbc_dec_cfg.sbc_mode = CONFIG_GMF_AUDIO_CODEC_DEC_SBC_MODE;
+    sbc_dec_cfg.ch_num = CONFIG_GMF_AUDIO_CODEC_DEC_SBC_CHANNEL;
+#ifdef CONFIG_GMF_AUDIO_CODEC_DEC_SBC_ENABLE_PLC
+    sbc_dec_cfg.enable_plc = true;
+#else
+    sbc_dec_cfg.enable_plc = false;
+#endif  /* CONFIG_GMF_AUDIO_CODEC_DEC_SBC_ENABLE_PLC */
+    dec_cfg.dec_cfg = &sbc_dec_cfg;
+    dec_cfg.cfg_size = sizeof(esp_sbc_dec_cfg_t);
 #else
     dec_cfg.dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_NONE;
     dec_cfg.dec_cfg = NULL;
