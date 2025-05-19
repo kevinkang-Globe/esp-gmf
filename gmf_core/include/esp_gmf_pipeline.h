@@ -35,22 +35,22 @@ typedef esp_gmf_err_t (*esp_gmf_pipeline_prev_act)(void *handle);  /*!<  */
  * @brief  Structure representing a pipeline in GMF
  */
 typedef struct esp_gmf_pipeline {
-    esp_gmf_element_handle_t    head_el;        /*!< Handle of the first element in the pipeline */
-    esp_gmf_element_handle_t    last_el;        /*!< Handle of the last element in the pipeline */
-    esp_gmf_io_handle_t         in;             /*!< Handle of the input I/O port */
-    esp_gmf_io_handle_t         out;            /*!< Handle of the output I/O port */
-    esp_gmf_event_item_t       *evt_conveyor;   /*!< Event conveyor list */
-    esp_gmf_event_cb            evt_acceptor;   /*!< Event acceptor callback function */
-    esp_gmf_event_cb            user_cb;        /*!< User callback function */
-    void                       *user_ctx;       /*!< User context */
-    esp_gmf_event_state_t       state;          /*!< Current state of the pipeline */
-    esp_gmf_task_handle_t       thread;         /*!< Handle of the task associated with the pipeline */
-    esp_gmf_pipeline_prev_act   prev_run;       /*!< A pointer to the previous run callback */
-    esp_gmf_pipeline_prev_act   prev_stop;      /*!< A pointer to the previous stop callback */
-    void                       *prev_run_ctx;   /*!< The previous run context */
-    void                       *prev_stop_ctx;  /*!< The previous stop context */
-    uint8_t                     prev_state;     /*!< The previous action state */
-    void                       *lock;           /*!< Lock for thread synchronization */
+    esp_gmf_element_handle_t   head_el;        /*!< Handle of the first element in the pipeline */
+    esp_gmf_element_handle_t   last_el;        /*!< Handle of the last element in the pipeline */
+    esp_gmf_io_handle_t        in;             /*!< Handle of the input I/O port */
+    esp_gmf_io_handle_t        out;            /*!< Handle of the output I/O port */
+    esp_gmf_event_item_t      *evt_conveyor;   /*!< Event conveyor list */
+    esp_gmf_event_cb           evt_acceptor;   /*!< Event acceptor callback function */
+    esp_gmf_event_cb           user_cb;        /*!< User callback function */
+    void                      *user_ctx;       /*!< User context */
+    esp_gmf_event_state_t      state;          /*!< Current state of the pipeline */
+    esp_gmf_task_handle_t      thread;         /*!< Handle of the task associated with the pipeline */
+    esp_gmf_pipeline_prev_act  prev_run;       /*!< A pointer to the previous run callback */
+    esp_gmf_pipeline_prev_act  prev_stop;      /*!< A pointer to the previous stop callback */
+    void                      *prev_run_ctx;   /*!< The previous run context */
+    void                      *prev_stop_ctx;  /*!< The previous stop context */
+    uint8_t                    prev_state;     /*!< The previous action state */
+    void                      *lock;           /*!< Lock for thread synchronization */
 } esp_gmf_pipeline_t;
 
 /**

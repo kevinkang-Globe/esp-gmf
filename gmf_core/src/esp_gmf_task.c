@@ -271,6 +271,10 @@ static void esp_gmf_thread_fun(void *pv)
                 ESP_LOGD(TAG, "Thread will be destroyed, [%s,%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk);
                 goto ESP_GMF_THREAD_EXIT;
             }
+            if (tsk->_run == 1) {
+                tsk->_running = 1;
+                tsk->_run = 0;
+            }
         }
         int ret = esp_gmf_task_event_state_change_and_notify(tsk, ESP_GMF_EVENT_STATE_RUNNING);
         GMF_TASK_SET_STATE_BITS(tsk->event_group, GMF_TASK_RUN_BIT);
@@ -452,7 +456,7 @@ esp_gmf_err_t esp_gmf_task_run(esp_gmf_task_handle_t handle)
         ESP_LOGW(TAG, "No task for run, %s, [%s,%p]", esp_gmf_event_get_state_str(tsk->state), OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk);
         return ESP_GMF_ERR_INVALID_STATE;
     }
-    tsk->_running = 1;
+    tsk->_run = 1;
     xSemaphoreGive(tsk->block_sem);
     // Wait for run finished
     if (GMF_TASK_WAIT_FOR_STATE_BITS(tsk->event_group, GMF_TASK_RUN_BIT, tsk->api_sync_time) == false) {
