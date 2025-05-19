@@ -7,14 +7,14 @@ menu "Example Configuration"
         config EXAMPLE_ESP_GMF_WIFI_SSID
             string "wifi_ssid"
             depends on EXAMPLE_ESP_GMF_WIFI
-            default "Audio_CI"
+            default "wifi_ssid"
             help
                 SSID (network name) for the example to connect to.
 
         config EXAMPLE_ESP_GMF_WIFI_PASS
             string "wifi_password"
             depends on EXAMPLE_ESP_GMF_WIFI
-            default "esp123456"
+            default "wifi_password"
             help
                 WiFi password (WPA or WPA2) for the example to use.
 

@@ -17,21 +17,29 @@ variables:
     - .build_template
   artifacts:
     paths:
-      - "${TEST_DIR}/test_apps/build*/size.json"
-      - "${TEST_DIR}/test_apps/build*/build_log.txt"
-      - "${TEST_DIR}/test_apps/build*/*.bin"
-      - "${TEST_DIR}/test_apps/build*/*.elf"
-      - "${TEST_DIR}/test_apps/build*/flasher_args.json"
-      - "${TEST_DIR}/test_apps/build*/flash_project_args"
-      - "${TEST_DIR}/test_apps/build*/config/sdkconfig.json"
-      - "${TEST_DIR}/test_apps/build*/sdkconfig"
-      - "${TEST_DIR}/test_apps/build*/bootloader/*.bin"
-      - "${TEST_DIR}/test_apps/build*/partition_table/*.bin"
-      - "${TEST_DIR}/test_apps/build*/srmodels/*.bin"
-      - "${TEST_DIR}/test_apps/*.py"
+      - "${TEST_DIR}/**/test_apps/build*/size.json"
+      - "${TEST_DIR}/**/test_apps/build*/build_log.txt"
+      - "${TEST_DIR}/**/test_apps/build*/*.bin"
+      - "${TEST_DIR}/**/test_apps/build*/*.elf"
+      - "${TEST_DIR}/**/test_apps/build*/flasher_args.json"
+      - "${TEST_DIR}/**/test_apps/build*/flash_project_args"
+      - "${TEST_DIR}/**/test_apps/build*/config/sdkconfig.json"
+      - "${TEST_DIR}/**/test_apps/build*/sdkconfig"
+      - "${TEST_DIR}/**/test_apps/build*/bootloader/*.bin"
+      - "${TEST_DIR}/**/test_apps/build*/partition_table/*.bin"
+      - "${TEST_DIR}/**/test_apps/build*/srmodels/*.bin"
+      - "${TEST_DIR}/**/test_apps/*.py"
     expire_in: 4 days
   script:
     - run_cmd python ${BASE_FRAMEWORK_PATH}/tools/ci/ci_build_apps.py ${TEST_DIR} -vv -t $IDF_TARGET --pytest-apps
+  after_script:
+    - find "${TEST_DIR}" -type d -name "managed_components" -exec rm -rf {} +
+
+.build_ut_gmf_packages:
+  extends:
+    - .build_gmf_component
+  variables:
+    TEST_DIR: ${CI_PROJECT_DIR}/packages
 
 .build_ut_gmf_elements:
   extends:
@@ -80,3 +88,15 @@ build_ut_gmf_elements_esp32s3:
     - .build_ut_gmf_elements
   variables:
     IDF_TARGET: esp32p4
+
+build_ut_gmf_packages_esp32:
+  extends:
+    - .build_ut_gmf_packages
+  variables:
+    IDF_TARGET: esp32
+
+build_ut_gmf_packages_esp32s3:
+  extends:
+    - .build_ut_gmf_packages
+  variables:
+    IDF_TARGET: esp32s3

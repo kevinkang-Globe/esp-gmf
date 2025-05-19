@@ -156,7 +156,7 @@ static void setup_periph_new_play_codec()
 #endif  /* CONFIG_IDF_TARGET_ESP32C3 */
 }
 
-static void setup_periph_new_record_codec()
+static void setup_periph_new_record_codec(void)
 {
 #if defined CONFIG_IDF_TARGET_ESP32P4
     audio_codec_i2c_cfg_t i2c_ctrl_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR, .port = 0, .bus_handle = i2c_handle};

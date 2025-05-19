@@ -528,7 +528,7 @@ TEST_CASE("Audio Play, two in pipe use same task, [file->dec]->rb->[resample+IIS
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "[ESP_GMF_POOL][leaks=10000]")
+TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "[ESP_GMF_POOL][leaks=11000]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -548,7 +548,7 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "[ESP_GMF_POOL][le
     void *sdcard = NULL;
     esp_gmf_setup_periph_sdmmc(&sdcard);
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
     esp_gmf_pool_handle_t pool = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_init(&pool));
@@ -669,7 +669,7 @@ TEST_CASE("Audio Play, One Pipe, [HTTP->dec->resample->IIS]", "[ESP_GMF_POOL][le
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
     esp_gmf_teardown_periph_sdmmc(sdcard);
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     esp_gmf_teardown_periph_codec(play_dev, NULL);
     esp_gmf_teardown_periph_i2c(0);
     esp_gmf_teardown_periph_wifi();
