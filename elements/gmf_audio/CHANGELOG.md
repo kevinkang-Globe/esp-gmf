@@ -16,6 +16,10 @@
 - Removed the audio encoder and decoder reconfig interface in `esp_gmf_audio_helper.c`
 - Used the `esp_gmf_element_handle_t` type handle in the `gmf_audio` module
 
+### Bug Fixes
+
+- Fixed `gmf_audio_enc` process blocked due to forget release of in_load when truncate is returned
+
 ## v0.6.3
 
 ### Bug Fixes
