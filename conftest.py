@@ -57,6 +57,7 @@ ENV_MARKERS = {
     'ESP_GMF_RINGBUF': 'Tests should be run on random runners.',
     'ESP_GMF_PBUF': 'Tests should be run on random runners.',
     'ESP_GMF_BLOCK': 'Tests should be run on random runners.',
+    'GMF_LOADER': 'Tests should be run on random runners.',
     'ELEMENT_POOL': 'Tests should be run on random runners.',
     'ELEMENT_PORT': 'Tests should be run on random runners.',
     'ESP_GMF_METHOD': 'Tests should be run on random runners.',

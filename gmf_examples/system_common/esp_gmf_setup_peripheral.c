@@ -147,7 +147,7 @@ static const audio_codec_data_if_t *setup_periph_new_i2s_data(void *tx_hd, void 
     return audio_codec_new_i2s_data(&i2s_cfg);
 }
 
-static void setup_periph_new_play_codec()
+static void setup_periph_new_play_codec(void)
 {
 #ifdef CONFIG_IDF_TARGET_ESP32C3
     if (gpio_if == NULL) {
@@ -174,10 +174,10 @@ static void setup_periph_new_play_codec()
     if (out_codec_if == NULL) {
         out_codec_if = es8311_codec_new(&es8311_cfg);
     }
-#endif /* CONFIG_IDF_TARGET_ESP32C3 */
+#endif  /* CONFIG_IDF_TARGET_ESP32C3 */
 }
 
-static void setup_periph_new_record_codec()
+static void setup_periph_new_record_codec(void)
 {
 #if defined CONFIG_IDF_TARGET_ESP32P4
     audio_codec_i2c_cfg_t i2c_ctrl_cfg = {.addr = ES8311_CODEC_DEFAULT_ADDR, .port = 0, .bus_handle = i2c_handle};
@@ -213,7 +213,7 @@ static void setup_periph_new_record_codec()
         .mic_selected = ES7120_SEL_MIC1 | ES7120_SEL_MIC2 | ES7120_SEL_MIC3,
     };
     in_codec_if = es7210_codec_new(&es7210_cfg);
-#endif /* defined CONFIG_IDF_TARGET_ESP32P4 */
+#endif  /* defined CONFIG_IDF_TARGET_ESP32P4 */
 }
 
 static esp_codec_dev_handle_t setup_periph_create_codec_dev(esp_codec_dev_type_t dev_type, esp_gmf_setup_periph_aud_info *aud_info)

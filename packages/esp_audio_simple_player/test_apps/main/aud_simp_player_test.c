@@ -1,7 +1,7 @@
 /*
- * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO., LTD
  *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "unity.h"
@@ -93,7 +93,7 @@ void task_audio_stop(void *param)
     vTaskDelete(NULL);
 }
 
-TEST_CASE("Play, new and delete", "Simple_Player")
+TEST_CASE("Play, new and delete", "[Simple_Player]")
 {
     esp_asp_cfg_t cfg = {
         .in.cb = out_data_callback,
@@ -119,7 +119,7 @@ TEST_CASE("Play, new and delete", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Create and delete multiple instances for playback, stop", "Simple_Player")
+TEST_CASE("Create and delete multiple instances for playback, stop", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -186,7 +186,7 @@ TEST_CASE("Create and delete multiple instances for playback, stop", "Simple_Pla
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Repeat playback same URI", "Simple_Player")
+TEST_CASE("Repeat playback same URI", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -246,8 +246,7 @@ TEST_CASE("Repeat playback same URI", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-
-TEST_CASE("Playback with raw MP3 data", "Simple_Player")
+TEST_CASE("Playback with raw MP3 data", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -325,7 +324,7 @@ static int embed_flash_io_set(esp_asp_handle_t *handle, void *ctx)
     return ret;
 }
 
-TEST_CASE("Playback embed flash tone", "Simple_Player")
+TEST_CASE("Playback embed flash tone", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -386,7 +385,7 @@ TEST_CASE("Playback embed flash tone", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, Advance API run and stop", "Simple_Player")
+TEST_CASE("Play, Advance API run and stop", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_ASMP_DEC", ESP_LOG_DEBUG);
@@ -423,7 +422,6 @@ TEST_CASE("Play, Advance API run and stop", "Simple_Player")
     esp_gmf_alc_init(&alc_cfg, &alc_hd);
     esp_audio_simple_player_register_el(handle, alc_hd);
 
-
     const char *name[] = {"aud_simp_dec", "rate_cvt", "ch_cvt", "bit_cvt", "alc"};
     esp_audio_simple_player_set_pipeline(handle, NULL, name, 5);
 
@@ -440,7 +438,6 @@ TEST_CASE("Play, Advance API run and stop", "Simple_Player")
     err = esp_audio_simple_player_stop(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
 
-
     const char *uri2 = "file://sdcard/test.aac";
     err = esp_audio_simple_player_run(handle, uri2, NULL);
     TEST_ASSERT_EQUAL(ESP_OK, err);
@@ -453,10 +450,8 @@ TEST_CASE("Play, Advance API run and stop", "Simple_Player")
     err = esp_audio_simple_player_stop(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
 
-
     err = esp_audio_simple_player_destroy(handle);
     TEST_ASSERT_EQUAL(ESP_OK, err);
-
 
     esp_gmf_teardown_periph_codec(play_dev, NULL);
     esp_gmf_teardown_periph_sdmmc(card);
@@ -465,7 +460,7 @@ TEST_CASE("Play, Advance API run and stop", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, pause,resume", "Simple_Player")
+TEST_CASE("Play, pause,resume", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -532,7 +527,7 @@ TEST_CASE("Play, pause,resume", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, play-multitask", "Simple_Player")
+TEST_CASE("Play, play-multitask", "[Simple_Player]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -580,7 +575,7 @@ TEST_CASE("Play, play-multitask", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, Multiple-file Sync Playing", "Simple_Player")
+TEST_CASE("Play, Multiple-file Sync Playing", "[Simple_Player][leaks=13000]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -641,7 +636,7 @@ TEST_CASE("Play, Multiple-file Sync Playing", "Simple_Player")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Play, Multiple-file Async Playing", "Simple_Player")
+TEST_CASE("Play, Multiple-file Async Playing", "[Simple_Player][leaks=13000]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);

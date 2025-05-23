@@ -66,3 +66,12 @@ ut_gmf_elements_esp32s3:
   variables:
     TEST_DIR: ${CI_PROJECT_DIR}/elements
   tags: [ ESP32S3, ESP_GMF_COMPONENT ]
+
+ut_gmf_packages_esp32s3:
+  extends:
+    - .pytest_components_dir_template
+  needs:
+    - 'build_ut_gmf_packages_esp32s3: [v5.4, 1/1]'
+  variables:
+    TEST_DIR: ${CI_PROJECT_DIR}/packages
+  tags: [ ESP32S3, ESP_GMF_COMPONENT ]
