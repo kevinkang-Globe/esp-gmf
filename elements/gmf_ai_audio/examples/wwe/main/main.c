@@ -9,29 +9,41 @@
 
 #include "esp_err.h"
 #include "esp_log.h"
+#include "soc/soc_caps.h"
 
 #include "esp_gmf_io.h"
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_pool.h"
 #include "esp_gmf_setup_peripheral.h"
 
-#include "esp_gmf_afe.h"
 #include "esp_gmf_io_codec_dev.h"
 #include "cli.h"
 #include "gmf_loader_setup_defaults.h"
 
+#if SOC_SDMMC_HOST_SUPPORTED == 1
 #define VOICE2FILE     (true)
+#endif  /* SOC_SDMMC_HOST_SUPPORTED == 1 */
 #define WAKENET_ENABLE (true)
 #define VAD_ENABLE     (true)
 #define QUIT_CMD_FOUND (BIT0)
 
 #define BOARD_LYRAT_MINI (0)
 #define BOARD_KORVO_2    (1)
+#define BOARD_XD_AIOT_C3 (2)
+#define BOARD_ESP_SPOT   (3)
 
 #if defined CONFIG_IDF_TARGET_ESP32S3
+#define WITH_AFE    (true)
 #define AUDIO_BOARD (BOARD_KORVO_2)
 #elif defined CONFIG_IDF_TARGET_ESP32
+#define WITH_AFE    (true)
 #define AUDIO_BOARD (BOARD_LYRAT_MINI)
+#elif defined CONFIG_IDF_TARGET_ESP32C3
+#define WITH_AFE    (false)
+#define AUDIO_BOARD (BOARD_XD_AIOT_C3)
+#elif defined CONFIG_IDF_TARGET_ESP32C5
+#define WITH_AFE    (false)
+#define AUDIO_BOARD (BOARD_ESP_SPOT)
 #endif  /* defined CONFIG_IDF_TARGET_ESP32S3 */
 
 #if AUDIO_BOARD == BOARD_KORVO_2
@@ -55,12 +67,40 @@
 #define INPUT_CH_NUM        (ADC_I2S_CH)
 #define INPUT_CH_BITS       (ADC_I2S_BITS)
 #define INPUT_CH_ALLOCATION ("RM")
+#elif AUDIO_BOARD == BOARD_XD_AIOT_C3
+#define AEC_ENABLE          (false)
+#define VCMD_ENABLE         (false)
+
+#define ADC_I2S_PORT        (0)
+#define ADC_I2S_CH          (2)
+#define ADC_I2S_BITS        (16)
+#define INPUT_CH_NUM        (ADC_I2S_CH)
+#define INPUT_CH_BITS       (ADC_I2S_BITS)
+#define INPUT_CH_ALLOCATION ("MR")
+#elif AUDIO_BOARD == BOARD_ESP_SPOT
+#define AEC_ENABLE          (false)
+#define VCMD_ENABLE         (false)
+
+#define ADC_I2S_PORT        (0)
+#define ADC_I2S_CH          (2)
+#define ADC_I2S_BITS        (16)
+#define INPUT_CH_NUM        (ADC_I2S_CH)
+#define INPUT_CH_BITS       (ADC_I2S_BITS)
+#define INPUT_CH_ALLOCATION ("MR")
 #endif  /* AUDIO_BOARD == BOARD_KORVO_2 */
+
+#if WITH_AFE == true
+#include "esp_gmf_afe.h"
+#else
+#include "esp_gmf_wn.h"
+#endif  /* WITH_AFE == true */
 
 static const char *TAG = "AI_AUDIO_WWE";
 
-static bool               speeching     = false;
-static bool               wakeup        = false;
+#if WITH_AFE == true
+static bool speeching = false;
+static bool wakeup    = false;
+#endif  /* WITH_AFE == true */
 static EventGroupHandle_t g_event_group = NULL;
 
 static esp_err_t _pipeline_event(esp_gmf_event_pkt_t *event, void *ctx)
@@ -71,40 +111,41 @@ static esp_err_t _pipeline_event(esp_gmf_event_pkt_t *event, void *ctx)
     return 0;
 }
 
+#if WITH_AFE == true
 void esp_gmf_afe_event_cb(esp_gmf_obj_handle_t obj, esp_gmf_afe_evt_t *event, void *user_data)
 {
     switch (event->type) {
         case ESP_GMF_AFE_EVT_WAKEUP_START: {
             wakeup = true;
-#if WAKENET_ENABLE == true
+#if WAKENET_ENABLE == true && VCMD_ENABLE == true
             esp_gmf_afe_vcmd_detection_cancel(obj);
             esp_gmf_afe_vcmd_detection_begin(obj);
-#endif  /* WAKENET_ENABLE == true */
+#endif  /* WAKENET_ENABLE == true && VCMD_ENABLE == true */
             esp_gmf_afe_wakeup_info_t *info = event->event_data;
             ESP_LOGI(TAG, "WAKEUP_START [%d : %d]", info->wake_word_index, info->wakenet_model_index);
             break;
         }
         case ESP_GMF_AFE_EVT_WAKEUP_END: {
             wakeup = false;
-#if WAKENET_ENABLE == true
+#if WAKENET_ENABLE == true && VCMD_ENABLE == true
             esp_gmf_afe_vcmd_detection_cancel(obj);
-#endif  /* WAKENET_ENABLE == true */
+#endif  /* WAKENET_ENABLE == true && VCMD_ENABLE == true */
             ESP_LOGI(TAG, "WAKEUP_END");
             break;
         }
         case ESP_GMF_AFE_EVT_VAD_START: {
-#if WAKENET_ENABLE != true
+#if WAKENET_ENABLE != true && VCMD_ENABLE == true
             esp_gmf_afe_vcmd_detection_cancel(obj);
             esp_gmf_afe_vcmd_detection_begin(obj);
-#endif  /* WAKENET_ENABLE != true */
+#endif  /* WAKENET_ENABLE != true && VCMD_ENABLE == true */
             speeching = true;
             ESP_LOGI(TAG, "VAD_START");
             break;
         }
         case ESP_GMF_AFE_EVT_VAD_END: {
-#if WAKENET_ENABLE != true
+#if WAKENET_ENABLE != true && VCMD_ENABLE == true
             esp_gmf_afe_vcmd_detection_cancel(obj);
-#endif  /* WAKENET_ENABLE != true */
+#endif  /* WAKENET_ENABLE != true && VCMD_ENABLE == true */
             speeching = false;
             ESP_LOGI(TAG, "VAD_END");
             break;
@@ -129,6 +170,16 @@ void esp_gmf_afe_event_cb(esp_gmf_obj_handle_t obj, esp_gmf_afe_evt_t *event, vo
         }
     }
 }
+#else
+static void esp_gmf_wn_event_cb(esp_gmf_obj_handle_t obj, int32_t trigger_ch, void *user_ctx)
+{
+    static int32_t cnt = 1;
+    ESP_LOGI(TAG, "WWE detected on channel %" PRIi32 ", cnt: %" PRIi32, trigger_ch, cnt++);
+    if (cnt >= 10) {
+        xEventGroupSetBits(g_event_group, QUIT_CMD_FOUND);
+    }
+}
+#endif  /* WITH_AFE == true */
 
 static void voice_2_file(uint8_t *buffer, int len)
 {
@@ -198,23 +249,40 @@ void app_main(void)
     gmf_loader_setup_all_defaults(pool);
 
     esp_gmf_pipeline_handle_t pipe = NULL;
+#if WITH_AFE == true
     const char *name[] = {"gmf_afe"};
+#else
+    const char *name[] = {"gmf_wn"};
+#endif  /* WITH_AFE == true */
     esp_gmf_pool_new_pipeline(pool, "codec_dev_rx", name, sizeof(name) / sizeof(char *), NULL, &pipe);
     if (pipe == NULL) {
         ESP_LOGE(TAG, "There is no pipeline");
         goto __quit;
     }
     esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_IN_INSTANCE(pipe), record_dev);
+#if WITH_AFE == true
     esp_gmf_element_handle_t afe = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "gmf_afe", &afe);
     esp_gmf_afe_set_event_cb(afe, esp_gmf_afe_event_cb, NULL);
+#else
+    esp_gmf_element_handle_t wn = NULL;
+    esp_gmf_pipeline_get_el_by_name(pipe, "gmf_wn", &wn);
+    esp_gmf_wn_set_detect_cb(wn, esp_gmf_wn_event_cb, NULL);
+#endif  /* WITH_AFE == true */
     esp_gmf_port_handle_t outport = NEW_ESP_GMF_PORT_OUT_BYTE(outport_acquire_write,
                                                               outport_release_write,
                                                               NULL,
                                                               NULL,
                                                               2048,
                                                               100);
-    esp_gmf_pipeline_reg_el_port(pipe, "gmf_afe", ESP_GMF_IO_DIR_WRITER, outport);
+    esp_gmf_pipeline_reg_el_port(pipe, name[0], ESP_GMF_IO_DIR_WRITER, outport);
+
+    esp_gmf_info_sound_t info = {
+        .sample_rates = 16000,
+        .channels = INPUT_CH_NUM,
+        .bits = INPUT_CH_BITS,
+    };
+    esp_gmf_pipeline_report_info(pipe, ESP_GMF_INFO_SOUND, &info, sizeof(info));
 
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
     cfg.ctx = NULL;

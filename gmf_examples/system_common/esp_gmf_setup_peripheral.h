@@ -23,8 +23,6 @@ typedef struct {
     uint8_t  port_num;        /*!< The number of i2s prot */
 } esp_gmf_setup_periph_aud_info;
 
-#if SOC_SDMMC_HOST_SUPPORTED
-
 /**
  * @brief  Set up sdmmc
  *
@@ -38,8 +36,6 @@ void esp_gmf_setup_periph_sdmmc(void **out_card);
  * @param[in]  card  Handle of sdmmc
  */
 void esp_gmf_teardown_periph_sdmmc(void *card);
-
-#endif  // SOC_SDMMC_HOST_SUPPORTED
 
 /**
  * @brief  Set up wifi

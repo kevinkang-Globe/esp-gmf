@@ -4,9 +4,10 @@
 
 `GMF AI Audio` is an artificial intelligence audio processing module that provides users with convenient and easy-to-use intelligent audio processing algorithms at the [GMF](https://github.com/espressif/esp-gmf) framework, such as voice wake-up, command word recognition, and echo cancellation. Currently, it offers the following modules based on `esp-sr`:
 
-* [esp_gmf_afe_manager](./src/esp_gmf_afe_manager.c): `audio front end(afe)` manager
-* [esp_gmf_aec](./src/esp_gmf_aec.c): Echo Cancellation
-* [esp_gmf_afe](./src/esp_gmf_afe.c): An easy-to-use interface based on the `audio front end (afe)` from `esp-sr`, providing functionalities such as voice wake-up, command word recognition, and speech detection
+- [esp_gmf_afe_manager](./src/esp_gmf_afe_manager.c): `audio front end(afe)` manager
+- [esp_gmf_aec](./src/esp_gmf_aec.c): Echo Cancellation
+- [esp_gmf_wn](./src/esp_gmf_wn.c): A standalone wake word detection module that can be used independently
+- [esp_gmf_afe](./src/esp_gmf_afe.c): An easy-to-use interface based on the `audio front end (afe)` from `esp-sr`, providing functionalities such as voice wake-up, command word recognition, and speech detection
 
 ## AFE Manager `esp_gmf_afe_manager`
 
@@ -53,7 +54,27 @@
 
 ### Technical Specifications
 
-- Supported Hardware: `ESP32`, `ESP32-S3`, `ESP32-C5`, and `ESP32-P4`
+- Supported Hardware: `ESP32`, `ESP32-S3`, and `ESP32-P4`
+- Input Format
+  - Sampling Rate: 8 kHz and 16 kHz
+  - Bit Width: 16-bit PCM
+- Channel Configuration: String identifiers (e.g., `MMNR`)
+  - `M`: Microphone Channel
+  - `R`: Reference Signal Channel
+  - `N`: Invalid Signal
+- Output Format: 16-bit single-channel PCM
+
+## Wake Word Detection `esp_gmf_wn`
+
+### Features
+
+- Runs independently without AFE dependency, low resource usage
+- Supports multi-channel input and single-channel output
+- Notifies wake word detection results via callback function
+
+### Technical Specifications
+
+- Supported Hardware: `ESP32`, `ESP32-S3`, `ESP32-C3`, `ESP32-C5` and `ESP32-P4`
 - Input Format
   - Sampling Rate: 16 kHz
   - Bit Width: 16-bit PCM
@@ -165,7 +186,7 @@ The following illustrates state transitions when features are enabled. The `/` c
 
 - **Enable Both Wake Word Detection and VAD**
 
-  This scenario combines command word detection with voice activity detection to avoid frequent voice activity events outside the wake word interval
+  This scenario combines wake word detection with voice activity detection to avoid frequent voice activity events outside the wake word interval
 
   Modify the configuration in the example [wwe](./examples/wwe/main/main.c) to use this scenario
 
@@ -193,8 +214,8 @@ The following illustrates state transitions when features are enabled. The `/` c
 
 Users need to decide when to start command word detection. A typical use case is to enable detection after the state machine pushes a (WAKEUP_START) event and determine the next operation based on the detected command word index in the callback function
 
-* Command word detection is independent of the wake word state machine
-* Command word detection supports continuous detection until timeout
+- Command word detection is independent of the wake word state machine
+- Command word detection supports continuous detection until timeout
 
 ## Usage
 

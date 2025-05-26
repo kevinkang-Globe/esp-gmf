@@ -27,6 +27,7 @@
 #include "esp_gmf_method.h"
 #include "esp_gmf_ai_audio_methods.h"
 
+#define AFE_DEFAULT_DATA_SIZE     (2048)
 #define WAKEUP_ST_SET(handle, st) (handle->wakeup_state = st)
 
 /**
@@ -602,6 +603,10 @@ esp_gmf_err_t esp_gmf_afe_init(void *config, esp_gmf_obj_handle_t *handle)
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto __failed, "Failed set OBJ tag");
 
     esp_gmf_element_cfg_t el_cfg = {0};
+    ESP_GMF_ELEMENT_IN_PORT_ATTR_SET(el_cfg.in_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 16, 0,
+                                     ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, AFE_DEFAULT_DATA_SIZE);
+    ESP_GMF_ELEMENT_OUT_PORT_ATTR_SET(el_cfg.out_attr, ESP_GMF_EL_PORT_CAP_SINGLE, 16, 0,
+                                      ESP_GMF_PORT_TYPE_BLOCK | ESP_GMF_PORT_TYPE_BYTE, AFE_DEFAULT_DATA_SIZE);
     el_cfg.dependency = false;
     ret = esp_gmf_audio_el_init(gmf_afe, &el_cfg);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, goto __failed, "Failed to initialize audio element");

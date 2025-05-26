@@ -5,6 +5,11 @@
  */
 #include "unity.h"
 #include <string.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+#include "esp_bit_defs.h"
+
 #include "esp_log.h"
 #include "esp_err.h"
 #include "driver/sdmmc_host.h"
