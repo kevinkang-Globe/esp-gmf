@@ -33,8 +33,14 @@ static const char *TAG = "ESP_GMF_TASK";
 #define GMF_TASK_WAIT_FOR_STATE_BITS(event_group, bits, timeout) \
     (bits == (bits & xEventGroupWaitBits((EventGroupHandle_t)event_group, bits, true, true, timeout)))
 
+#define GMF_TASK_WAIT_FOR_MULTI_STATE_BITS(event_group, bits, timeout) \
+    (0 != ((bits) & xEventGroupWaitBits((EventGroupHandle_t)event_group, (bits), false, false, timeout)))
+
 #define GMF_TASK_SET_STATE_BITS(event_group, bits) \
     xEventGroupSetBits((EventGroupHandle_t)event_group, bits);
+
+#define GMF_TASK_CLR_STATE_BITS(event_group, bits) \
+    xEventGroupClearBits((EventGroupHandle_t)event_group, bits);
 
 static inline esp_gmf_err_t esp_gmf_event_state_notify(esp_gmf_task_handle_t handle, esp_gmf_event_type_t type, esp_gmf_event_state_t st)
 {
@@ -142,6 +148,25 @@ static inline void __esp_gmf_task_delete_jobs(esp_gmf_task_handle_t handle)
     esp_gmf_node_clear((esp_gmf_node_t **)&tsk->working, esp_gmf_job_item_free);
 }
 
+static inline esp_gmf_job_t *_esp_gmf_get_next_job(esp_gmf_task_t *tsk, esp_gmf_job_t *worker)
+{
+    esp_gmf_job_t *next_job = worker->next;
+    if (worker->times == ESP_GMF_JOB_TIMES_ONCE) {
+        ESP_LOGI(TAG, "One times job is complete, del[wk:%p, ctx:%p, label:%s]", worker, worker->ctx, worker->label);
+        esp_gmf_node_del_at((esp_gmf_node_t **)&tsk->working, (esp_gmf_node_t *)worker);
+        esp_gmf_job_item_free(worker);
+    }
+    if (next_job) {
+        return next_job;
+    }
+    bool is_empty = false;
+    esp_gmf_job_stack_is_empty(tsk->start_stack, &is_empty);
+    if (is_empty == false) {
+        esp_gmf_job_stack_pop(tsk->start_stack, (uint32_t *)&next_job);
+    }
+    return next_job;
+}
+
 static inline int process_func(esp_gmf_task_handle_t handle, void *para)
 {
     esp_gmf_task_t *tsk = (esp_gmf_task_t *)handle;
@@ -151,7 +176,8 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
         return ESP_GMF_ERR_INVALID_ARG;
     }
     int result = ESP_GMF_ERR_OK;
-    uint8_t is_stop = 0;
+    GMF_TASK_CLR_STATE_BITS(tsk->event_group, GMF_TASK_STOP_BIT);
+    esp_gmf_event_state_t quit_state = ESP_GMF_EVENT_STATE_STOPPED;
     while (worker && worker->func) {
         ESP_LOGD(TAG, "Running, job:%p, ctx:%p", worker->func, worker->ctx);
         worker->ret = worker->func(worker->ctx, NULL);
@@ -159,7 +185,10 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
         if (worker->ret == ESP_GMF_JOB_ERR_CONTINUE) {
             // The means need more loops
             worker = tsk->working;
-            continue;
+            // When receive command need process command
+            if (tsk->_pause == false && tsk->_stop == false) {
+                continue;
+            }
         } else if (worker->ret == ESP_GMF_JOB_ERR_TRUNCATE) {
             ESP_LOGD(TAG, "Job truncated [tsk:%s-%p:%p-%p-%s], st:%s", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label,
                      esp_gmf_event_get_state_str(tsk->state));
@@ -173,14 +202,8 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
             worker = tmp;
             if (worker == NULL) {
                 ESP_LOGD(TAG, "All jobs are finished, [tsk:%s-%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk);
-                esp_gmf_job_stack_clear(tsk->start_stack);
-                esp_gmf_task_event_loading_job(tsk, ESP_GMF_EVENT_STATE_FINISHED);
-                worker = tsk->working;
-                if (worker == NULL) {
-                    ESP_LOGV(TAG, "No more jobs after finished, [%s-%p, new job:%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker);
-                    continue;
-                }
-                ESP_LOGD(TAG, "After finished, [%s-%p, wk:%p, new job:%p-%s]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label);
+                quit_state = ESP_GMF_EVENT_STATE_FINISHED;
+                break;
             }
             continue;
         } else if (worker->ret == ESP_GMF_JOB_ERR_FAIL) {
@@ -188,16 +211,8 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
                      esp_gmf_event_get_state_str(tsk->state));
             if (tsk->state != ESP_GMF_EVENT_STATE_STOPPED) {
                 __esp_gmf_task_delete_jobs(tsk);
-                esp_gmf_job_stack_clear(tsk->start_stack);
-                esp_gmf_task_event_loading_job(tsk, ESP_GMF_EVENT_STATE_ERROR);
-                worker = tsk->working;
-                is_stop = 1;
-                if (worker == NULL) {
-                    ESP_LOGV(TAG, "No more jobs after failed, [%s-%p, new job:%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker);
-                    continue;
-                }
-                ESP_LOGD(TAG, "After failed, [%s-%p, wk:%p,new job:%p-%s]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label);
-                continue;
+                quit_state = ESP_GMF_EVENT_STATE_ERROR;
+                break;
             }
         }
         if (tsk->_pause) {
@@ -220,41 +235,30 @@ static inline int process_func(esp_gmf_task_handle_t handle, void *para)
         if (tsk->_stop && (tsk->state != ESP_GMF_EVENT_STATE_ERROR)) {
             ESP_LOGV(TAG, "Stop job, [%s-%p, wk:%p, job:%p-%s]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label);
             __esp_gmf_task_delete_jobs(tsk);
-            esp_gmf_job_stack_clear(tsk->start_stack);
-            esp_gmf_task_event_loading_job(tsk, ESP_GMF_EVENT_STATE_STOPPED);
-            worker = tsk->working;
+            quit_state = ESP_GMF_EVENT_STATE_STOPPED;
             tsk->_stop = 0;
-            is_stop = 1;
-            if (worker == NULL) {
-                ESP_LOGV(TAG, "No more jobs after stopped, [%s-%p, new job:%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker);
-                continue;
-            }
-            ESP_LOGD(TAG, "After stopped, [%s-%p, new job:%p-%p-%s]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label);
-            continue;
+            break;
         }
-
         ESP_LOGD(TAG, "Find next job to process, [%s-%p, cur:%p-%p-%s]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk, worker, worker->ctx, worker->label);
-
-        esp_gmf_job_t *tmp = worker->next;
-        if (worker->times == ESP_GMF_JOB_TIMES_ONCE) {
-            ESP_LOGI(TAG, "One times job is complete, del[wk:%p,ctx:%p, label:%s]", worker, worker->ctx, worker->label);
-            esp_gmf_node_del_at((esp_gmf_node_t **)&tsk->working, (esp_gmf_node_t *)worker);
-            esp_gmf_job_item_free(worker);
-            worker = NULL;
-        }
-        worker = tmp;
-        bool is_empty = false;
-        esp_gmf_job_stack_is_empty(tsk->start_stack, &is_empty);
-        if ((tmp == NULL) && (is_empty == false)) {
-            esp_gmf_job_stack_pop(tsk->start_stack, (uint32_t *)&worker);
-        }
+        worker = _esp_gmf_get_next_job(tsk, worker);
         ESP_LOGD(TAG, "Found next job[%p] to process", worker);
     }
-    ESP_LOGV(TAG, "Worker exit, [%p-%s], st:%s, stop:%s", tsk, OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), esp_gmf_event_get_state_str(tsk->state), is_stop == 0 ? "NO" : "YES");
-    esp_gmf_event_state_notify(tsk, ESP_GMF_EVT_TYPE_CHANGE_STATE, tsk->state);
-    if (is_stop) {
-        GMF_TASK_SET_STATE_BITS(tsk->event_group, GMF_TASK_STOP_BIT);
+    // Load quit jobs and run
+    esp_gmf_job_stack_clear(tsk->start_stack);
+    esp_gmf_task_event_loading_job(tsk, quit_state);
+    ESP_LOGV(TAG, "Worker exit, [%p-%s], st:%s", tsk, OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), esp_gmf_event_get_state_str(tsk->state));
+    worker = tsk->working;
+    while (worker && worker->func) {
+        worker->ret = worker->func(worker->ctx, NULL);
+        // Failed when do clear up set state to error, continue to clear up for other jobs
+        if (worker->ret != ESP_GMF_JOB_ERR_OK) {
+            quit_state = ESP_GMF_EVENT_STATE_ERROR;
+        }
+        worker = _esp_gmf_get_next_job(tsk, worker);
     }
+    tsk->state = quit_state;
+    esp_gmf_event_state_notify(tsk, ESP_GMF_EVT_TYPE_CHANGE_STATE, tsk->state);
+    GMF_TASK_SET_STATE_BITS(tsk->event_group, GMF_TASK_STOP_BIT);
     return result;
 }
 
@@ -525,11 +529,13 @@ esp_gmf_err_t esp_gmf_task_pause(esp_gmf_task_handle_t handle)
         return ESP_GMF_ERR_NOT_SUPPORT;
     }
     tsk->_pause = 1;
-    if (GMF_TASK_WAIT_FOR_STATE_BITS(tsk->event_group, GMF_TASK_PAUSE_BIT, tsk->api_sync_time) == false) {
+    if (GMF_TASK_WAIT_FOR_MULTI_STATE_BITS(tsk->event_group, GMF_TASK_PAUSE_BIT | GMF_TASK_STOP_BIT, tsk->api_sync_time) == false) {
         ESP_LOGE(TAG, "Pause timeout,[%s,%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk);
         esp_gmf_oal_mutex_unlock(tsk->lock);
         return ESP_GMF_ERR_TIMEOUT;
     }
+    // Only clear pause bits
+    GMF_TASK_CLR_STATE_BITS(tsk->event_group, GMF_TASK_PAUSE_BIT);
     esp_gmf_oal_mutex_unlock(tsk->lock);
     return ESP_GMF_ERR_OK;
 }
@@ -547,11 +553,12 @@ esp_gmf_err_t esp_gmf_task_resume(esp_gmf_task_handle_t handle)
     }
     tsk->_pause = 0;
     esp_gmf_task_release_signal(tsk, portMAX_DELAY);
-    if (GMF_TASK_WAIT_FOR_STATE_BITS(tsk->event_group, GMF_TASK_RESUME_BIT, tsk->api_sync_time) == false) {
+    if (GMF_TASK_WAIT_FOR_MULTI_STATE_BITS(tsk->event_group, GMF_TASK_RESUME_BIT | GMF_TASK_STOP_BIT, tsk->api_sync_time) == false) {
         ESP_LOGE(TAG, "Resume timeout,[%s,%p]", OBJ_GET_TAG((esp_gmf_obj_handle_t)tsk), tsk);
         esp_gmf_oal_mutex_unlock(tsk->lock);
         return ESP_GMF_ERR_TIMEOUT;
     }
+    GMF_TASK_CLR_STATE_BITS(tsk->event_group, GMF_TASK_RESUME_BIT);
     esp_gmf_oal_mutex_unlock(tsk->lock);
     return ESP_GMF_ERR_OK;
 }

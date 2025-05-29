@@ -43,6 +43,10 @@ esp_gmf_err_t esp_gmf_pool_deinit(esp_gmf_pool_handle_t handle);
 /**
  * @brief  Register a GMF element to specific pool
  *
+ * @note   Once an element is registered to the pool, the pool takes ownership of it
+ *         The user should avoid destroying the element manually to prevent issues
+ *         caused by the pool accessing an invalid element
+ *
  * @param[in]  handle  GMF pool handle
  * @param[in]  el      GMF element handle to register
  * @param[in]  tag     Tag associated with the element
@@ -53,6 +57,23 @@ esp_gmf_err_t esp_gmf_pool_deinit(esp_gmf_pool_handle_t handle);
  *       - ESP_GMF_ERR_MEMORY_LACK  Memory allocation failed
  */
 esp_gmf_err_t esp_gmf_pool_register_element(esp_gmf_pool_handle_t handle, esp_gmf_element_handle_t el, const char *tag);
+
+/**
+ * @brief  Insert a GMF element at the head of specific pool
+ *
+ * @note   This API functions like `esp_gmf_pool_register_element`, except that it
+ *         inserts the element at the head of the pool to ensure higher search priority
+ *
+ * @param[in]  handle  GMF pool handle
+ * @param[in]  el      GMF element handle to register
+ * @param[in]  tag     Tag associated with the element
+ *
+ * @return
+ *       - ESP_GMF_ERR_OK           On success
+ *       - ESP_GMF_ERR_INVALID_ARG  Invalid arguments
+ *       - ESP_GMF_ERR_MEMORY_LACK  Memory allocation failed
+ */
+esp_gmf_err_t esp_gmf_pool_register_element_at_head(esp_gmf_pool_handle_t handle, esp_gmf_element_handle_t el, const char *tag);
 
 /**
  * @brief  Register a GMF I/O instance with a GMF pool
