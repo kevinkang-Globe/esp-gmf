@@ -13,10 +13,11 @@
 #include "esp_gmf_pool.h"
 #include "esp_embed_tone.h"
 #include "esp_gmf_io_embed_flash.h"
-#include "esp_gmf_setup_peripheral.h"
-#include "esp_gmf_setup_pool.h"
+#include "esp_gmf_app_setup_peripheral.h"
 #include "esp_gmf_audio_helper.h"
 #include "esp_gmf_audio_dec.h"
+#include "gmf_loader_setup_defaults.h"
+#include "esp_gmf_io_codec_dev.h"
 
 static const char *TAG = "PLAY_EMBED_MUSIC";
 
@@ -41,34 +42,14 @@ void app_main(void)
     ESP_GMF_MEM_SHOW(TAG);
     int ret;
     ESP_LOGI(TAG, "[ 1 ] Mount peripheral");
-#ifndef CONFIG_IDF_TARGET_ESP32C3
-    esp_gmf_setup_periph_i2c(0);
-#endif /* CONFIG_IDF_TARGET_ESP32C3 */
-    esp_gmf_setup_periph_aud_info play_info = {
-        .sample_rate = 48000,
-        .channel = 2,
-        .bits_per_sample = 16,
-        .port_num = 0,
-    };
-    void *play_dev = NULL;
-    void *record_dev = NULL;
-#ifdef CONFIG_IDF_TARGET_ESP32
-    esp_gmf_setup_periph_aud_info record_info = {0};
-    memcpy(&record_info, &play_info, sizeof(esp_gmf_setup_periph_aud_info));
-    record_info.port_num = 1;
-    ret = esp_gmf_setup_periph_codec(&play_info, &record_info, &play_dev, &record_dev);
-#else
-    ret = esp_gmf_setup_periph_codec(&play_info, NULL, &play_dev, NULL);
-#endif
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, { return; }, "Failed to setup play codec");
+    esp_gmf_app_setup_codec_dev(NULL);
 
     ESP_LOGI(TAG, "[ 2 ] Register all the elements and set audio information to play codec device");
     esp_gmf_pool_handle_t pool = NULL;
     esp_gmf_pool_init(&pool);
-    pool_register_io(pool);
-    pool_register_audio_codecs(pool);
-    pool_register_audio_effects(pool);
-    pool_register_codec_dev_io(pool, play_dev, record_dev);
+    gmf_loader_setup_io_default(pool);
+    gmf_loader_setup_audio_codec_default(pool);
+    gmf_loader_setup_audio_effects_default(pool);
     ESP_GMF_POOL_SHOW_ITEMS(pool);
 
     ESP_LOGI(TAG, "[ 3 ] Create audio pipeline");
@@ -76,6 +57,8 @@ void app_main(void)
     const char *name[] = {"aud_simp_dec", "bit_cvt", "rate_cvt", "ch_cvt"};
     ret = esp_gmf_pool_new_pipeline(pool, "embed", name, sizeof(name) / sizeof(char *), "codec_dev_tx", &pipe);
     ESP_GMF_RET_ON_NOT_OK(TAG, ret, { return; }, "Failed to new pipeline");
+
+    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_OUT_INSTANCE(pipe), esp_gmf_app_get_playback_handle());
 
     ESP_LOGI(TAG, "[ 3.1 ] Set audio url to play");
     esp_gmf_pipeline_set_in_uri(pipe, esp_embed_tone_url[ESP_EMBED_TONE_FF_16B_1C_44100HZ_MP3]);
@@ -112,13 +95,12 @@ void app_main(void)
     esp_gmf_pipeline_stop(pipe);
 
     ESP_LOGI(TAG, "[ 6 ] Destroy all the resources");
-    pool_unregister_audio_codecs();
     esp_gmf_task_deinit(work_task);
     esp_gmf_pipeline_destroy(pipe);
+    gmf_loader_teardown_audio_effects_default(pool);
+    gmf_loader_teardown_audio_codec_default(pool);
+    gmf_loader_teardown_io_default(pool);
     esp_gmf_pool_deinit(pool);
-    esp_gmf_teardown_periph_codec(play_dev, record_dev);
-#ifndef CONFIG_IDF_TARGET_ESP32C3
-    esp_gmf_teardown_periph_i2c(0);
-#endif /* CONFIG_IDF_TARGET_ESP32C3 */
+    esp_gmf_app_teardown_codec_dev();
     ESP_GMF_MEM_SHOW(TAG);
 }

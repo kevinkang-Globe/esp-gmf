@@ -15,3 +15,11 @@ dependencies:
     version: '*'
     rules:
       - if: "target in [esp32p4]"
+  espressif/gmf_video:
+    override_path: ../../../../elements/gmf_video
+  espressif/gmf_ai_audio:
+    override_path: ../../../../elements/gmf_ai_audio            
+  espressif/gmf_loader:
+    override_path: ../../../../packages/gmf_loader
+  espressif/gmf_app_utils:
+    override_path: ../../../../packages/gmf_app_utils

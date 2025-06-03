@@ -82,7 +82,11 @@ static esp_gmf_err_t gmf_loader_setup_default_http_io(esp_gmf_pool_handle_t pool
     if (dir == ESP_GMF_IO_DIR_READER) {
 #ifdef CONFIG_GMF_IO_INIT_HTTP_READER
         http_cfg.out_buf_size = CONFIG_GMF_IO_HTTP_READER_OUT_BUF_SIZE;
-        http_cfg.cert_pem = CONFIG_GMF_IO_HTTP_READER_CERT_PEM;
+        if (CONFIG_GMF_IO_HTTP_READER_CERT_PEM[0] == '\0') {
+            http_cfg.cert_pem = NULL;
+        } else {
+            http_cfg.cert_pem = CONFIG_GMF_IO_HTTP_READER_CERT_PEM;
+        }
         http_cfg.task_stack = CONFIG_GMF_IO_HTTP_READER_TASK_STACK;
 #ifdef CONFIG_GMF_IO_HTTP_READER_STACK_IN_EXT
         http_cfg.stack_in_ext = true;
@@ -95,7 +99,11 @@ static esp_gmf_err_t gmf_loader_setup_default_http_io(esp_gmf_pool_handle_t pool
     } else {
 #ifdef CONFIG_GMF_IO_INIT_HTTP_WRITER
         http_cfg.out_buf_size = CONFIG_GMF_IO_HTTP_WRITER_OUT_BUF_SIZE;
-        http_cfg.cert_pem = CONFIG_GMF_IO_HTTP_WRITER_CERT_PEM;
+        if (CONFIG_GMF_IO_HTTP_WRITER_CERT_PEM[0] == '\0') {
+            http_cfg.cert_pem = NULL;
+        } else {
+            http_cfg.cert_pem = CONFIG_GMF_IO_HTTP_WRITER_CERT_PEM;
+        }
         http_cfg.task_stack = CONFIG_GMF_IO_HTTP_WRITER_TASK_STACK;
 #ifdef CONFIG_GMF_IO_HTTP_WRITER_STACK_IN_EXT
         http_cfg.stack_in_ext = true;

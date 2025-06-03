@@ -10,6 +10,7 @@
 
 ### Bug Fixes
 - Fixed an issue where HTTP IO did not reset the thread and databus properly
+- Fixed file open check for treat return error as valid fd
 
 ## v0.6.3
 

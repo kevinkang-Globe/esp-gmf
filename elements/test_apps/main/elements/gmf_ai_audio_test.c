@@ -35,7 +35,7 @@
 #include "esp_gmf_aec.h"
 #include "esp_dsp.h"
 #endif  /* defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32P4) */
-#include "esp_gmf_setup_peripheral.h"
+#include "esp_gmf_app_setup_peripheral.h"
 
 #define DEBUG2FILE  (false)
 #define FS          16000
@@ -223,8 +223,8 @@ TEST_CASE("Test gmf aec process", "[ESP_GMF_AEC]")
 
     printf("\r\n///////////////////// AEC /////////////////////\r\n");
 #if DEBUG2FILE == true
-    void *sdcard = NULL;
-    esp_gmf_setup_periph_sdmmc(&sdcard);
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
 #endif  /* DEBUG2FILE == true */
     int16_t *reference_signal = (int16_t *)esp_gmf_oal_malloc_align(16, SIGNAL_LEN * sizeof(int16_t));
     TEST_ASSERT_NOT_NULL(reference_signal);
@@ -310,7 +310,7 @@ TEST_CASE("Test gmf aec process", "[ESP_GMF_AEC]")
     } else {
         ESP_LOGE(TAG, "Failed to open noise_buffer.pcm for writing");
     }
-    esp_gmf_teardown_periph_sdmmc(sdcard);
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
 #endif  /* DEBUG2FILE == true */
     out_count = 0;
     esp_gmf_oal_free(noise_buffer);

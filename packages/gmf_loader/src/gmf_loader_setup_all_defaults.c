@@ -35,6 +35,9 @@ esp_gmf_err_t gmf_loader_setup_all_defaults(esp_gmf_pool_handle_t pool)
     ret = gmf_loader_setup_video_effects_default(pool);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to register video effects");
 
+    ret = gmf_loader_setup_misc_default(pool);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to register misc");
+
     return ret;
 }
 
@@ -60,6 +63,9 @@ esp_gmf_err_t gmf_loader_teardown_all_defaults(esp_gmf_pool_handle_t pool)
 
     ret = gmf_loader_teardown_video_effects_default(pool);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to teardown video effects");
+
+    ret = gmf_loader_teardown_misc_default(pool);
+    ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to teardown misc");
 
     return ret;
 }

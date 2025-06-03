@@ -103,8 +103,8 @@ static esp_gmf_err_t audio_dec_reconfig_dec_by_sound_info(esp_gmf_element_handle
     if (dec_cfg == NULL) {
         dec_cfg = esp_gmf_oal_calloc(1, sizeof(esp_audio_simple_dec_cfg_t));
         ESP_GMF_MEM_VERIFY(TAG, dec_cfg, return ESP_GMF_ERR_MEMORY_LACK, "audio simple decoder configuration", sizeof(esp_audio_simple_dec_cfg_t));
+        esp_gmf_obj_set_config(handle, dec_cfg, sizeof(esp_audio_simple_dec_cfg_t));
     }
-    esp_gmf_obj_set_config(handle, dec_cfg, sizeof(esp_audio_simple_dec_cfg_t));
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     bool same_type = (info->format_id == dec_cfg->dec_type) ? (true) : (false);
     dec_cfg->dec_type = info->format_id;
@@ -131,6 +131,10 @@ static esp_gmf_err_t audio_dec_reconfig_dec_by_sound_info(esp_gmf_element_handle
                 };
                 ret = audio_dec_set_subcfg(dec_cfg, &aac_cfg, sizeof(esp_aac_dec_cfg_t));
             }
+            esp_aac_dec_cfg_t *aac_cfg = (esp_aac_dec_cfg_t *)dec_cfg->dec_cfg;
+            aac_cfg->sample_rate = info->sample_rates;
+            aac_cfg->channel = info->channels;
+            aac_cfg->bits_per_sample = info->bits;
             break;
         case ESP_AUDIO_SIMPLE_DEC_TYPE_RAW_OPUS:
             if (dec_cfg->dec_cfg == NULL) {
@@ -174,9 +178,9 @@ static esp_gmf_err_t audio_dec_reconfig_dec_by_sound_info(esp_gmf_element_handle
             if (dec_cfg->dec_cfg == NULL) {
                 dec_cfg->dec_type = ESP_AUDIO_SIMPLE_DEC_TYPE_SBC;
                 esp_sbc_dec_cfg_t sbc_cfg = {
-                .sbc_mode = ESP_SBC_MODE_STD,
-                .ch_num = 2,
-                .enable_plc = false,
+                    .sbc_mode = ESP_SBC_MODE_STD,
+                    .ch_num = 2,
+                    .enable_plc = false,
                 };
                 ret = audio_dec_set_subcfg(dec_cfg, &sbc_cfg, sizeof(esp_sbc_dec_cfg_t));
             }

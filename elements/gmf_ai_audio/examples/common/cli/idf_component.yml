@@ -1,3 +1,0 @@
-dependencies:
-  espressif/gmf_core:
-    version: "^0.6"

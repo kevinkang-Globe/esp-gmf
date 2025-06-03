@@ -9,7 +9,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif /* __cplusplus */
+#endif  /* __cplusplus */
 
 /**
  * @brief  Start monitor of app system
@@ -23,4 +23,4 @@ void esp_gmf_app_sys_monitor_stop(void);
 
 #ifdef __cplusplus
 }
-#endif /* __cplusplus */
+#endif  /* __cplusplus */
