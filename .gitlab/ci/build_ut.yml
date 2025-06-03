@@ -17,21 +17,26 @@ variables:
     - .build_template
   artifacts:
     paths:
-      - "${TEST_DIR}/**/test_apps/build*/size.json"
-      - "${TEST_DIR}/**/test_apps/build*/build_log.txt"
-      - "${TEST_DIR}/**/test_apps/build*/*.bin"
-      - "${TEST_DIR}/**/test_apps/build*/*.elf"
-      - "${TEST_DIR}/**/test_apps/build*/flasher_args.json"
-      - "${TEST_DIR}/**/test_apps/build*/flash_project_args"
-      - "${TEST_DIR}/**/test_apps/build*/config/sdkconfig.json"
-      - "${TEST_DIR}/**/test_apps/build*/sdkconfig"
-      - "${TEST_DIR}/**/test_apps/build*/bootloader/*.bin"
-      - "${TEST_DIR}/**/test_apps/build*/partition_table/*.bin"
-      - "${TEST_DIR}/**/test_apps/build*/srmodels/*.bin"
+      - "**/build*/size.json"
+      - "**/build*/build_log.txt"
+      - "**/build*/*.bin"
+      - "**/build*/*.elf"
+      - "**/build*/flasher_args.json"
+      - "**/build*/flash_project_args"
+      - "**/build*/config/sdkconfig.json"
+      - "**/build*/sdkconfig"
+      - "**/build*/bootloader/*.bin"
+      - "**/build*/partition_table/*.bin"
+      - "**/build*/srmodels/*.bin"
       - "${TEST_DIR}/**/test_apps/*.py"
     expire_in: 4 days
   script:
-    - run_cmd python ${BASE_FRAMEWORK_PATH}/tools/ci/ci_build_apps.py ${TEST_DIR} -vv -t $IDF_TARGET --pytest-apps
+    - cd ${CI_PROJECT_DIR}
+    - run_cmd python $CI_PROJECT_DIR/tools/ci/build_apps.py ${TEST_DIR} \
+                -t $IDF_TARGET -vv \
+                --pytest-apps \
+                --parallel-count ${parallel##*/} \
+                --parallel-index ${parallel%%/*}
   after_script:
     - find "${TEST_DIR}" -type d -name "managed_components" -exec rm -rf {} +
 

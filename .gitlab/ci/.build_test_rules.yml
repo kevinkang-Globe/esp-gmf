@@ -1,0 +1,15 @@
+.enable_general: &enable_general
+  enable:
+    - if: IDF_TARGET in ["esp32", "esp32s2", "esp32s3", "esp32c3", "esp32p4", "esp32c6"]
+
+gmf_core/test_apps:
+  <<: *enable_general
+
+elements/test_apps:
+  <<: *enable_general
+
+packages:
+  <<: *enable_general
+
+gmf_examples:
+  <<: *enable_general

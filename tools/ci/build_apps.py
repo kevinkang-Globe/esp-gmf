@@ -15,6 +15,10 @@ from typing import List
 
 from idf_build_apps import App, build_apps, find_apps, setup_logging, utils
 
+if not os.environ.get('PROJECT_PATH'):
+    print('Please set the environment variable PROJECT_PATH to the repository path.')
+    sys.exit(1)
+
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 APPS_BUILD_PER_JOB = 30
 IGNORE_WARNINGS = [
@@ -79,7 +83,7 @@ def get_cmake_apps(
             check_warnings=True,
             preserve=True,
             default_build_targets=default_build_targets,
-            manifest_files=[str(p) for p in Path(os.environ['BASE_FRAMEWORK_PATH']).glob('**/.build-test-rules.yml')],
+            manifest_files=[str(p) for p in Path(os.environ['PROJECT_PATH']).glob('**/.build_test_rules.yml')],
         )
         return apps
     else:
@@ -93,11 +97,28 @@ def get_cmake_apps(
             size_json_filename='size.json',
             check_warnings=True,
             default_build_targets=default_build_targets,
-            manifest_files=[str(p) for p in Path(os.environ['BASE_FRAMEWORK_PATH']).glob('**/.build-test-rules.yml')],
+            manifest_files=[str(p) for p in Path(os.environ['PROJECT_PATH']).glob('**/.build_test_rules.yml')],
         )
         return apps
 
 def main(args):  # type: (argparse.Namespace) -> None
+    if args.pytest_apps:
+        test_apps_paths = []
+        for base_path in args.paths:
+            for root, dirs, files in os.walk(base_path):
+                if 'managed_components' in root.split(os.sep):
+                    continue
+                if os.path.basename(root) == 'test_apps':
+                    test_apps_paths.append(root)
+        if not test_apps_paths:
+            print('No test_apps directory found in given paths!')
+            sys.exit(1)
+        args.paths = test_apps_paths
+
+    print(f'Collected {len(args.paths)} test_apps directories for pytest build:')
+    for p in args.paths:
+        print(f'  - {p}')
+
     default_build_targets = args.default_build_targets.split(',') if args.default_build_targets else None
     apps = get_cmake_apps(args.paths, args.target, args.config, default_build_targets)
     if args.exclude_apps:
@@ -171,6 +192,12 @@ if __name__ == '__main__':
         '-v', '--verbose',
         action='count', default=0,
         help='Show verbose log message',
+    )
+    parser.add_argument(
+        '--pytest-apps',
+        action='store_true',
+        help='Only build apps required by pytest scripts. '
+        'Will build non-test-related apps if this flag is unspecified.',
     )
 
     arguments = parser.parse_args()
