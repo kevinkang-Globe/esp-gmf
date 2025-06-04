@@ -17,5 +17,5 @@ from pytest_embedded import Dut
     ],
     indirect=True,
 )
-def test_gmf_core(dut: Dut) -> None:
+def test_gmf_elements(dut: Dut) -> None:
     dut.run_all_single_board_cases(timeout=2000)

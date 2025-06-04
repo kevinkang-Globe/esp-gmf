@@ -9,5 +9,5 @@ from pytest_embedded import Dut
 
 @pytest.mark.esp32
 @pytest.mark.esp32s3
-def test_str_detect(dut: Dut)-> None:
+def test_pipeline_record_sdcard_str_detect(dut: Dut)-> None:
     dut.expect(r'ESP_GMF_TASK: One times job is complete, del', timeout=20)

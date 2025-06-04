@@ -10,7 +10,7 @@ from audio_test_package.audio_recorder.recorder_stream import Recorder
 
 @pytest.mark.esp32
 @pytest.mark.AUDIO_LOOPBACK_ENV
-def test_audio_similarity_compare(dut: Dut)-> None:
+def test_pipeline_play_embed_music_similarity_compare(dut: Dut)-> None:
     script_path = os.path.abspath(__file__)
     script_dir = os.path.dirname(script_path)
     filename = os.path.join(script_dir, 'output.wav')
@@ -32,5 +32,5 @@ def test_audio_similarity_compare(dut: Dut)-> None:
     recorder.request_audio_similarity(url)
 
 @pytest.mark.esp32s3
-def test_str_detect(dut: Dut)-> None:
+def test_pipeline_play_embed_music_str_detect(dut: Dut)-> None:
     dut.expect(r'ESP_GMF_EMBED_FLASH: Closed, pos: 231725/231725', timeout=30)
