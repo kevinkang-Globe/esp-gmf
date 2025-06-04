@@ -12,6 +12,7 @@ variables:
   IDF_SKIP_CHECK_SUBMODULES: 1
   GIT_DEPTH: 1
   IDF_PATH: "/root/.espressif/esp-idf"
+  PROJECT_PATH: "${CI_PROJECT_DIR}"
   BASE_FRAMEWORK: $IDF_REPOSITORY
   BASE_FRAMEWORK_PATH: "${IDF_PATH}"
   EXAMPLES_PATH: "${CI_PROJECT_DIR}/gmf_examples/basic_examples"
