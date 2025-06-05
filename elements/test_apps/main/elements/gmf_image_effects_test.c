@@ -67,31 +67,31 @@ _cfg_free:
     return ret;
 }
 
-static int imgfx_acquire_read(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t imgfx_acquire_read(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
 {
     blk->buf = test_buffer;
     blk->buf_length = TEST_MAX_IMG_LENGTH;
     blk->valid_size = wanted_size;
     memset(blk->buf, 1, wanted_size);
-    return ESP_OK;
+    return ESP_GMF_ERR_OK;
 }
 
-static int imgfx_release_read(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
+static esp_gmf_err_io_t imgfx_release_read(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
 {
-    return ESP_OK;
+    return ESP_GMF_ERR_OK;
 }
 
-static int imgfx_acquire_write(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t imgfx_acquire_write(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
 {
     blk->buf = test_buffer1;
     blk->buf_length = TEST_MAX_IMG_LENGTH;
-    return ESP_OK;
+    return ESP_GMF_ERR_OK;
 }
 
-static int imgfx_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
+static esp_gmf_err_io_t imgfx_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
 {
     ESP_LOGI(TAG, "Output size %d", blk->valid_size);
-    return ESP_OK;
+    return ESP_GMF_ERR_OK;
 }
 
 TEST_CASE("Test for all software video effects", "[ESP_GMF_Effects]")

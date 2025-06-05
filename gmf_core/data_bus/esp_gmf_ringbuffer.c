@@ -199,7 +199,7 @@ esp_gmf_err_io_t esp_gmf_rb_release_read(esp_gmf_rb_handle_t handle, esp_gmf_dat
 
 esp_gmf_err_io_t esp_gmf_rb_acquire_write(esp_gmf_rb_handle_t handle, esp_gmf_data_bus_block_t *blk, uint32_t wanted_size, int ticks_to_wait)
 {
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 esp_gmf_err_io_t esp_gmf_rb_release_write(esp_gmf_rb_handle_t handle, esp_gmf_data_bus_block_t *blk, int block_ticks)

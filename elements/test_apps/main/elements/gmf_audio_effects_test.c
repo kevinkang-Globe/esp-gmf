@@ -122,33 +122,33 @@ esp_err_t _pipeline_event4(esp_gmf_event_pkt_t *event, void *ctx)
     return 0;
 }
 
-static int ae_acquire_read(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t ae_acquire_read(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
 {
     if (blk->buf == NULL) {
         return ESP_FAIL;
     }
     blk->valid_size = wanted_size;
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
-static int ae_release_read(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
+static esp_gmf_err_io_t ae_release_read(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
 {
     blk->valid_size = 0;
-    return ESP_OK;
+    return ESP_GMF_IO_OK;
 }
 
-static int ae_acquire_write(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t ae_acquire_write(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
 {
     if (blk->buf) {
-        return wanted_size;
+        return ESP_GMF_IO_OK;
     }
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
-static int ae_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
+static esp_gmf_err_io_t ae_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
 {
     ESP_LOGE(TAG, "%s-%d,file_release_write, %d,%p", __func__, __LINE__, blk->valid_size, blk);
-    return blk->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 TEST_CASE("AUDIO CODEC METHOD TEST", "[ESP_GMF_Effects]")

@@ -83,7 +83,7 @@ static esp_gmf_err_io_t _embed_flash_acquire_read(esp_gmf_io_handle_t io, void *
     }
     memcpy(pload->buf, embed_flash->items[embed_flash->cur].address + info.pos, wanted_size);
     pload->valid_size = wanted_size;
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t _embed_flash_release_read(esp_gmf_io_handle_t io, void *payload, int block_ticks)

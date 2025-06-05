@@ -77,7 +77,7 @@ static esp_gmf_err_io_t _i2s_pdm_acquire_read(esp_gmf_io_handle_t handle, void *
     }
     pload->valid_size = rlen;
     ESP_LOGD(TAG, "Read len: %d", rlen);
-    return rlen;
+    return ESP_GMF_ERR_OK;
 }
 
 static esp_gmf_err_io_t _i2s_pdm_release_read(esp_gmf_io_handle_t handle, void *payload, int block_ticks)

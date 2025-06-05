@@ -228,16 +228,18 @@ static esp_gmf_err_t _http_close(esp_gmf_io_handle_t self)
     http_stream_t *http = (http_stream_t *)self;
     ESP_LOGD(TAG, "_http_close, %p", http);
     http_io_cfg_t *http_io_cfg = (http_io_cfg_t *)OBJ_GET_CFG(http);
-    while (http->is_open && (http_io_cfg->dir == ESP_GMF_IO_DIR_WRITER)) {
-        if (dispatch_hook(self, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
-            break;
-        }
-        if (esp_http_client_fetch_headers(http->client) < 0) {
-            break;
-        }
-        if (dispatch_hook(self, HTTP_STREAM_FINISH_REQUEST, NULL, 0) < 0) {
-            break;
-        }
+    if (http->is_open && (http_io_cfg->dir == ESP_GMF_IO_DIR_WRITER)) {
+        do {
+            if (dispatch_hook(self, HTTP_STREAM_POST_REQUEST, NULL, 0) < 0) {
+                break;
+            }
+            if (esp_http_client_fetch_headers(http->client) < 0) {
+                break;
+            }
+            if (dispatch_hook(self, HTTP_STREAM_FINISH_REQUEST, NULL, 0) < 0) {
+                break;
+            }
+        } while (0);
     }
     http->is_open = false;
     if (http->gzip) {
@@ -307,12 +309,12 @@ static int _http_write(esp_gmf_io_handle_t self, char *buffer, int len, TickType
     return wrlen;
 }
 
-static int _http_process(esp_gmf_io_handle_t self, void *params)
+static esp_gmf_job_err_t _http_process(esp_gmf_io_handle_t self, void *params)
 {
     int r_size = 0;
     http_stream_t *http = (http_stream_t *)self;
     esp_gmf_data_bus_block_t blk = {0};
-    int w_size = 0;
+    esp_gmf_job_err_t job_err = ESP_GMF_JOB_ERR_OK;
     http->is_open = true;
     http_io_cfg_t *http_io_cfg = (http_io_cfg_t *)OBJ_GET_CFG(http);
     if (http_io_cfg->dir == ESP_GMF_IO_DIR_READER) {
@@ -344,24 +346,27 @@ static int _http_process(esp_gmf_io_handle_t self, void *params)
         } else if (r_size == 0) {
             esp_gmf_db_done_write(http->data_bus);
             esp_gmf_db_release_write(http->data_bus, &blk, portMAX_DELAY);
-            w_size = ESP_GMF_JOB_ERR_DONE;
+            job_err = ESP_GMF_JOB_ERR_DONE;
         } else {
-            w_size = r_size;
+            job_err = r_size;
             esp_gmf_db_abort(http->data_bus);
         }
     } else {
         r_size = esp_gmf_db_acquire_read(http->data_bus, &blk, HTTP_STREAM_BUFFER_SIZE, portMAX_DELAY);
         ESP_LOGD(TAG, "ACQ, read: %d, vld: %d, buf_len: %d", r_size, blk.valid_size, blk.buf_length);
-        if (r_size > 0) {
-            w_size = _http_write(self, (char *)blk.buf, blk.valid_size, portMAX_DELAY, NULL);
+        if (blk.valid_size > 0) {
+            int w_size = _http_write(self, (char *)blk.buf, blk.valid_size, portMAX_DELAY, NULL);
+            if (w_size <= 0) {
+                job_err = ESP_GMF_JOB_ERR_FAIL;
+            }
         } else if (r_size == ESP_GMF_IO_OK || r_size == ESP_GMF_IO_ABORT) {
-            w_size = ESP_GMF_JOB_ERR_DONE;
+            job_err = ESP_GMF_JOB_ERR_DONE;
         } else {
-            w_size = r_size;
+            job_err = r_size;
         }
         esp_gmf_db_release_read(http->data_bus, &blk, portMAX_DELAY);
     }
-    return w_size;
+    return job_err;
 }
 
 static esp_gmf_err_t _http_destroy(esp_gmf_io_handle_t self)
@@ -403,9 +408,9 @@ static esp_gmf_err_io_t _http_acquire_read(esp_gmf_io_handle_t handle, void *pay
 {
     http_stream_t *http = (http_stream_t *)handle;
     esp_gmf_data_bus_block_t *blk = (esp_gmf_data_bus_block_t *)payload;
-    int rlen = esp_gmf_db_acquire_read(http->data_bus, payload, wanted_size, block_ticks);
+    esp_gmf_err_io_t ret = esp_gmf_db_acquire_read(http->data_bus, payload, wanted_size, block_ticks);
     ESP_LOGD(TAG, "acq_rd: %ld, vld: %d, done: %d, %p, %d", wanted_size, blk->valid_size, blk->is_last, blk->buf, blk->buf_length);
-    return rlen;
+    return ret;
 }
 
 static esp_gmf_err_io_t _http_release_read(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
@@ -413,8 +418,7 @@ static esp_gmf_err_io_t _http_release_read(esp_gmf_io_handle_t handle, void *pay
     http_stream_t *http = (http_stream_t *)handle;
     esp_gmf_data_bus_block_t *blk = (esp_gmf_data_bus_block_t *)payload;
     ESP_LOGD(TAG, "rel_rd: %p, vld: %d, len: %d done: %d", blk->buf, blk->valid_size, blk->buf_length, blk->is_last);
-    int ret = esp_gmf_db_release_read(http->data_bus, payload, block_ticks);
-    return ret;
+    return esp_gmf_db_release_read(http->data_bus, payload, block_ticks);
 }
 
 static esp_gmf_err_io_t _http_acquire_write(esp_gmf_io_handle_t handle, void *payload, uint32_t wanted_size, int block_ticks)
@@ -422,8 +426,7 @@ static esp_gmf_err_io_t _http_acquire_write(esp_gmf_io_handle_t handle, void *pa
     http_stream_t *http = (http_stream_t *)handle;
     esp_gmf_data_bus_block_t *blk = (esp_gmf_data_bus_block_t *)payload;
     ESP_LOGD(TAG, "acq_wr: %ld, vld: %d, done: %d, %p, %d", wanted_size, blk->valid_size, blk->is_last, blk->buf, blk->buf_length);
-    int ret = esp_gmf_db_acquire_write(http->data_bus, payload, wanted_size, block_ticks);
-    return ret;
+    return esp_gmf_db_acquire_write(http->data_bus, payload, wanted_size, block_ticks);
 }
 
 static esp_gmf_err_io_t _http_release_write(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
@@ -431,8 +434,7 @@ static esp_gmf_err_io_t _http_release_write(esp_gmf_io_handle_t handle, void *pa
     http_stream_t *http = (http_stream_t *)handle;
     esp_gmf_data_bus_block_t *blk = (esp_gmf_data_bus_block_t *)payload;
     ESP_LOGD(TAG, "rel_wr: %p, vld: %d, len: %d, done: %d", blk->buf, blk->valid_size, blk->buf_length, blk->is_last);
-    int wlen = esp_gmf_db_release_write(http->data_bus, payload, block_ticks);
-    return wlen;
+    return esp_gmf_db_release_write(http->data_bus, payload, block_ticks);
 }
 
 esp_gmf_err_t esp_gmf_io_http_reset(esp_gmf_io_handle_t handle)

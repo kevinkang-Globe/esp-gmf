@@ -13,6 +13,7 @@
 #include "esp_log.h"
 #include "esp_err.h"
 #include "driver/sdmmc_host.h"
+#include "esp_http_client.h"
 #include "esp_gmf_element.h"
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_pool.h"
@@ -30,7 +31,10 @@
 #include "media_lib_mem_trace.h"
 #endif  /* MEDIA_LIB_MEM_TEST */
 
-#define PIPELINE_BLOCK_BIT  BIT(0)
+#define SETUP_AUDIO_SAMPLE_RATE 16000
+#define SETUP_AUDIO_BITS        16
+#define SETUP_AUDIO_CHANNELS    1
+#define PIPELINE_BLOCK_BIT      BIT(0)
 
 static const char *TAG = "AUDIO_REC_ELEMENT_TEST";
 
@@ -44,6 +48,12 @@ static const char *test_enc_format[] = {
     "g711a",
     "g711u",
     "alac",
+};
+
+static const char *header_type[] = {
+    "audio/aac",
+    "audio/opus",
+    "audio/pcm",
 };
 
 static esp_err_t _pipeline_event(esp_gmf_event_pkt_t *event, void *ctx)
@@ -62,6 +72,92 @@ static esp_err_t _pipeline_event(esp_gmf_event_pkt_t *event, void *ctx)
     return 0;
 }
 
+static esp_gmf_err_t _http_set_content_type_by_format(esp_http_client_handle_t http, uint32_t format)
+{
+    switch (format) {
+        case ESP_AUDIO_TYPE_AAC:
+            esp_http_client_set_header(http, "Content-Type", header_type[0]);
+            break;
+        case ESP_AUDIO_TYPE_OPUS:
+            esp_http_client_set_header(http, "Content-Type", header_type[1]);
+            break;
+        case ESP_AUDIO_TYPE_PCM:
+            esp_http_client_set_header(http, "Content-Type", header_type[2]);
+            break;
+        default:
+            return ESP_GMF_ERR_FAIL;
+    }
+    return ESP_GMF_ERR_OK;
+}
+
+static esp_gmf_err_t _http_stream_event_handle(http_stream_event_msg_t *msg)
+{
+    esp_http_client_handle_t http = (esp_http_client_handle_t)msg->http_client;
+    char len_buf[16];
+    if (msg->event_id == HTTP_STREAM_PRE_REQUEST) {
+        // set header
+        ESP_LOGW(TAG, "[ + ] HTTP client HTTP_STREAM_PRE_REQUEST, length=%d, format:%s", msg->buffer_len, (char *)msg->user_data);
+        esp_http_client_set_method(http, HTTP_METHOD_POST);
+        char dat[10] = {0};
+        snprintf(dat, sizeof(dat), "%d", SETUP_AUDIO_SAMPLE_RATE);
+        esp_http_client_set_header(http, "x-audio-sample-rates", dat);
+        uint32_t fmt = 0;
+        esp_gmf_audio_helper_get_audio_type_by_uri((char *)msg->user_data, &fmt);
+        esp_gmf_err_t ret = _http_set_content_type_by_format(http, fmt);
+        if (ret != ESP_GMF_ERR_OK) {
+            ESP_LOGE(TAG, "Failed to set content type for format: %lx", fmt);
+            return ret;
+        }
+        memset(dat, 0, sizeof(dat));
+        snprintf(dat, sizeof(dat), "%d", SETUP_AUDIO_BITS);
+        esp_http_client_set_header(http, "x-audio-bits", dat);
+        memset(dat, 0, sizeof(dat));
+        snprintf(dat, sizeof(dat), "%d", SETUP_AUDIO_CHANNELS);
+        esp_http_client_set_header(http, "x-audio-channel", dat);
+        return ESP_GMF_ERR_OK;
+    }
+
+    if (msg->event_id == HTTP_STREAM_ON_REQUEST) {
+        // write data
+        int wlen = sprintf(len_buf, "%x\r\n", msg->buffer_len);
+        if (esp_http_client_write(http, len_buf, wlen) <= 0) {
+            return ESP_GMF_ERR_FAIL;
+        }
+        if (esp_http_client_write(http, msg->buffer, msg->buffer_len) <= 0) {
+            return ESP_GMF_ERR_FAIL;
+        }
+        if (esp_http_client_write(http, "\r\n", 2) <= 0) {
+            return ESP_GMF_ERR_FAIL;
+        }
+        return msg->buffer_len;
+    }
+
+    if (msg->event_id == HTTP_STREAM_POST_REQUEST) {
+        ESP_LOGW(TAG, "[ + ] HTTP client HTTP_STREAM_POST_REQUEST, write end chunked marker");
+        if (esp_http_client_write(http, "0\r\n\r\n", 5) <= 0) {
+            return ESP_GMF_ERR_FAIL;
+        }
+        return ESP_GMF_ERR_OK;
+    }
+
+    if (msg->event_id == HTTP_STREAM_FINISH_REQUEST) {
+        ESP_LOGW(TAG, "[ + ] HTTP client HTTP_STREAM_FINISH_REQUEST");
+        char *buf = (char *)calloc(1, 64);
+        assert(buf);
+        int read_len = esp_http_client_read(http, buf, 64);
+        if (read_len <= 0) {
+            free(buf);
+            return ESP_GMF_ERR_FAIL;
+        }
+        buf[read_len] = 0;
+        ESP_LOGI(TAG, "Got HTTP Response = %s", (char *)buf);
+        free(buf);
+        return ESP_GMF_ERR_OK;
+    }
+    ESP_LOGD(TAG, "Unknown event: %d", msg->event_id);
+    return ESP_GMF_ERR_OK;
+}
+
 TEST_CASE("Recorder, One Pipe, [IIS->ENC->FILE]", "[ESP_GMF_POOL]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
@@ -69,12 +165,11 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->FILE]", "[ESP_GMF_POOL]")
     // esp_log_level_set("GMF_CACHE", ESP_LOG_DEBUG);
     // esp_log_level_set("ESP_GMF_AENC", ESP_LOG_DEBUG);
     ESP_GMF_MEM_SHOW(TAG);
-    uint32_t I2S_REC_SAMPLE_RATE = 16000;
     uint32_t I2S_REC_ENCODER_SAMPLE_RATE = 48000;
     esp_gmf_app_codec_info_t codec_info = ESP_GMF_APP_CODEC_INFO_DEFAULT();
-    codec_info.record_info.sample_rate = I2S_REC_SAMPLE_RATE;
-    codec_info.record_info.channel = 1;
-    codec_info.record_info.bits_per_sample = 16;
+    codec_info.record_info.sample_rate = SETUP_AUDIO_SAMPLE_RATE;
+    codec_info.record_info.channel = SETUP_AUDIO_CHANNELS;
+    codec_info.record_info.bits_per_sample = SETUP_AUDIO_BITS;
     codec_info.play_info.sample_rate = codec_info.record_info.sample_rate;
     esp_gmf_app_setup_codec_dev(&codec_info);
     void *sdcard_handle = NULL;
@@ -116,9 +211,9 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->FILE]", "[ESP_GMF_POOL]")
     uint32_t audio_type = 0;
     esp_gmf_audio_helper_get_audio_type_by_uri(uri, &audio_type);
     esp_gmf_info_sound_t info = {
-        .sample_rates = I2S_REC_SAMPLE_RATE,
-        .channels = 1,
-        .bits = 16,
+        .sample_rates = SETUP_AUDIO_SAMPLE_RATE,
+        .channels = SETUP_AUDIO_CHANNELS,
+        .bits = SETUP_AUDIO_BITS,
         .bitrate = 90000,
         .format_id = audio_type,
     };
@@ -126,7 +221,7 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->FILE]", "[ESP_GMF_POOL]")
     esp_gmf_element_handle_t resp = NULL;
     esp_gmf_pipeline_get_el_by_name(pipe, "rate_cvt", &resp);
     esp_ae_rate_cvt_cfg_t *resp_cfg = (esp_ae_rate_cvt_cfg_t *)OBJ_GET_CFG(resp);
-    resp_cfg->src_rate = I2S_REC_SAMPLE_RATE;
+    resp_cfg->src_rate = SETUP_AUDIO_SAMPLE_RATE;
     if (audio_type == ESP_AUDIO_TYPE_AMRNB) {
         resp_cfg->dest_rate = 8000;
     } else if (audio_type == ESP_AUDIO_TYPE_G711U) {
@@ -167,9 +262,9 @@ TEST_CASE("Recorder, One Pipe recoding multiple format, [IIS->ENC->FILE]", "[ESP
     ESP_GMF_MEM_SHOW(TAG);
 
     esp_gmf_app_codec_info_t codec_info = ESP_GMF_APP_CODEC_INFO_DEFAULT();
-    codec_info.record_info.sample_rate = 16000;
-    codec_info.record_info.channel = 1;
-    codec_info.record_info.bits_per_sample = 16;
+    codec_info.record_info.sample_rate = SETUP_AUDIO_SAMPLE_RATE;
+    codec_info.record_info.channel = SETUP_AUDIO_CHANNELS;
+    codec_info.record_info.bits_per_sample = SETUP_AUDIO_BITS;
     codec_info.play_info.sample_rate = codec_info.record_info.sample_rate;
     esp_gmf_app_setup_codec_dev(&codec_info);
     void *sdcard_handle = NULL;
@@ -204,7 +299,6 @@ TEST_CASE("Recorder, One Pipe recoding multiple format, [IIS->ENC->FILE]", "[ESP
     esp_gmf_pipeline_set_event(pipe, _pipeline_event, pipe_sync_evt);
 
     char uri[128] = {0};
-    uint32_t I2S_REC_SAMPLE_RATE = 16000;
     uint32_t I2S_REC_ENCODER_SAMPLE_RATE = 48000;
 
     for (int i = 0; i < sizeof(test_enc_format) / sizeof(char *); ++i) {
@@ -215,9 +309,9 @@ TEST_CASE("Recorder, One Pipe recoding multiple format, [IIS->ENC->FILE]", "[ESP
         uint32_t audio_type = 0;
         esp_gmf_audio_helper_get_audio_type_by_uri(uri, &audio_type);
         esp_gmf_info_sound_t info = {
-            .sample_rates = I2S_REC_SAMPLE_RATE,
-            .channels = 1,
-            .bits = 16,
+            .sample_rates = SETUP_AUDIO_SAMPLE_RATE,
+            .channels = SETUP_AUDIO_CHANNELS,
+            .bits = SETUP_AUDIO_BITS,
             .format_id = audio_type,
         };
         if (audio_type == ESP_AUDIO_TYPE_AMRNB) {
@@ -233,7 +327,7 @@ TEST_CASE("Recorder, One Pipe recoding multiple format, [IIS->ENC->FILE]", "[ESP
         esp_gmf_element_handle_t resp = NULL;
         esp_gmf_pipeline_get_el_by_name(pipe, "rate_cvt", &resp);
         esp_ae_rate_cvt_cfg_t *resp_cfg = (esp_ae_rate_cvt_cfg_t *)OBJ_GET_CFG(resp);
-        resp_cfg->src_rate = I2S_REC_SAMPLE_RATE;
+        resp_cfg->src_rate = SETUP_AUDIO_SAMPLE_RATE;
         if (audio_type == ESP_AUDIO_TYPE_AMRNB) {
             resp_cfg->dest_rate = 8000;
         } else if (audio_type == ESP_AUDIO_TYPE_G711U) {
@@ -342,7 +436,7 @@ TEST_CASE("Record file for playback, multiple files with One Pipe, [FILE->dec->r
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Recorder, One Pipe, [IIS->ENC->HTTP]", "[ESP_GMF_POOL][ignore]")
+TEST_CASE("Recorder, One Pipe, [IIS->ENC->HTTP]", "[ESP_GMF_POOL][ignore][leaks=14000]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PIPELINE", ESP_LOG_DEBUG);
@@ -350,9 +444,9 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->HTTP]", "[ESP_GMF_POOL][ignore]")
     ESP_GMF_MEM_SHOW(TAG);
     esp_gmf_app_wifi_connect();
     esp_gmf_app_codec_info_t codec_info = ESP_GMF_APP_CODEC_INFO_DEFAULT();
-    codec_info.record_info.sample_rate = 16000;
-    codec_info.record_info.channel = 1;
-    codec_info.record_info.bits_per_sample = 16;
+    codec_info.record_info.sample_rate = SETUP_AUDIO_SAMPLE_RATE;
+    codec_info.record_info.channel = SETUP_AUDIO_CHANNELS;
+    codec_info.record_info.bits_per_sample = SETUP_AUDIO_BITS;
     codec_info.play_info.sample_rate = codec_info.record_info.sample_rate;
     esp_gmf_app_setup_codec_dev(&codec_info);
 
@@ -378,9 +472,9 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->HTTP]", "[ESP_GMF_POOL][ignore]")
     uint32_t audio_type = ESP_AUDIO_TYPE_AAC;
     esp_gmf_audio_helper_get_audio_type_by_uri(rec_type, &audio_type);
     esp_gmf_info_sound_t info = {
-        .sample_rates = 16000,
-        .channels = 1,
-        .bits = 16,
+        .sample_rates = SETUP_AUDIO_SAMPLE_RATE,
+        .channels = SETUP_AUDIO_CHANNELS,
+        .bits = SETUP_AUDIO_BITS,
         .bitrate = 90000,
         .format_id = audio_type,
     };
@@ -391,6 +485,7 @@ TEST_CASE("Recorder, One Pipe, [IIS->ENC->HTTP]", "[ESP_GMF_POOL][ignore]")
     esp_gmf_pipeline_get_out(pipe, &http_out);
     http_io_cfg_t *http_cfg = (http_io_cfg_t *)OBJ_GET_CFG(http_out);
     http_cfg->user_data = (void *)rec_type;
+    http_cfg->event_handle = _http_stream_event_handle;
 
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
     cfg.ctx = NULL;
