@@ -709,30 +709,17 @@ TEST_CASE("Audio Play, Two Pipe, [HTTP->dec]--RB-->[resample->IIS]", "[ESP_GMF_P
 +----------------------+
 
 ***/
-
-esp_gmf_port_handle_t out_port1, out_port2;
 esp_gmf_pipeline_handle_t pipe_in1, pipe_in2;
-esp_gmf_db_handle_t db = NULL;
-uint8_t loop_play_times = 0;
 esp_err_t _loop_play_event(esp_gmf_event_pkt_t *event, void *ctx)
 {
     ESP_LOGW(TAG, "CB:Loop Play, Pipeline EVT: %s-%p, type:%d, sub:%s, payload:%p, size:%d,%p",
              OBJ_GET_TAG(event->from), event->from, event->type, esp_gmf_event_get_state_str(event->sub),
              event->payload, event->payload_size, ctx);
     if (event->sub == ESP_GMF_EVENT_STATE_FINISHED) {
-        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_db_reset_done_write(db));
         if (event->from == pipe_in1) {
-            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_port_clean_payload_done(out_port1));
-            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_reset(pipe_in2));
-            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe_in2));
-            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe_in2));
-        } else if (event->from == pipe_in2) {
-            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_port_clean_payload_done(out_port2));
-            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_reset(pipe_in1));
-            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe_in1));
-            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe_in1));
-
-            loop_play_times++;
+            xEventGroupSetBits((EventGroupHandle_t)ctx, PIPELINE_BLOCK_BIT);
+        }  else if (event->from == pipe_in2) {
+            xEventGroupSetBits((EventGroupHandle_t)ctx, PIPELINE_BLOCK_BIT2);
         }
     }
     return 0;
@@ -751,7 +738,8 @@ TEST_CASE("Audio Play, loop with no gap, [file->dec]->rb->[resample+IIS]", "[ESP
 #endif  /* MEDIA_LIB_MEM_TEST */
     EventGroupHandle_t pipe_sync_evt = xEventGroupCreate();
     ESP_GMF_NULL_CHECK(TAG, pipe_sync_evt, return);
-
+    esp_gmf_port_handle_t out_port1, out_port2;
+    esp_gmf_db_handle_t db = NULL;
     esp_gmf_pool_handle_t pool = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pool_init(&pool));
     TEST_ASSERT_NOT_NULL(pool);
@@ -788,13 +776,13 @@ TEST_CASE("Audio Play, loop with no gap, [file->dec]->rb->[resample+IIS]", "[ESP
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task_in1));
     TEST_ASSERT_NOT_NULL(work_task_in1);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_bind_task(pipe_in1, work_task_in1));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe_in1, _loop_play_event, NULL));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe_in1, _loop_play_event, pipe_sync_evt));
 
     esp_gmf_task_handle_t work_task_in2 = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_init(&cfg, &work_task_in2));
     TEST_ASSERT_NOT_NULL(work_task_in2);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_bind_task(pipe_in2, work_task_in2));
-    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe_in2, _loop_play_event, NULL));
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_set_event(pipe_in2, _loop_play_event, pipe_sync_evt));
 
     esp_gmf_audio_element_handle_t el = NULL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_get_el_by_name(pipe_in2, "aud_simp_dec", &el));
@@ -832,12 +820,30 @@ TEST_CASE("Audio Play, loop with no gap, [file->dec]->rb->[resample+IIS]", "[ESP
     ESP_GMF_MEM_SHOW(TAG);
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe_out));
 
-    // Wait to loop play
-    loop_play_times = 0;
-    while (loop_play_times < 2) {
-        vTaskDelay(1000 / portTICK_RATE_MS);
+    int loop_play_times = 0;
+    while (1) {
+        // Wait for pipeline auto stopped event after done then auto start next input pipeline (pipe_in2/pipe_in1)
+        // Loop 2 cycles and quit
+        int bits = xEventGroupWaitBits(pipe_sync_evt, PIPELINE_BLOCK_BIT | PIPELINE_BLOCK_BIT2,
+                                       pdTRUE, pdFALSE, portMAX_DELAY);
+        TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_db_reset_done_write(db));
+        if (bits & PIPELINE_BLOCK_BIT) {
+            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_port_clean_payload_done(out_port1));
+            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_reset(pipe_in2));
+            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe_in2));
+            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe_in2));
+        }
+        if (bits & PIPELINE_BLOCK_BIT2) {
+            loop_play_times++;
+            if (loop_play_times >= 2) {
+                break;
+            }
+            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_port_clean_payload_done(out_port2));
+            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_reset(pipe_in1));
+            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_loading_jobs(pipe_in1));
+            TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(pipe_in1));
+        }
     }
-
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe_in1));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe_in2));
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_stop(pipe_out));

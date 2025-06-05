@@ -89,11 +89,14 @@ static inline esp_gmf_err_t esp_gmf_method_prepare_exec_ctx(const esp_gmf_method
     if (exec_ctx->method == NULL) {
         return ESP_GMF_ERR_NOT_FOUND;
     }
+    exec_ctx->exec_buf = NULL;
     // Allocate for execute buffer
     esp_gmf_args_desc_get_total_size(exec_ctx->method->args_desc, &exec_ctx->buf_size);
-    exec_ctx->exec_buf = esp_gmf_oal_calloc(1, exec_ctx->buf_size);
-    if ( exec_ctx->exec_buf == NULL) {
-        return ESP_GMF_ERR_MEMORY_LACK;
+    if (exec_ctx->buf_size > 0) {
+        exec_ctx->exec_buf = esp_gmf_oal_calloc(1, exec_ctx->buf_size);
+        if (exec_ctx->exec_buf == NULL) {
+            return ESP_GMF_ERR_MEMORY_LACK;
+        }
     }
     return ESP_GMF_ERR_OK;
 }
