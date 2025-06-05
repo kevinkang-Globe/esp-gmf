@@ -187,14 +187,14 @@ static esp_gmf_err_io_t in_acquire(void *handle, esp_gmf_payload_t *load, uint32
     load->buf = video_el_inst.src_pixel;
     load->valid_size = video_el_inst.src_size;
     load->buf_length = load->valid_size;
-    return load->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t in_release(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
 {
     video_el_inst.in_frame_count++;
     vTaskDelay(10 / portTICK_RATE_MS);
-    return 0;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t overlay_acquire(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
@@ -203,12 +203,12 @@ static esp_gmf_err_io_t overlay_acquire(void *handle, esp_gmf_payload_t *load, u
     load->buf = video_el_inst.overlay_data;
     load->valid_size = video_el_inst.overlay_size;
     load->buf_length = video_el_inst.overlay_size;
-    return load->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t overlay_release(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
 {
-    return 0;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t out_acquire(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
@@ -229,7 +229,7 @@ static esp_gmf_err_io_t out_acquire(void *handle, esp_gmf_payload_t *load, uint3
         load->buf = video_el_inst.out_pixel;
         load->buf_length = video_el_inst.out_max_size;
     }
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t out_release(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
@@ -242,7 +242,7 @@ static esp_gmf_err_io_t out_release(void *handle, esp_gmf_payload_t *load, uint3
     if (video_el_inst.no_need_free == false) {
         load->buf = NULL;
     }
-    return 0;
+    return ESP_GMF_IO_OK;
 }
 
 static int prepare_pool(convert_res_t *res)

@@ -7,6 +7,7 @@
 - Added `esp_gmf_afe_set_event_cb` API to register AFE element event callbacks
 - Replaced the interface for decoder reconfiguration
 - Introduced `esp_gmf_wn` element to support wake word detection
+- Corrected return value validation for *acq_write and *acq_release callback function implementations
 
 ### Bug Fixes
 

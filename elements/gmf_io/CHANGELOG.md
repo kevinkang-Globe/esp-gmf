@@ -11,6 +11,8 @@
 ### Bug Fixes
 - Fixed an issue where HTTP IO did not reset the thread and databus properly
 - Fixed file open check for treat return error as valid fd
+- Corrected return value validation for *acq_write/read and *acq_release_write/read callback function implementations
+- Fixed HTTP connection timeout handling during _http_close operations
 
 ## v0.6.3
 

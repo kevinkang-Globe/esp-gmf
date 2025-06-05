@@ -18,6 +18,7 @@
 - Fixed pause timeout caused by missing sync event when pause producer entered an error state
 - Fixed a thread safety issue with the gmf_task `running` flag
 - Fixed parameter type mismatch in memory transfer operations to ensure data integrity
+- Corrected return value validation for *acq_write/read and *acq_release_write/read callback function which in esp_gmf_ring_buffer.c
 
 ## v0.6.1
 

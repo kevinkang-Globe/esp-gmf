@@ -47,7 +47,7 @@ static esp_gmf_err_io_t _codec_dev_acquire_read(esp_gmf_io_handle_t handle, void
         return ESP_GMF_IO_FAIL;
     }
     pload->valid_size = wanted_size;
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t _codec_dev_release_read(esp_gmf_io_handle_t handle, void *payload, int block_ticks)

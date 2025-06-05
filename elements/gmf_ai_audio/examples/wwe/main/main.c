@@ -212,17 +212,17 @@ static void voice_2_file(uint8_t *buffer, int len)
 #endif  /* VOICE2FILE == true */
 }
 
-static int outport_acquire_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t outport_acquire_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
 {
     ESP_LOGD(TAG, "Acquire write");
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
-static int outport_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
+static esp_gmf_err_io_t outport_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
     ESP_LOGD(TAG, "Release write");
     voice_2_file(load->buf, load->valid_size);
-    return load->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 void app_main(void)

@@ -103,48 +103,45 @@ static void queue_sender_task(void *pvParameters)
     }
 }
 
-static int ae_acquire_read(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t ae_acquire_read(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
 {
     ae_data_hd_t *ctx = (ae_data_hd_t *)handle;
     if (ctx == NULL || blk == NULL) {
-        return ESP_FAIL;
+        return ESP_GMF_IO_FAIL;
     }
     queue_data_t data;
     if (xQueueReceive(ctx->queue1, &data, block_ticks) != pdTRUE) {
-        return ESP_FAIL;
+        return ESP_GMF_IO_FAIL;
     }
     int valid_size = data.buf_len > blk->buf_length ? blk->buf_length : data.buf_len;
     memcpy(blk->buf, data.buf, valid_size);
     blk->valid_size = valid_size;
-    return valid_size;
+    return ESP_GMF_IO_OK;
 }
 
-static int ae_release_read(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
+static esp_gmf_err_io_t ae_release_read(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
 {
     ae_data_hd_t *ctx = (ae_data_hd_t *)handle;
     if (ctx == NULL || blk == NULL) {
-        return ESP_FAIL;
+        return ESP_GMF_IO_FAIL;
     }
     int release_cnt = 1;
     if (xQueueSend(ctx->queue2, &release_cnt, block_ticks) != pdTRUE) {
-        return ESP_FAIL;
+        return ESP_GMF_IO_FAIL;
     }
     blk->valid_size = 0;
-    return ESP_OK;
+    return ESP_GMF_IO_OK;
 }
 
-static int ae_acquire_write(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t ae_acquire_write(void *handle, esp_gmf_data_bus_block_t *blk, int wanted_size, int block_ticks)
 {
-    if (blk->buf) {
-        return wanted_size;
-    }
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
-static int ae_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
+static esp_gmf_err_io_t ae_release_write(void *handle, esp_gmf_data_bus_block_t *blk, int block_ticks)
 {
     ESP_LOGD(TAG, "%s-%d,file_release_write, %d,%p", __func__, __LINE__, blk->valid_size, blk);
-    return blk->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 static int prepare_encoder_pipeline(esp_gmf_pool_handle_t pool, esp_gmf_info_sound_t *snd_info, encoder_res_t *res, QueueHandle_t queue1, QueueHandle_t queue2)

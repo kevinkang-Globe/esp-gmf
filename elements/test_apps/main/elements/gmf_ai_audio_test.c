@@ -180,21 +180,21 @@ static esp_gmf_err_io_t aec_acquire_read(void *handle, esp_gmf_payload_t *load, 
     return ret;
 }
 
-static int aec_release_read(void *handle, esp_gmf_payload_t *load, int block_ticks)
+static esp_gmf_err_io_t aec_release_read(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
     load->valid_size = 0;
-    return ESP_OK;
+    return ESP_GMF_IO_OK;
 }
 
-static int aec_acquire_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t aec_acquire_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
 {
     if (load->buf == NULL) {
         return ESP_FAIL;
     }
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
-static int aec_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
+static esp_gmf_err_io_t aec_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
     uint8_t *dest = (uint8_t *)handle;
 #ifdef CONFIG_IDF_TARGET_ESP32S3
@@ -366,21 +366,21 @@ static esp_gmf_err_io_t afe_acquire_read(void *handle, esp_gmf_payload_t *load, 
         load->valid_size = 0;
         load->is_done = true;
     }
-    return 0;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t afe_release_read(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
     load->valid_size = 0;
-    return ESP_OK;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t afe_acquire_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
 {
     if (load->buf == NULL) {
-        return ESP_FAIL;
+        return ESP_GMF_ERR_FAIL;
     }
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t afe_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
@@ -527,20 +527,20 @@ static esp_gmf_err_io_t wn_acquire_read(void *handle, esp_gmf_payload_t *load, i
 static esp_gmf_err_io_t wn_release_read(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
     load->valid_size = 0;
-    return ESP_OK;
+    return ESP_GMF_ERR_OK;
 }
 
 static esp_gmf_err_io_t wn_acquire_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
 {
     if (load->buf == NULL) {
-        return ESP_FAIL;
+        return ESP_GMF_ERR_FAIL;
     }
-    return wanted_size;
+    return ESP_GMF_ERR_OK;
 }
 
 static esp_gmf_err_io_t wn_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
-    return ESP_GMF_IO_OK;
+    return ESP_GMF_ERR_OK;
 }
 
 static void esp_gmf_wn_event_cb(esp_gmf_obj_handle_t obj, int32_t trigger_ch, void *user_ctx)

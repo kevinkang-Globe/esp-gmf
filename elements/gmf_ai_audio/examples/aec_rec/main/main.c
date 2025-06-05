@@ -76,12 +76,12 @@ static esp_err_t _pipeline_event(esp_gmf_event_pkt_t *event, void *ctx)
     return ESP_OK;
 }
 
-static int pcm_buf_acq_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t pcm_buf_acq_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
 {
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
-static int pcm_buf_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
+static esp_gmf_err_io_t pcm_buf_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
     if (load == NULL) {
         return ESP_GMF_IO_FAIL;

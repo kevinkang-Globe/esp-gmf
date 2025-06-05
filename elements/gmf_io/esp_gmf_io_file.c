@@ -110,7 +110,7 @@ static esp_gmf_err_io_t _file_acquire_read(esp_gmf_io_handle_t handle, void *pay
     ESP_LOGD(TAG, "Read len: %d-%ld", rlen, wanted_size);
     if (rlen == -1) {
         ESP_LOGE(TAG, "The error is happened in reading data, error msg: %s", strerror(errno));
-        return rlen;
+        return ESP_GMF_IO_FAIL;
     }
     pload->valid_size = rlen;
     if (rlen < wanted_size) {
@@ -118,11 +118,11 @@ static esp_gmf_err_io_t _file_acquire_read(esp_gmf_io_handle_t handle, void *pay
         if (rlen == 0) {
             pload->is_done = true;
             ESP_LOGI(TAG, "No more data, ret: %d", rlen);
-            return rlen;
+            return ESP_GMF_IO_OK;
         }
         pload->valid_size += rlen;
     }
-    return rlen;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t _file_release_read(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
@@ -138,7 +138,7 @@ static esp_gmf_err_io_t _file_release_read(esp_gmf_io_handle_t handle, void *pay
 
 static esp_gmf_err_io_t _file_acquire_write(esp_gmf_io_handle_t handle, void *payload, uint32_t wanted_size, int block_ticks)
 {
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t _file_release_write(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
@@ -156,8 +156,9 @@ static esp_gmf_err_io_t _file_release_write(esp_gmf_io_handle_t handle, void *pa
     }
     if (wlen == -1) {
         ESP_LOGE(TAG, "The error is happened in writing data, error msg:%s", strerror(errno));
+        return ESP_GMF_IO_FAIL;
     }
-    return wlen > 0 ? ESP_GMF_IO_OK : wlen;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_t _file_seek(esp_gmf_io_handle_t io, uint64_t seek_byte_pos)
