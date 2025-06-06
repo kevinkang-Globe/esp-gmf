@@ -1,0 +1,77 @@
+.target_ut_test_template:
+  image: "$CI_DOCKER_REGISTRY/target-test-env-v5.4:1"
+  stage: target_test
+  interruptible: true
+  timeout: 2 hour
+  cache:
+    # Usually do not need submodule-cache in target_test
+    - key: pip-cache
+      paths:
+        - .cache/pip
+      policy: pull
+
+.pytest_ut_template:
+  extends:
+    - .target_ut_test_template
+  artifacts:
+    when: always
+    paths:
+      - XUNIT_RESULT.xml
+      - pytest-embedded/
+    reports:
+      junit: XUNIT_RESULT.xml
+    expire_in: 1 week
+  variables:
+    IDF_VERSION_TAG: v5.4
+    IDF_TAG_FLAG: true
+  before_script:
+    - source ${CI_PROJECT_DIR}/tools/ci/utils.sh
+    - check_idf_version $IDF_VERSION_TAG
+    - export PYTHONPATH="$IDF_PATH/tools:$IDF_PATH/tools/ci/python_packages:$PYTHONPATH"
+    - export PYTHONPATH="$CI_PROJECT_DIR/tools:$PYTHONPATH"
+  script:
+    - cd $CI_PROJECT_DIR
+    - pip install pytest pytest-embedded-idf pytest-embedded-serial-esp pytest-rerunfailures pytest-timeout
+    - pytest $TEST_DIR
+      --target ${IDF_TARGET}
+      --junitxml=XUNIT_RESULT.xml
+      --parallel-count ${CI_NODE_TOTAL:-1}
+      --parallel-index ${CI_NODE_INDEX:-1}
+      ${PYTEST_EXTRA_FLAGS}
+
+.pytest_components_dir_template:
+  extends:
+    - .rules:build:enable-gmf-unit-test
+    - .pytest_ut_template
+  variables:
+    TEST_DIR: ${CI_PROJECT_DIR}/gmf_core
+    BUILD_JOB_PREFIX: build_pytest_components_
+    IDF_TARGET: esp32s3
+  retry: 2
+
+ut_gmf_core_esp32s3:
+  extends:
+    - .pytest_components_dir_template
+  needs:
+    - 'build_ut_gmf_core_esp32s3: [v5.4, 1/1]'
+  variables:
+    TEST_DIR: ${CI_PROJECT_DIR}/gmf_core
+  tags: [ ESP32S3, ESP_GMF_COMPONENT ]
+
+ut_gmf_elements_esp32s3:
+  extends:
+    - .pytest_components_dir_template
+  needs:
+    - 'build_ut_gmf_elements_esp32s3: [v5.4, 1/1]'
+  variables:
+    TEST_DIR: ${CI_PROJECT_DIR}/elements
+  tags: [ ESP32S3, ESP_GMF_COMPONENT ]
+
+ut_gmf_packages_esp32s3:
+  extends:
+    - .pytest_components_dir_template
+  needs:
+    - 'build_ut_gmf_packages_esp32s3: [v5.4, 1/1]'
+  variables:
+    TEST_DIR: ${CI_PROJECT_DIR}/packages
+  tags: [ ESP32S3, ESP_GMF_COMPONENT ]

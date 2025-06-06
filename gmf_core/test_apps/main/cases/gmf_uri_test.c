@@ -1,13 +1,14 @@
 /*
- * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2025 Espressif Systems (Shanghai) CO., LTD
  *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
+ * SPDX-License-Identifier: Apache-2.0
  */
+
 #include <stdio.h>
 #include "unity.h"
 #include "esp_gmf_uri_parser.h"
 
-TEST_CASE("URI, Parser test", "ESP_GMF_URI")
+TEST_CASE("URI, Parser test", "[ESP_GMF_URI]")
 {
     esp_gmf_uri_t *uri = NULL;
 

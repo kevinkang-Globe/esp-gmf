@@ -19,15 +19,6 @@ This example supports IDF release/v5.3 and later branches.
 
 This example requires a microSD card, with the user’s audio file renamed to `test` and stored on the card. The default format used in the example is MP3. Users can change the audio file to be played by calling the function `esp_gmf_pipeline_set_in_uri`.
 
-This example supports the ESP32-LyraT-Mini, ESP32s3_Korvo_2, ESP32p4_Function_EV_Board boards. Other boards support need to modify the following content in the [ system_common ](../../system_common):
-
-| Configuration | Related Files |  Related Functions   |
-|:----:| :-----: | :---- |
-|I2S Port and I2S Format| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `setup_periph_create_i2s` |
-|I2C Port| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `esp_gmf_setup_periph_i2c` |
-|Codec Type and Format|`esp_gmf_setup_peripheral.c` |`setup_periph_new_play_codec`  |
-|PA Port| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `setup_periph_new_play_codec` |
-|Sdmmc Port| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `esp_gmf_setup_periph_sdmmc` |
 
 ### Build and Flash
 
@@ -50,6 +41,12 @@ cd $YOUR_GMF_PATH/gmf_examples/basic_examples/pipeline_play_sdcard_music
 
 ```
 idf.py set-target esp32s3
+```
+- Select the compilation board, taking esp32 s3 Korvo V2 as an example:
+
+```
+idf.py menuconfig
+In 'menuconfig', select 'GMF APP Configuration' -> 'Audio Board' -> 'ESP32-S3-Korvo V2', and then save and exit
 ```
 
 - Build the Example

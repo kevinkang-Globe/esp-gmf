@@ -85,9 +85,9 @@ typedef struct {
     esp_gmf_afe_manager_task_setting_t feed_task_setting;   /*!< Feed task setting */
     esp_gmf_afe_manager_task_setting_t fetch_task_setting;  /*!< Fetch task setting */
     esp_gmf_afe_manager_read_cb_t      read_cb;             /*!< Callback function for reading audio data */
-    void                          *read_ctx;            /*!< Context for the read callback function */
+    void                              *read_ctx;            /*!< Context for the read callback function */
     esp_gmf_afe_manager_result_cb_t    result_cb;           /*!< Callback function for processing AFE results */
-    void                          *result_ctx;          /*!< Context for the result callback function */
+    void                              *result_ctx;          /*!< Context for the result callback function */
 } esp_gmf_afe_manager_cfg_t;
 
 #define DEFAULT_GMF_AFE_MANAGER_CFG(_afe_cfg, _read_cb, _read_ctx, _result_cb, _result_ctx) {   \

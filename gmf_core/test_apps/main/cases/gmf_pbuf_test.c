@@ -226,7 +226,7 @@ wr_task_err:
     vTaskDelete(NULL);
 }
 
-TEST_CASE("One task for read write test", "ESP_GMF_PBUF")
+TEST_CASE("One task for read write test", "[ESP_GMF_PBUF]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PBUF", ESP_LOG_INFO);
@@ -258,7 +258,7 @@ TEST_CASE("One task for read write test", "ESP_GMF_PBUF")
     ESP_LOGE(TAG, "%s,%d", __func__, __LINE__);
 }
 
-TEST_CASE("One task for multiple read write test", "ESP_GMF_PBUF")
+TEST_CASE("One task for multiple read write test", "[ESP_GMF_PBUF]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PBUF", ESP_LOG_INFO);
@@ -290,7 +290,7 @@ TEST_CASE("One task for multiple read write test", "ESP_GMF_PBUF")
     ESP_LOGE(TAG, "%s,%d", __func__, __LINE__);
 }
 
-TEST_CASE("Read task and write task thread safe test", "ESP_GMF_PBUF")
+TEST_CASE("Read task and write task thread safe test", "[ESP_GMF_PBUF]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_PBUF", ESP_LOG_INFO);

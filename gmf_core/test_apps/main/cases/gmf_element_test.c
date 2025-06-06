@@ -27,7 +27,7 @@ esp_err_t element_event(esp_gmf_event_pkt_t *event, void *ctx)
     return ESP_OK;
 }
 
-TEST_CASE("Register and unregister port for GMF ELEMENT", "ESP_GMF_ELEMENT")
+TEST_CASE("Register and unregister port for GMF ELEMENT", "[ESP_GMF_ELEMENT]")
 {
     esp_log_level_set("*", ESP_LOG_DEBUG);
     esp_log_level_set("ESP_GMF_ELEMENT", ESP_LOG_VERBOSE);

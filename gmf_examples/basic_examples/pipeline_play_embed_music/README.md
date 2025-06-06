@@ -25,17 +25,6 @@ This example provides two test files, `ff-16b-1c-44100hz.mp3` and `alarm.mp3`, l
 python $YOUR_GMF_PATH/elements/gmf_io/mk_flash_embed_tone.py -p $YOUR_GMF_PATH/gmf_examples/basic_examples/pipeline_play_embed_music/main
 ```
 
-### Configuration
-
-This example supports the ESP32-LyraT-Mini, ESP32c3-Lyra, ESP32s3_Korvo_2, ESP32p4_Function_EV_Board boards. Other boards support need to modify the following content in the [ system_common ](../../system_common):
-
-| Configuration | Related Files |  Related Functions   |
-|:----:| :-----: | :---- |
-|I2S Port and I2S Format| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `setup_periph_create_i2s` |
-|I2C Port| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `esp_gmf_setup_periph_i2c` |
-|Codec Type and Format|`esp_gmf_setup_peripheral.c` |`setup_periph_new_play_codec`  |
-|PA Port| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `setup_periph_new_play_codec` |
-
 ### Build and Flash
 
 Before compiling this example, ensure that the ESP-IDF environment is properly configured. If it is already set up, you can proceed to the next configuration step. If not, run the following script in the root directory of ESP-IDF to set up the build environment. For detailed steps on configuring and using ESP-IDF, please refer to the [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/index.html)
@@ -57,6 +46,12 @@ cd $YOUR_GMF_PATH/gmf_examples/basic_examples/pipeline_play_embed_music
 
 ```
 idf.py set-target esp32s3
+```
+- Select the compilation board, taking ESP32-S3-Korvo V2 as an example:
+
+```
+idf.py menuconfig
+In 'menuconfig', select 'GMF APP Configuration' -> 'Audio Board' -> 'ESP32-S3-Korvo V2', and then save and exit
 ```
 
 - Build the Example

@@ -12,18 +12,24 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif  /* __cplusplus */
+#endif /* __cplusplus */
+
+/**
+ * @brief  The meta flag for the current payload
+ */
+#define ESP_GMF_META_FLAG_AUD_RECOVERY_PLC  (1 << 0) /*!< The current frame is recovered through the packet loss concealment (PLC) mechanism */
 
 /**
  * @brief  Structure representing a payload in GMF
  */
 typedef struct {
-    uint8_t  *buf;             /*!< Pointer to the payload buffer */
-    size_t    buf_length;      /*!< Length of the payload buffer */
-    size_t    valid_size;      /*!< Size of valid data in the payload buffer */
-    bool      is_done;         /*!< Flag indicating if this payload buffer marks the end of the stream */
-    uint64_t  pts;             /*!< Presentation time stamp */
-    uint8_t   needs_free : 1;  /*!< Flag indicating if the payload buffer needs to be freed by esp_gmf_payload_delete or not*/
+    uint8_t *buf;               /*!< Pointer to the payload buffer */
+    size_t   buf_length;        /*!< Length of the payload buffer */
+    size_t   valid_size;        /*!< Size of valid data in the payload buffer */
+    bool     is_done;           /*!< Flag indicating if this payload buffer marks the end of the stream */
+    uint64_t pts;               /*!< Presentation time stamp */
+    uint8_t  needs_free : 1;    /*!< Flag indicating if the payload buffer needs to be freed by esp_gmf_payload_delete or not*/
+    uint8_t  meta_flag : 7;     /*!< Meta flag for the payload */
 } esp_gmf_payload_t;
 
 /**
@@ -124,4 +130,4 @@ void esp_gmf_payload_delete(esp_gmf_payload_t *instance);
 
 #ifdef __cplusplus
 }
-#endif  /* __cplusplus */
+#endif /* __cplusplus */

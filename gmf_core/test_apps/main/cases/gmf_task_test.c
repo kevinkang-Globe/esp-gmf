@@ -136,7 +136,7 @@ static esp_gmf_err_t esp_gmf_task_evt(esp_gmf_event_pkt_t *evt, void *ctx)
     return ESP_GMF_ERR_OK;
 }
 
-TEST_CASE("Working to done with manual register cleanup", "ESP_GMF_TASK")
+TEST_CASE("Working to done with manual register cleanup", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     clear_test_gmf_task_count();
@@ -191,7 +191,7 @@ TEST_CASE("Working to done with manual register cleanup", "ESP_GMF_TASK")
     TEST_ASSERT_NOT_EQUAL(0, test_gmf_task3_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
     if ((test_gmf_task1_count.working == test_gmf_task2_count.working) && test_gmf_task1_count.working == test_gmf_task3_count.working) {
         // OK
         TEST_ASSERT_TRUE(true);
@@ -200,7 +200,7 @@ TEST_CASE("Working to done with manual register cleanup", "ESP_GMF_TASK")
     }
 }
 
-TEST_CASE("Working to done with auto register cleanup", "ESP_GMF_TASK")
+TEST_CASE("Working to done with auto register cleanup", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
 
@@ -254,20 +254,20 @@ TEST_CASE("Working to done with auto register cleanup", "ESP_GMF_TASK")
     TEST_ASSERT_NOT_EQUAL(0, test_gmf_task4_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
 }
 
-TEST_CASE("Working with CONTINUE", "ESP_GMF_TASK")
+TEST_CASE("Working with CONTINUE", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
 
-/* Test following cases:
-*  1. A->B->C->D
-*  2. A->B->C
-*  3. A->B
-*  4. A->B->C->D
-*  5. To Done
-*/
+    /* Test following cases:
+     *  1. A->B->C->D
+     *  2. A->B->C
+     *  3. A->B
+     *  4. A->B->C->D
+     *  5. To Done
+     */
     clear_test_gmf_task_count();
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
     cfg.ctx = NULL;
@@ -327,7 +327,7 @@ TEST_CASE("Working with CONTINUE", "ESP_GMF_TASK")
     TEST_ASSERT_NOT_EQUAL(0, test_gmf_task4_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
     if ((test_gmf_task1_count.working >= test_gmf_task2_count.working)
         && (test_gmf_task2_count.working > test_gmf_task3_count.working)
         && (test_gmf_task3_count.working > test_gmf_task4_count.working)) {
@@ -338,17 +338,17 @@ TEST_CASE("Working with CONTINUE", "ESP_GMF_TASK")
     }
 }
 
-TEST_CASE("Working with TRUNCATE", "ESP_GMF_TASK")
+TEST_CASE("Working with TRUNCATE", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
 
-/* Test following cases:
-*  1. A->B->C->D
-*  2. B->C->D
-*  3. C->D
-*  4. A->B->C->D
-*  5. To Done
-*/
+    /* Test following cases:
+     *  1. A->B->C->D
+     *  2. B->C->D
+     *  3. C->D
+     *  4. A->B->C->D
+     *  5. To Done
+     */
     clear_test_gmf_task_count();
 
     esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
@@ -409,7 +409,7 @@ TEST_CASE("Working with TRUNCATE", "ESP_GMF_TASK")
     TEST_ASSERT_NOT_EQUAL(0, test_gmf_task4_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
     if ((test_gmf_task1_count.working < test_gmf_task2_count.working)
         && (test_gmf_task2_count.working < test_gmf_task3_count.working)
         && (test_gmf_task3_count.working <= test_gmf_task4_count.working)) {
@@ -422,7 +422,7 @@ TEST_CASE("Working with TRUNCATE", "ESP_GMF_TASK")
 }
 
 
-TEST_CASE("Stopped by stop API", "ESP_GMF_TASK")
+TEST_CASE("Stopped by stop API", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     clear_test_gmf_task_count();
@@ -475,7 +475,7 @@ TEST_CASE("Stopped by stop API", "ESP_GMF_TASK")
     TEST_ASSERT_NOT_EQUAL(0, test_gmf_task4_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
     // if ((test_gmf_task1_count.working == test_gmf_task2_count.working)
     //     && (test_gmf_task2_count.working > test_gmf_task3_count.working)
     //     && (test_gmf_task3_count.working >= test_gmf_task4_count.working)) {
@@ -486,7 +486,7 @@ TEST_CASE("Stopped by stop API", "ESP_GMF_TASK")
     // }
 }
 
-TEST_CASE("Return error on the PREPARE stage", "ESP_GMF_TASK")
+TEST_CASE("Return error on the PREPARE stage", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
 
@@ -540,11 +540,11 @@ TEST_CASE("Return error on the PREPARE stage", "ESP_GMF_TASK")
     TEST_ASSERT_EQUAL(0, test_gmf_task4_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Return error on the WORKING stage", "ESP_GMF_TASK")
+TEST_CASE("Return error on the WORKING stage", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_TASK", ESP_LOG_DEBUG);
@@ -598,12 +598,12 @@ TEST_CASE("Return error on the WORKING stage", "ESP_GMF_TASK")
     TEST_ASSERT_EQUAL(0, test_gmf_task4_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
 
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Return error on the CLEANUP stage", "ESP_GMF_TASK")
+TEST_CASE("Return error on the CLEANUP stage", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
 
@@ -638,6 +638,12 @@ TEST_CASE("Return error on the CLEANUP stage", "ESP_GMF_TASK")
     vTaskDelay(200 / portTICK_PERIOD_MS);
 
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_stop(hd));
+
+    // Make sure enter error state
+    esp_gmf_event_state_t state = ESP_GMF_EVENT_STATE_NONE;
+    esp_gmf_task_get_state(hd, &state);
+    TEST_ASSERT_EQUAL(ESP_GMF_EVENT_STATE_ERROR, state);
+
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(hd));
 
     TEST_ASSERT_EQUAL(1, test_gmf_task1_count.cleanup);
@@ -656,7 +662,7 @@ TEST_CASE("Return error on the CLEANUP stage", "ESP_GMF_TASK")
     TEST_ASSERT_NOT_EQUAL(0, test_gmf_task4_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
     if ((test_gmf_task1_count.working > test_gmf_task2_count.working)
         && (test_gmf_task2_count.working == test_gmf_task3_count.working)
         && (test_gmf_task3_count.working == test_gmf_task4_count.working)) {
@@ -669,7 +675,80 @@ TEST_CASE("Return error on the CLEANUP stage", "ESP_GMF_TASK")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Return error after call STOP", "ESP_GMF_TASK")
+TEST_CASE("Finished state return error on the CLEANUP", "[ESP_GMF_TASK]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+
+    clear_test_gmf_task_count();
+    esp_gmf_task_cfg_t cfg = DEFAULT_ESP_GMF_TASK_CONFIG();
+    cfg.ctx = NULL;
+    cfg.cb = NULL;
+    esp_gmf_task_handle_t hd = NULL;
+
+    esp_gmf_task_init(&cfg, &hd);
+    esp_gmf_task_set_event_func(hd, esp_gmf_task_evt, NULL);
+
+    esp_gmf_task_register_ready_job(hd, NULL, prepare1, ESP_GMF_JOB_TIMES_ONCE, NULL, false);
+    esp_gmf_task_register_ready_job(hd, NULL, prepare2, ESP_GMF_JOB_TIMES_ONCE, NULL, false);
+    esp_gmf_task_register_ready_job(hd, NULL, prepare3, ESP_GMF_JOB_TIMES_ONCE, NULL, false);
+    esp_gmf_task_register_ready_job(hd, NULL, prepare4, ESP_GMF_JOB_TIMES_ONCE, NULL, false);
+
+    esp_gmf_task_register_ready_job(hd, NULL, working1, ESP_GMF_JOB_TIMES_INFINITE, NULL, false);
+    esp_gmf_task_register_ready_job(hd, NULL, working2, ESP_GMF_JOB_TIMES_INFINITE, NULL, false);
+    esp_gmf_task_register_ready_job(hd, NULL, working3, ESP_GMF_JOB_TIMES_INFINITE, NULL, false);
+    esp_gmf_task_register_ready_job(hd, NULL, working4, ESP_GMF_JOB_TIMES_INFINITE, NULL, false);
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_run(hd));
+    // Let all job to be finished
+    test_gmf_task1_count.working_return = ESP_GMF_JOB_ERR_DONE;
+    test_gmf_task2_count.working_return = ESP_GMF_JOB_ERR_DONE;
+    test_gmf_task3_count.working_return = ESP_GMF_JOB_ERR_DONE;
+    test_gmf_task4_count.working_return = ESP_GMF_JOB_ERR_DONE;
+    test_gmf_task2_count.cleanup_return = ESP_GMF_JOB_ERR_FAIL;
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_pause(hd));
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    // When resume for finished return not supported
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_NOT_SUPPORT, esp_gmf_task_resume(hd));
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_stop(hd));
+    // Even stopped we keep the state to be error
+    esp_gmf_event_state_t state = ESP_GMF_EVENT_STATE_NONE;
+    esp_gmf_task_get_state(hd, &state);
+    TEST_ASSERT_EQUAL(ESP_GMF_EVENT_STATE_ERROR, state);
+
+    TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(hd));
+
+    TEST_ASSERT_EQUAL(1, test_gmf_task1_count.cleanup);
+    TEST_ASSERT_EQUAL(1, test_gmf_task2_count.cleanup);
+    TEST_ASSERT_EQUAL(1, test_gmf_task3_count.cleanup);
+    TEST_ASSERT_EQUAL(1, test_gmf_task4_count.cleanup);
+
+    TEST_ASSERT_EQUAL(1, test_gmf_task1_count.prepare);
+    TEST_ASSERT_EQUAL(1, test_gmf_task2_count.prepare);
+    TEST_ASSERT_EQUAL(1, test_gmf_task3_count.prepare);
+    TEST_ASSERT_EQUAL(1, test_gmf_task4_count.prepare);
+
+    TEST_ASSERT_NOT_EQUAL(0, test_gmf_task1_count.working);
+    TEST_ASSERT_NOT_EQUAL(0, test_gmf_task2_count.working);
+    TEST_ASSERT_NOT_EQUAL(0, test_gmf_task3_count.working);
+    TEST_ASSERT_NOT_EQUAL(0, test_gmf_task4_count.working);
+
+    ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+    if ((test_gmf_task1_count.working == test_gmf_task2_count.working) && test_gmf_task1_count.working == test_gmf_task3_count.working) {
+        // OK
+        TEST_ASSERT_TRUE(true);
+    } else {
+        TEST_ASSERT_FALSE(true);
+    }
+
+    ESP_GMF_MEM_SHOW(TAG);
+}
+
+TEST_CASE("Return error after call STOP", "[ESP_GMF_TASK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_TASK", ESP_LOG_DEBUG);
@@ -704,6 +783,10 @@ TEST_CASE("Return error after call STOP", "ESP_GMF_TASK")
     test_gmf_task2_count.cleanup_return = ESP_GMF_JOB_ERR_FAIL;
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_stop(hd));
 
+    esp_gmf_event_state_t state = ESP_GMF_EVENT_STATE_NONE;
+    esp_gmf_task_get_state(hd, &state);
+    TEST_ASSERT_EQUAL(ESP_GMF_EVENT_STATE_ERROR, state);
+
     TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_task_deinit(hd));
 
     TEST_ASSERT_EQUAL(1, test_gmf_task1_count.cleanup);
@@ -722,7 +805,7 @@ TEST_CASE("Return error after call STOP", "ESP_GMF_TASK")
     TEST_ASSERT_NOT_EQUAL(0, test_gmf_task4_count.working);
 
     ESP_LOGI(TAG, "task1: %d, task2: %d, task3: %d, task4: %d", test_gmf_task1_count.working,
-        test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
+            test_gmf_task2_count.working, test_gmf_task3_count.working, test_gmf_task4_count.working);
     // if ((test_gmf_task1_count.working > test_gmf_task2_count.working)
     //     && (test_gmf_task2_count.working > test_gmf_task3_count.working)
     //     && (test_gmf_task3_count.working >= test_gmf_task4_count.working)) {

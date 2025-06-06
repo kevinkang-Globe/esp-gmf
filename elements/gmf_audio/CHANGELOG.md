@@ -1,5 +1,26 @@
 # Changelog
 
+## *Unreleased*
+
+### Features
+
+- Updated `esp_audio_codec` to version v2.3.0
+- Updated `esp_audio_effects` to version v1.1.0
+- Added `esp_gmf_audio_enc_get_frame_size`, `esp_gmf_audio_enc_set_bitrate`, `esp_gmf_audio_enc_get_bitrate`, `esp_gmf_audio_enc_reconfig` and `esp_gmf_audio_enc_reconfig_by_sound_info` functions to `gmf_audio_enc`
+- Added `SBC` and `LC3` encoders
+- Added `esp_gmf_audio_dec_reconfig` and `esp_gmf_audio_dec_reconfig_by_sound_info` functions to `gmf_audio_dec`
+- Added `SBC` and `LC3` decoders
+- Added `meta_flag` in `gmf_audio_dec` to support audio decoder recovery status tracking
+- Added common audio parameter setting interface
+- Redefined audio methods name
+- Removed the audio encoder and decoder reconfig interface in `esp_gmf_audio_helper.c`
+- Used the `esp_gmf_element_handle_t` type handle in the `gmf_audio` module
+
+### Bug Fixes
+
+- Fixed `gmf_audio_enc` process blocked due to forget release of in_load when truncate is returned
+- Fixed parameter mismatch in `audio_dec_reconfig_dec_by_sound_info`
+
 ## v0.6.3
 
 ### Bug Fixes

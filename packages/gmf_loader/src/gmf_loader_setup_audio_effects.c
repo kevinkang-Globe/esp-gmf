@@ -38,12 +38,55 @@ static esp_gmf_err_t gmf_loader_setup_default_alc(esp_gmf_pool_handle_t pool)
 #endif  /* CONFIG_GMF_AUDIO_EFFECT_INIT_ALC */
 
 #ifdef CONFIG_GMF_AUDIO_EFFECT_INIT_EQ
+#define EQ_FILTER_ENTRY(i) {                                     \
+    .filter_type = CONFIG_GMF_EQ_FILTER##i##_TYPE,               \
+    .fc = CONFIG_GMF_EQ_FILTER##i##_FC,                          \
+    .q = (float)(CONFIG_GMF_EQ_FILTER##i##_QX1000) / 1000.0f,    \
+    .gain = (float)(CONFIG_GMF_EQ_FILTER##i##_GAINX10) / 10.0f,  \
+}
+
 static esp_gmf_err_t gmf_loader_setup_default_eq(esp_gmf_pool_handle_t pool)
 {
     ESP_GMF_NULL_CHECK(TAG, pool, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     esp_gmf_element_handle_t hd = NULL;
     esp_ae_eq_cfg_t eq_cfg = DEFAULT_ESP_GMF_EQ_CONFIG();
+#if CONFIG_GMF_EQ_FILTER_NUM > 0
+    static const esp_ae_eq_filter_para_t para[] = {
+#if CONFIG_GMF_EQ_FILTER_NUM >= 1
+        EQ_FILTER_ENTRY(1),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 1 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 2
+        EQ_FILTER_ENTRY(2),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 2 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 3
+        EQ_FILTER_ENTRY(3),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 3 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 4
+        EQ_FILTER_ENTRY(4),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 4 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 5
+        EQ_FILTER_ENTRY(5),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 5 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 6
+        EQ_FILTER_ENTRY(6),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 6 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 7
+        EQ_FILTER_ENTRY(7),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 7 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 8
+        EQ_FILTER_ENTRY(8),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 8 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 9
+        EQ_FILTER_ENTRY(9),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 9 */
+#if CONFIG_GMF_EQ_FILTER_NUM >= 10
+        EQ_FILTER_ENTRY(10),
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM >= 10 */
+    };
+    eq_cfg.filter_num = CONFIG_GMF_EQ_FILTER_NUM;
+    eq_cfg.para = para;
+#endif  /* CONFIG_GMF_EQ_FILTER_NUM > 0 */
     ret = esp_gmf_eq_init(&eq_cfg, &hd);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to init audio EQ");
     ret = esp_gmf_pool_register_element(pool, hd, NULL);
@@ -109,6 +152,12 @@ static esp_gmf_err_t gmf_loader_setup_default_fade(esp_gmf_pool_handle_t pool)
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     esp_gmf_element_handle_t hd = NULL;
     esp_ae_fade_cfg_t fade_cfg = DEFAULT_ESP_GMF_FADE_CONFIG();
+
+    // Configure fade parameters from Kconfig
+    fade_cfg.mode = CONFIG_GMF_AUDIO_EFFECT_FADE_MODE;
+    fade_cfg.curve = CONFIG_GMF_AUDIO_EFFECT_FADE_CURVE;
+    fade_cfg.transit_time = CONFIG_GMF_AUDIO_EFFECT_FADE_TRANSIT_TIME;
+
     ret = esp_gmf_fade_init(&fade_cfg, &hd);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to init audio fade");
     ret = esp_gmf_pool_register_element(pool, hd, NULL);
@@ -163,12 +212,48 @@ static esp_gmf_err_t gmf_loader_setup_default_interleave(esp_gmf_pool_handle_t p
 #endif  /* CONFIG_GMF_AUDIO_EFFECT_INIT_INTERLEAVE */
 
 #ifdef CONFIG_GMF_AUDIO_EFFECT_INIT_MIXER
+#define MIXER_SRC_ENTRY(i) {                                                      \
+    .weight1 = (float)(CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC##i##_WEIGHT1) / 100.0f,  \
+    .weight2 = (float)(CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC##i##_WEIGHT2) / 100.0f,  \
+    .transit_time = CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC##i##_TRANSIT_TIME,          \
+}
+
 static esp_gmf_err_t gmf_loader_setup_default_mixer(esp_gmf_pool_handle_t pool)
 {
     ESP_GMF_NULL_CHECK(TAG, pool, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_err_t ret = ESP_GMF_ERR_OK;
     esp_gmf_element_handle_t hd = NULL;
     esp_ae_mixer_cfg_t mixer_cfg = DEFAULT_ESP_GMF_MIXER_CONFIG();
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM != 0
+    static esp_ae_mixer_info_t src_info[] = {
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 1
+        MIXER_SRC_ENTRY(1),
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 1 */
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 2
+        MIXER_SRC_ENTRY(2),
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 2 */
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 3
+        MIXER_SRC_ENTRY(3),
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 3 */
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 4
+        MIXER_SRC_ENTRY(4),
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 4 */
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 5
+        MIXER_SRC_ENTRY(5),
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 5 */
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 6
+        MIXER_SRC_ENTRY(6),
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 6 */
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 7
+        MIXER_SRC_ENTRY(7),
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 7 */
+#if CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 8
+        MIXER_SRC_ENTRY(8),
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM >= 8 */
+    };
+    mixer_cfg.src_num = CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM;
+    mixer_cfg.src_info = src_info;
+#endif  /* CONFIG_GMF_AUDIO_EFFECT_MIXER_SRC_NUM != 0 */
     ret = esp_gmf_mixer_init(&mixer_cfg, &hd);
     ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Failed to init audio mixer");
     ret = esp_gmf_pool_register_element(pool, hd, NULL);

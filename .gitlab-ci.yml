@@ -1,6 +1,7 @@
 stages:
   - pre_check
   - build
+  - target_test
   - deploy
 
 variables:
@@ -10,6 +11,11 @@ variables:
   GIT_SUBMODULE_STRATEGY: none
   IDF_SKIP_CHECK_SUBMODULES: 1
   GIT_DEPTH: 1
+  IDF_PATH: "/root/.espressif/esp-idf"
+  PROJECT_PATH: "${CI_PROJECT_DIR}"
+  BASE_FRAMEWORK: $IDF_REPOSITORY
+  BASE_FRAMEWORK_PATH: "${IDF_PATH}"
+  EXAMPLES_PATH: "${CI_PROJECT_DIR}/gmf_examples/basic_examples"
 
 before_script:
   - source ${CI_PROJECT_DIR}/tools/ci/utils.sh
@@ -19,5 +25,8 @@ include:
   - '.gitlab/ci/rules.yml'
   - '.gitlab/ci/common.yml'
   - '.gitlab/ci/pre_check.yml'
-  - '.gitlab/ci/build_ut_gmf_core.yml'
+  - '.gitlab/ci/build_examples.yml'
+  - '.gitlab/ci/build_ut.yml'
+  - '.gitlab/ci/target_ut.yml'
+  - '.gitlab/ci/target_examples.yml'
   - '.gitlab/ci/deploy.yml'

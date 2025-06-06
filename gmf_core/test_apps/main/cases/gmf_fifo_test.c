@@ -108,7 +108,7 @@ write_task_err:
     vTaskDelete(NULL);
 }
 
-TEST_CASE("FIFO read and write on different task", "ESP_GMF_FIFO")
+TEST_CASE("FIFO read and write on different task", "[ESP_GMF_FIFO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("ESP_GMF_FIFO", ESP_LOG_VERBOSE);
@@ -122,7 +122,7 @@ TEST_CASE("FIFO read and write on different task", "ESP_GMF_FIFO")
     TEST_ASSERT_NOT_NULL(fifo);
     uint8_t priority[][2] = { {5, 5}, {0,10,}, {10, 0}};
 
-    for (size_t i = 0; i < sizeof(priority) / sizeof(priority[0]); i++){
+    for (size_t i = 0; i < sizeof(priority) / sizeof(priority[0]); i++) {
         ESP_LOGW(TAG, "Test FIFO with priority %d, %d\r\n", priority[i][0], priority[i][1]);
         read_is_done = false;
         write_is_done = false;

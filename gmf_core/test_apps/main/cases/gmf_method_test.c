@@ -32,7 +32,7 @@ esp_gmf_err_t esp_gmf_method_func3(void *handle, esp_gmf_args_desc_t *arg_desc, 
     return ESP_OK;
 }
 
-TEST_CASE("Method create and destroy test", "ESP_GMF_METHOD")
+TEST_CASE("Method create and destroy test", "[ESP_GMF_METHOD]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_gmf_method_t *method = NULL;
@@ -54,7 +54,7 @@ TEST_CASE("Method create and destroy test", "ESP_GMF_METHOD")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Test basic arithmetic type arguments description", "ESP_GMF_METHOD")
+TEST_CASE("Test basic arithmetic type arguments description", "[ESP_GMF_METHOD]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
@@ -161,7 +161,7 @@ TEST_CASE("Test basic arithmetic type arguments description", "ESP_GMF_METHOD")
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Test structure description", "ESP_GMF_METHOD")
+TEST_CASE("Test structure description", "[ESP_GMF_METHOD]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);

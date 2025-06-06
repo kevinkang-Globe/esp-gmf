@@ -9,7 +9,7 @@
 
 #include "esp_gmf_err.h"
 #include "esp_ae_bit_cvt.h"
-#include "esp_gmf_audio_element.h"
+#include "esp_gmf_element.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,11 +33,10 @@ extern "C" {
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
  *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
  */
-esp_gmf_err_t esp_gmf_bit_cvt_init(esp_ae_bit_cvt_cfg_t *config, esp_gmf_obj_handle_t *handle);
+esp_gmf_err_t esp_gmf_bit_cvt_init(esp_ae_bit_cvt_cfg_t *config, esp_gmf_element_handle_t *handle);
 
 /**
  * @brief  Set destination bits for the bit conversion handle
- *         Note: Only allow set on state `ESP_GMF_EVENT_STATE_NONE` and `ESP_GMF_EVENT_STATE_INITIALIZED`
  *
  * @param[in]  handle     The channel bit handle
  * @param[in]  dest_bits  The destination bits
@@ -47,7 +46,7 @@ esp_gmf_err_t esp_gmf_bit_cvt_init(esp_ae_bit_cvt_cfg_t *config, esp_gmf_obj_han
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  *       - ESP_GMF_ERR_FAIL         Failed to set configuration
  */
-esp_gmf_err_t esp_gmf_bit_cvt_set_dest_bits(esp_gmf_audio_element_handle_t handle, uint8_t dest_bits);
+esp_gmf_err_t esp_gmf_bit_cvt_set_dest_bits(esp_gmf_element_handle_t handle, uint8_t dest_bits);
 
 #ifdef __cplusplus
 }

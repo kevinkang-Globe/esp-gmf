@@ -1,5 +1,11 @@
 # Changelog
 
+## *Unreleased*
+
+### Features
+
+- Replaced the interface for decoding reconfig
+
 ## v0.9.3
 
 ### Features

@@ -72,7 +72,7 @@ static esp_gmf_err_t _file_open(esp_gmf_io_handle_t io)
     }
     if (((file_io_cfg_t *)file_io->base.parent.cfg)->dir == ESP_GMF_IO_DIR_READER) {
         file_io->file = open(path, O_RDONLY);
-        if (file_io->file == 0) {
+        if (file_io->file <= 0) {
             ESP_LOGE(TAG, "Failed to open on read, path: %s, err: %s", path, strerror(errno));
             return ESP_GMF_ERR_FAIL;
         }
@@ -110,7 +110,7 @@ static esp_gmf_err_io_t _file_acquire_read(esp_gmf_io_handle_t handle, void *pay
     ESP_LOGD(TAG, "Read len: %d-%ld", rlen, wanted_size);
     if (rlen == -1) {
         ESP_LOGE(TAG, "The error is happened in reading data, error msg: %s", strerror(errno));
-        return rlen;
+        return ESP_GMF_IO_FAIL;
     }
     pload->valid_size = rlen;
     if (rlen < wanted_size) {
@@ -118,11 +118,11 @@ static esp_gmf_err_io_t _file_acquire_read(esp_gmf_io_handle_t handle, void *pay
         if (rlen == 0) {
             pload->is_done = true;
             ESP_LOGI(TAG, "No more data, ret: %d", rlen);
-            return rlen;
+            return ESP_GMF_IO_OK;
         }
         pload->valid_size += rlen;
     }
-    return rlen;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t _file_release_read(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
@@ -138,7 +138,7 @@ static esp_gmf_err_io_t _file_release_read(esp_gmf_io_handle_t handle, void *pay
 
 static esp_gmf_err_io_t _file_acquire_write(esp_gmf_io_handle_t handle, void *payload, uint32_t wanted_size, int block_ticks)
 {
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t _file_release_write(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
@@ -156,8 +156,9 @@ static esp_gmf_err_io_t _file_release_write(esp_gmf_io_handle_t handle, void *pa
     }
     if (wlen == -1) {
         ESP_LOGE(TAG, "The error is happened in writing data, error msg:%s", strerror(errno));
+        return ESP_GMF_IO_FAIL;
     }
-    return wlen > 0 ? ESP_GMF_IO_OK : wlen;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_t _file_seek(esp_gmf_io_handle_t io, uint64_t seek_byte_pos)
@@ -175,6 +176,15 @@ static esp_gmf_err_t _file_seek(esp_gmf_io_handle_t io, uint64_t seek_byte_pos)
     if (lseek(file_io->file, seek_byte_pos, SEEK_SET) < 0) {
         ESP_LOGE(TAG, "Error seek file, error message: %s, line: %d", strerror(errno), __LINE__);
         return ESP_GMF_ERR_FAIL;
+    }
+    return ESP_GMF_ERR_OK;
+}
+
+static esp_gmf_err_t _file_reset(esp_gmf_io_handle_t io)
+{
+    file_io_stream_t *file_io = (file_io_stream_t *)io;
+    if (file_io->file != 0) {
+        lseek(file_io->file, 0, SEEK_SET);
     }
     return ESP_GMF_ERR_OK;
 }
@@ -230,6 +240,7 @@ esp_gmf_err_t esp_gmf_io_file_init(file_io_cfg_t *config, esp_gmf_io_handle_t *i
     file_io->base.close = _file_close;
     file_io->base.open = _file_open;
     file_io->base.seek = _file_seek;
+    file_io->base.reset = _file_reset;
     file_io_cfg_t *fat_cfg = (file_io_cfg_t *)config;
     esp_gmf_io_init(obj, NULL);
     if (fat_cfg->dir == ESP_GMF_IO_DIR_WRITER) {

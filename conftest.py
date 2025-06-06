@@ -50,13 +50,18 @@ SPECIAL_MARKERS = {
 
 ENV_MARKERS = {
     'GMF_EXAMPLE_GENERIC': 'Tests should be run on GMF_EXAMPLE_GENERIC runners.',
-    'UT_T1_AUDIO': 'Tests should be run on UT_T1_AUDIO runners.',
-    'UT_T1_AUDIO_L1': 'Tests should be run on UT_T1_AUDIO_L1 runners.',
-    'UT_T1_AUDIO_L2': 'Tests should be run on UT_T1_AUDIO_L2 runners.',
-    'UT_T1_AUDIO_L3': 'Tests should be run on UT_T1_AUDIO_L3 runners.',
-    'UT_T1_AUDIO_L4': 'Tests should be run on UT_T1_AUDIO_L4 runners.',
-    'UT_T1_AUDIO_L5': 'Tests should be run on UT_T1_AUDIO_L5 runners.',
-    'UT_T1_AUDIO_E6': 'Tests should be run on UT_T1_AUDIO_E6 runners.',
+    'ESP_GMF_COMPONENT': 'Tests should be run on ESP_GMF_COMPONENT runners.',
+    'ESP_GMF_ELEMENT': 'Tests should be run on random runners.',
+    'ESP_GMF_TASK': 'Tests should be run on random runners.',
+    'ESP_GMF_IO': 'Tests should be run on random runners.',
+    'ESP_GMF_RINGBUF': 'Tests should be run on random runners.',
+    'ESP_GMF_PBUF': 'Tests should be run on random runners.',
+    'ESP_GMF_BLOCK': 'Tests should be run on random runners.',
+    'GMF_LOADER': 'Tests should be run on random runners.',
+    'ELEMENT_POOL': 'Tests should be run on random runners.',
+    'ELEMENT_PORT': 'Tests should be run on random runners.',
+    'ESP_GMF_METHOD': 'Tests should be run on random runners.',
+    'AUDIO_LOOPBACK_ENV': 'Audio loopback testing verifies the functionality by comparing the audio input signal with the output signal.',
 }
 
 ##################

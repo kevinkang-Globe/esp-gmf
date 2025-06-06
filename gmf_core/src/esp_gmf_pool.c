@@ -113,6 +113,22 @@ esp_gmf_err_t esp_gmf_pool_register_element(esp_gmf_pool_handle_t handle, esp_gm
     return ESP_GMF_ERR_OK;
 }
 
+esp_gmf_err_t esp_gmf_pool_register_element_at_head(esp_gmf_pool_handle_t handle, esp_gmf_element_handle_t el, const char *tag)
+{
+    ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);
+    ESP_GMF_NULL_CHECK(TAG, el, return ESP_GMF_ERR_INVALID_ARG);
+    esp_gmf_element_item_t *el_item = (esp_gmf_element_item_t *)esp_gmf_oal_calloc(1, sizeof(esp_gmf_element_item_t));
+    ESP_GMF_MEM_CHECK(TAG, el_item, return ESP_GMF_ERR_MEMORY_LACK);
+    if (tag) {
+        int ret = esp_gmf_obj_set_tag((esp_gmf_obj_t *)el, tag);
+        ESP_GMF_RET_ON_ERROR(TAG, ret, return ret, "Set EL tag failed, obj:%p, tag:%s", el, OBJ_GET_TAG((esp_gmf_obj_t *)el));
+    }
+    el_item->instance = el;
+    STAILQ_INSERT_HEAD(&handle->el_list, el_item, next);
+    ESP_LOGD(TAG, "REG at head el:[%p-%s], item:%p", el, OBJ_GET_TAG(el), el_item);
+    return ESP_GMF_ERR_OK;
+}
+
 esp_gmf_err_t esp_gmf_pool_register_io(esp_gmf_pool_handle_t handle, esp_gmf_io_handle_t io, const char *tag)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, return ESP_GMF_ERR_INVALID_ARG);

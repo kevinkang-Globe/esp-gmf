@@ -47,7 +47,7 @@ static esp_gmf_err_io_t _codec_dev_acquire_read(esp_gmf_io_handle_t handle, void
         return ESP_GMF_IO_FAIL;
     }
     pload->valid_size = wanted_size;
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t _codec_dev_release_read(esp_gmf_io_handle_t handle, void *payload, int block_ticks)
@@ -140,6 +140,7 @@ esp_gmf_err_t esp_gmf_io_codec_dev_init(codec_dev_io_cfg_t *config, esp_gmf_io_h
     codec_dev_io->base.close = _codec_dev_close;
     codec_dev_io->base.open = _codec_dev_open;
     codec_dev_io->base.seek = _codec_dev_seek;
+    codec_dev_io->base.reset = NULL;
     esp_gmf_io_init(obj, NULL);
     if (codec_dev_io->base.dir == ESP_GMF_IO_DIR_WRITER) {
         codec_dev_io->base.acquire_write = _codec_dev_acquire_write;

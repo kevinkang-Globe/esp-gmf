@@ -9,7 +9,7 @@
 
 #include "esp_gmf_err.h"
 #include "esp_ae_sonic.h"
-#include "esp_gmf_audio_element.h"
+#include "esp_gmf_element.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +32,7 @@ extern "C" {
  *       - ESP_ERR_INVALID_ARG      Invalid configuration provided
  *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
  */
-esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_t *handle);
+esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_element_handle_t *handle);
 
 /**
  * @brief  Set the audio speed
@@ -45,7 +45,7 @@ esp_gmf_err_t esp_gmf_sonic_init(esp_ae_sonic_cfg_t *config, esp_gmf_obj_handle_
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_audio_element_handle_t handle, float speed);
+esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_element_handle_t handle, float speed);
 
 /**
  * @brief  Get the audio speed
@@ -57,7 +57,7 @@ esp_gmf_err_t esp_gmf_sonic_set_speed(esp_gmf_audio_element_handle_t handle, flo
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_sonic_get_speed(esp_gmf_audio_element_handle_t handle, float *speed);
+esp_gmf_err_t esp_gmf_sonic_get_speed(esp_gmf_element_handle_t handle, float *speed);
 
 /**
  * @brief  Set the audio pitch
@@ -73,7 +73,7 @@ esp_gmf_err_t esp_gmf_sonic_get_speed(esp_gmf_audio_element_handle_t handle, flo
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_sonic_set_pitch(esp_gmf_audio_element_handle_t handle, float pitch);
+esp_gmf_err_t esp_gmf_sonic_set_pitch(esp_gmf_element_handle_t handle, float pitch);
 
 /**
  * @brief  Get the audio pitch
@@ -85,7 +85,7 @@ esp_gmf_err_t esp_gmf_sonic_set_pitch(esp_gmf_audio_element_handle_t handle, flo
  *       - ESP_GMF_ERR_OK           Operation succeeded
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  */
-esp_gmf_err_t esp_gmf_sonic_get_pitch(esp_gmf_audio_element_handle_t handle, float *pitch);
+esp_gmf_err_t esp_gmf_sonic_get_pitch(esp_gmf_element_handle_t handle, float *pitch);
 
 #ifdef __cplusplus
 }

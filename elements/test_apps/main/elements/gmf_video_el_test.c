@@ -21,13 +21,11 @@
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 #include "esp_heap_caps.h"
-
-#ifdef VIDEO_SW_PROCESS
 #include "esp_gmf_video_scale.h"
 #include "esp_gmf_video_crop.h"
 #include "esp_gmf_video_rotate.h"
 #include "esp_gmf_video_color_convert.h"
-#endif
+#include "gmf_loader_setup_defaults.h"
 
 #define TAG "VID_EL_TEST"
 
@@ -39,16 +37,16 @@
 #define TEST_PATTERN_HEIGHT (240)
 #endif
 #define TEST_PATTERN_VERTICAL  (false)
-#define TEST_PATTERN_BAR_COUNT (16)
+#define TEST_PATTERN_BAR_COUNT (8)
 #define TEST_VIDEO_ALIGNMENT   (128)
 
-#define SAFE_FREE(ptr) if (ptr) {   \
-    esp_gmf_oal_free(ptr);          \
-    ptr = NULL;                     \
+#define SAFE_FREE(ptr) if (ptr) {  \
+    esp_gmf_oal_free(ptr);         \
+    ptr = NULL;                    \
 }
 
 #define ELEMS(arr)              (sizeof(arr) / sizeof((arr)[0]))
-#define VIDEO_EL_MAX_STACK_SIZE (40*1024)
+#define VIDEO_EL_MAX_STACK_SIZE (40 * 1024)
 
 typedef struct {
     // Src information
@@ -88,88 +86,6 @@ typedef struct {
 
 static video_el_test_t video_el_inst;
 
-static void pool_register_video_effect(esp_gmf_pool_handle_t pool)
-{
-    esp_gmf_element_handle_t fps_cvt = NULL;
-    esp_gmf_video_fps_cvt_init(NULL, &fps_cvt);
-    esp_gmf_pool_register_element(pool, fps_cvt, NULL);
-
-    esp_gmf_element_handle_t vid_cvt = NULL;
-    esp_gmf_video_ppa_init(NULL, &vid_cvt);
-    esp_gmf_pool_register_element(pool, vid_cvt, NULL);
-
-    esp_gmf_element_handle_t overlay_mixer = NULL;
-    esp_gmf_video_overlay_init(NULL, &overlay_mixer);
-    esp_gmf_pool_register_element(pool, overlay_mixer, NULL);
-}
-
-static void pool_register_sw_video_effect(esp_gmf_pool_handle_t pool)
-{
-#ifdef VIDEO_SW_PROCESS
-    esp_gmf_element_handle_t element;
-
-    esp_imgfx_scale_cfg_t scale_cfg = {
-        .in_pixel_fmt = ESP_IMGFX_PIXEL_FMT_RGB888,
-        .in_res = {640, 480},
-        .scale_res = {320, 240},
-        .filter_type = ESP_IMGFX_SCALE_FILTER_TYPE_BILINEAR
-    };
-    element = NULL;
-    esp_gmf_video_scale_init(&scale_cfg, &element);
-    esp_gmf_pool_register_element(pool, element, NULL);
-
-    esp_imgfx_crop_cfg_t crop_cfg = {
-        .in_res = {100, 100},
-        .in_pixel_fmt = ESP_IMGFX_PIXEL_FMT_RGB888,
-        .cropped_res = {50, 50},
-        .x_pos = 25,
-        .y_pos = 25
-    };
-    element = NULL;
-    esp_gmf_video_crop_init(&crop_cfg, &element);
-    esp_gmf_pool_register_element(pool, element, NULL);
-
-    esp_imgfx_rotate_cfg_t rotate_cfg = {
-        .in_pixel_fmt = ESP_IMGFX_PIXEL_FMT_RGB888,
-        .in_res = {.width = 256, .height = 256},
-        .degree = 90
-    };
-    element = NULL;
-    esp_gmf_video_rotate_init(&rotate_cfg, &element);
-    esp_gmf_pool_register_element(pool, element, NULL);
-
-    esp_imgfx_color_convert_cfg_t clr_cvt_cfg = {
-        .in_res = {320, 240},
-        .in_pixel_fmt = ESP_IMGFX_PIXEL_FMT_RGB565_LE,
-        .out_pixel_fmt = ESP_IMGFX_PIXEL_FMT_RGB888,
-        .color_space_std = ESP_IMGFX_COLOR_SPACE_STD_BT601
-    };
-    element = NULL;
-    esp_gmf_video_color_convert_init(&clr_cvt_cfg, &element);
-    esp_gmf_pool_register_element(pool, element, NULL);
-#endif
-}
-
-static void pool_register_video_codec(esp_gmf_pool_handle_t pool)
-{
-    esp_video_enc_register_default();
-    esp_video_dec_register_default();
-
-    esp_gmf_element_handle_t dec_hd = NULL;
-    esp_gmf_video_dec_init(NULL, &dec_hd);
-    esp_gmf_pool_register_element(pool, dec_hd, NULL);
-
-    esp_gmf_element_handle_t enc_hd = NULL;
-    esp_gmf_video_enc_init(NULL, &enc_hd);
-    esp_gmf_pool_register_element(pool, enc_hd, NULL);
-}
-
-static void pool_unregister_video_codec(void)
-{
-    esp_video_enc_unregister_default();
-    esp_video_dec_unregister_default();
-}
-
 static esp_gmf_element_handle_t get_element_by_caps_from_pool(esp_gmf_pool_handle_t pool, uint64_t caps_cc)
 {
     const void *iter = NULL;
@@ -178,7 +94,7 @@ static esp_gmf_element_handle_t get_element_by_caps_from_pool(esp_gmf_pool_handl
         const esp_gmf_cap_t *caps = NULL;
         esp_gmf_element_get_caps(element, &caps);
         while (caps) {
-             if (caps->cap_eightcc == caps_cc) {
+            if (caps->cap_eightcc == caps_cc) {
                 return element;
             }
             caps = caps->next;
@@ -195,7 +111,7 @@ static esp_gmf_element_handle_t get_element_by_caps_from_pipe(esp_gmf_pipeline_h
 
     for (; element; esp_gmf_pipeline_get_next_el(pipe, element, &element)) {
         esp_gmf_element_get_caps(element, &caps);
-        for (; caps ; caps = caps->next) {
+        for (; caps; caps = caps->next) {
             if (caps->cap_eightcc == caps_cc) {
                 return element;
             }
@@ -271,14 +187,14 @@ static esp_gmf_err_io_t in_acquire(void *handle, esp_gmf_payload_t *load, uint32
     load->buf = video_el_inst.src_pixel;
     load->valid_size = video_el_inst.src_size;
     load->buf_length = load->valid_size;
-    return load->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t in_release(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
 {
     video_el_inst.in_frame_count++;
     vTaskDelay(10 / portTICK_RATE_MS);
-    return 0;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t overlay_acquire(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
@@ -287,12 +203,12 @@ static esp_gmf_err_io_t overlay_acquire(void *handle, esp_gmf_payload_t *load, u
     load->buf = video_el_inst.overlay_data;
     load->valid_size = video_el_inst.overlay_size;
     load->buf_length = video_el_inst.overlay_size;
-    return load->valid_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t overlay_release(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
 {
-    return 0;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t out_acquire(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
@@ -304,7 +220,7 @@ static esp_gmf_err_io_t out_acquire(void *handle, esp_gmf_payload_t *load, uint3
             SAFE_FREE(video_el_inst.out_pixel);
             uint8_t *new_buf = esp_gmf_oal_malloc_align(TEST_VIDEO_ALIGNMENT, wanted_size + TEST_VIDEO_ALIGNMENT);
             if (new_buf == NULL) {
-                ESP_LOGE(TAG, "Fail to allocate %d bytes for output buffer", (int) wanted_size + TEST_VIDEO_ALIGNMENT);
+                ESP_LOGE(TAG, "Fail to allocate %d bytes for output buffer", (int)wanted_size + TEST_VIDEO_ALIGNMENT);
                 return -1;
             }
             video_el_inst.out_pixel = new_buf;
@@ -313,7 +229,7 @@ static esp_gmf_err_io_t out_acquire(void *handle, esp_gmf_payload_t *load, uint3
         load->buf = video_el_inst.out_pixel;
         load->buf_length = video_el_inst.out_max_size;
     }
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t out_release(void *handle, esp_gmf_payload_t *load, uint32_t wanted_size, int wait_ticks)
@@ -326,22 +242,18 @@ static esp_gmf_err_io_t out_release(void *handle, esp_gmf_payload_t *load, uint3
     if (video_el_inst.no_need_free == false) {
         load->buf = NULL;
     }
-    return 0;
+    return ESP_GMF_IO_OK;
 }
 
-static int prepare_pool(convert_res_t *res, bool sw)
+static int prepare_pool(convert_res_t *res)
 {
     memset(res, 0, sizeof(*res));
     esp_gmf_pool_init(&res->pool);
     if (res->pool == NULL) {
         return -1;
     }
-    pool_register_video_codec(res->pool);
-    if (sw == false) {
-        pool_register_video_effect(res->pool);
-    } else {
-        pool_register_sw_video_effect(res->pool);
-    }
+    gmf_loader_setup_video_codec_default(res->pool);
+    gmf_loader_setup_video_effects_default(res->pool);
     ESP_GMF_POOL_SHOW_ITEMS(res->pool);
     return 0;
 }
@@ -397,7 +309,8 @@ static void release_convert_pipeline(convert_res_t *res)
     if (res->pipe) {
         esp_gmf_pipeline_destroy(res->pipe);
     }
-    pool_unregister_video_codec();
+    gmf_loader_teardown_video_codec_default(res->pool);
+    gmf_loader_teardown_video_effects_default(res->pool);
     esp_gmf_pool_deinit(res->pool);
 }
 
@@ -416,7 +329,6 @@ static int test_color_convert(convert_res_t *res, uint32_t convert_pair[][2], in
         esp_gmf_element_handle_t convert_hd;
         convert_hd = get_element_by_caps_from_pipe(res->pipe, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
         esp_gmf_video_param_set_dst_format(convert_hd, convert_pair[i][1]);
-        // esp_gmf_video_ppa_set_dst_format(convert_hd, convert_pair[i][1]);
         esp_gmf_pipeline_report_info(res->pipe, ESP_GMF_INFO_VIDEO, &info, sizeof(info));
         TEST_ASSERT_EQUAL(ESP_GMF_ERR_OK, esp_gmf_pipeline_run(res->pipe));
         vTaskDelay(1000 / portTICK_RATE_MS);
@@ -430,26 +342,21 @@ static int test_color_convert(convert_res_t *res, uint32_t convert_pair[][2], in
 }
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
-TEST_CASE("Color convert HW", "ESP_GMF_VIDEO")
+TEST_CASE("Color convert HW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, false);
-    esp_gmf_element_handle_t element;
-    element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
-    const char *name[] = { "vid_cvt", NULL };
-    name[0] = OBJ_GET_TAG(element);
-    printf("Get element name %s\n", OBJ_GET_TAG(element));
+    prepare_pool(&res);
+    const char *name[] = {"vid_ppa", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, (const char **)name));
-
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY },
-        { ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16 },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY},
+        {ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16},
     };
     test_color_convert(&res, convert_pair, ELEMS(convert_pair));
 
@@ -458,32 +365,29 @@ TEST_CASE("Color convert HW", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 #endif
 
-TEST_CASE("Color convert SW", "ESP_GMF_VIDEO")
+TEST_CASE("Color convert SW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, true);
-    esp_gmf_element_handle_t element;
-    element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
-    const char *name[] = { "vid_cvt", NULL };
-    name[0] = OBJ_GET_TAG(element);
-    printf("Get element name %s\n", OBJ_GET_TAG(element));
+    prepare_pool(&res);
+    const char *name[] = {"imgfx_color_convert", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, (const char **)name));
 
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY },
-        { ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16 },
-        { ESP_FOURCC_RGB16, ESP_FOURCC_RGB24 },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY},
+        {ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16},
+        {ESP_FOURCC_RGB16, ESP_FOURCC_BGR16},
+        {ESP_FOURCC_RGB16, ESP_FOURCC_RGB24},
     };
     test_color_convert(&res, convert_pair, ELEMS(convert_pair));
 
@@ -492,7 +396,38 @@ TEST_CASE("Color convert SW", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
+    ESP_GMF_MEM_SHOW(TAG);
+}
+
+TEST_CASE("Color convert by caps", "[ESP_GMF_VIDEO]")
+{
+    esp_log_level_set("*", ESP_LOG_INFO);
+    ESP_GMF_MEM_SHOW(TAG);
+#ifdef MEDIA_LIB_MEM_TEST
+    media_lib_add_default_adapter();
+#endif  /* MEDIA_LIB_MEM_TEST */
+    convert_res_t res;
+    memset(&video_el_inst, 0, sizeof(video_el_test_t));
+    prepare_pool(&res);
+    esp_gmf_element_handle_t element;
+    element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
+    const char *name[] = {OBJ_GET_TAG(element), NULL};
+    printf("Get element name %s\n", OBJ_GET_TAG(element));
+    TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, (const char **)name));
+
+    uint32_t convert_pair[][2] = {
+        {ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY},
+        {ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16},
+    };
+    test_color_convert(&res, convert_pair, ELEMS(convert_pair));
+
+    // Clear up resources
+    release_convert_pipeline(&res);
+
+#ifdef MEDIA_LIB_MEM_TEST
+    media_lib_stop_mem_trace();
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 
@@ -502,15 +437,13 @@ static int test_scale(convert_res_t *res, uint32_t convert_pair[][2], int n)
         // Gen pattern
         allocate_src_pattern(convert_pair[i][0], false);
         video_el_inst.out_res.width = video_el_inst.src_res.width >> 1;
-        video_el_inst.out_res.height = video_el_inst.src_res.width >> 1;
+        video_el_inst.out_res.height = video_el_inst.src_res.height >> 1;
         video_el_inst.out_codec = convert_pair[i][1];
         esp_gmf_element_handle_t convert_hd;
         convert_hd = get_element_by_caps_from_pipe(res->pipe, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
         esp_gmf_video_param_set_dst_format(convert_hd, convert_pair[i][1]);
-        // esp_gmf_video_ppa_set_dst_format(convert_hd, convert_pair[i][1]);
         esp_gmf_element_handle_t scale_hd;
         scale_hd = get_element_by_caps_from_pipe(res->pipe, ESP_GMF_CAPS_VIDEO_SCALE);
-        // esp_gmf_video_ppa_set_dst_resolution(scale_hd, &video_el_inst.out_res);
         esp_gmf_video_param_set_dst_resolution(scale_hd, &video_el_inst.out_res);
 
         esp_gmf_info_video_t info = {
@@ -533,26 +466,22 @@ static int test_scale(convert_res_t *res, uint32_t convert_pair[][2], int n)
 }
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
-TEST_CASE("Scale HW", "ESP_GMF_VIDEO")
+TEST_CASE("Scale HW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-
-    prepare_pool(&res, false);
-    esp_gmf_element_handle_t element;
-    element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_SCALE);
-    const char *name[] = { NULL, NULL, NULL };
-    name[0] = OBJ_GET_TAG(element);
+    prepare_pool(&res);
+    const char *name[] = {"vid_ppa", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, (const char **)name));
 
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY },
-        { ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16 },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY},
+        {ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16},
     };
     test_scale(&res, convert_pair, ELEMS(convert_pair));
 
@@ -561,35 +490,26 @@ TEST_CASE("Scale HW", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 #endif
 
-TEST_CASE("Scale SW", "ESP_GMF_VIDEO")
+TEST_CASE("Scale SW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-
-    prepare_pool(&res, true);
-
-    const char *name[] = { NULL, NULL, NULL };
-    esp_gmf_element_handle_t element;
-    element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_SCALE);
-    name[0] = OBJ_GET_TAG(element);
-   // element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
-   // name[1] = OBJ_GET_TAG(element);
-    TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, (const char**)name));
-
+    prepare_pool(&res);
+    const char *name[] = {"imgfx_scale", NULL};
+    TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, (const char **)name));
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB16, ESP_FOURCC_RGB16 },
-        { ESP_FOURCC_RGB24, ESP_FOURCC_RGB24 },
-       // { ESP_FOURCC_RGB24, ESP_FOURCC_RGB16 },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_RGB16},
+        {ESP_FOURCC_RGB24, ESP_FOURCC_RGB24},
     };
     test_scale(&res, convert_pair, ELEMS(convert_pair));
 
@@ -598,7 +518,7 @@ TEST_CASE("Scale SW", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 
@@ -639,22 +559,21 @@ static int test_rotate(convert_res_t *res, uint32_t convert_pair[][2], int n)
 }
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
-TEST_CASE("Rotate HW", "ESP_GMF_VIDEO")
+TEST_CASE("Rotate HW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, false);
-    const char *name[] = { "vid_ppa", NULL };
+    prepare_pool(&res);
+    const char *name[] = {"vid_ppa", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, name));
-
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY },
-        { ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16 },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY},
+        {ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16},
     };
     test_rotate(&res, convert_pair, ELEMS(convert_pair));
 
@@ -663,33 +582,25 @@ TEST_CASE("Rotate HW", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 #endif
 
-TEST_CASE("Rotate SW", "ESP_GMF_VIDEO")
+TEST_CASE("Rotate SW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, true);
-    const char *name[] = { NULL, NULL, NULL };
-    esp_gmf_element_handle_t element;
-    element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_ROTATE);
-    name[0] = OBJ_GET_TAG(element);
-    //element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
-    //name[1] = OBJ_GET_TAG(element);
-    TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, (const char**)name));
-
+    prepare_pool(&res);
+    const char *name[] = {"imgfx_rotate", NULL};
+    TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, (const char **)name));
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB24, ESP_FOURCC_RGB16 },
-        //{ ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY },
-        //{ ESP_FOURCC_RGB24, ESP_FOURCC_RGB16 },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_RGB16},
     };
     test_rotate(&res, convert_pair, ELEMS(convert_pair));
 
@@ -698,7 +609,7 @@ TEST_CASE("Rotate SW", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 
@@ -745,22 +656,21 @@ static int test_crop(convert_res_t *res, uint32_t convert_pair[][2], int n)
 }
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
-TEST_CASE("Crop HW", "ESP_GMF_VIDEO")
+TEST_CASE("Crop HW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, false);
-    const char *name[] = { "vid_ppa", NULL };
+    prepare_pool(&res);
+    const char *name[] = {"vid_ppa", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, name));
-
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY },
-        { ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16 },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY},
+        {ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_RGB16},
     };
     test_crop(&res, convert_pair, ELEMS(convert_pair));
     // Clear up resources
@@ -768,32 +678,28 @@ TEST_CASE("Crop HW", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 #endif
 
-TEST_CASE("Crop only SW", "ESP_GMF_VIDEO")
+TEST_CASE("Crop only SW", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, true);
-    esp_gmf_element_handle_t element;
-    const char *name[] = { NULL, NULL, NULL };
-    element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_CROP);
-    name[0] = OBJ_GET_TAG(element);
-    // element = get_element_by_caps_from_pool(res.pool, ESP_GMF_CAPS_VIDEO_COLOR_CONVERT);
-    // name[1] = OBJ_GET_TAG(element);
+    prepare_pool(&res);
+
+    const char *name[] = {"imgfx_crop", NULL};
+
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, name));
 
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB16, ESP_FOURCC_RGB16 },
-        //  { ESP_FOURCC_RGB16, ESP_FOURCC_OUYY_EVYY },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_RGB16},
         // { ESP_FOURCC_RGB24, ESP_FOURCC_RGB16 },
     };
     test_crop(&res, convert_pair, ELEMS(convert_pair));
@@ -802,33 +708,33 @@ TEST_CASE("Crop only SW", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Encoder only", "ESP_GMF_VIDEO")
+TEST_CASE("Encoder only", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, false);
-    const char *name[] = { "vid_enc", NULL };
+    prepare_pool(&res);
+    const char *name[] = {"vid_enc", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, name));
 
     uint32_t convert_pair[][2] = {
 #if CONFIG_IDF_TARGET_ESP32P4
-        { ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_H264 },
-        { ESP_FOURCC_RGB16, ESP_FOURCC_MJPG },
+        {ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_H264},
+        {ESP_FOURCC_RGB16, ESP_FOURCC_MJPG},
 #else
-        { ESP_FOURCC_RGB24, ESP_FOURCC_MJPG },
+        {ESP_FOURCC_RGB24, ESP_FOURCC_MJPG},
 #if CONFIG_IDF_TARGET_ESP32S3
-        { ESP_FOURCC_YUV420P, ESP_FOURCC_H264 },
-#endif
-#endif
+        {ESP_FOURCC_YUV420P, ESP_FOURCC_H264},
+#endif  /* CON FIG_IDF_TARGET_ESP32S3 */
+#endif  /* CONFIG_IDF_TARGET_ESP32P4 */
     };
     for (int i = 0; i < ELEMS(convert_pair); i++) {
         // Gen pattern
@@ -857,24 +763,24 @@ TEST_CASE("Encoder only", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("FPS convert only", "ESP_GMF_VIDEO")
+TEST_CASE("FPS convert only", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, false);
-    const char *name[] = { "vid_fps_cvt", NULL };
+    prepare_pool(&res);
+    const char *name[] = {"vid_fps_cvt", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, name));
     uint32_t convert_pair[][2] = {
-        { ESP_FOURCC_RGB16, ESP_FOURCC_MJPG },
+        {ESP_FOURCC_RGB16, ESP_FOURCC_MJPG},
     };
     for (int i = 0; i < ELEMS(convert_pair); i++) {
         // Gen pattern
@@ -902,21 +808,21 @@ TEST_CASE("FPS convert only", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Overlay Test", "ESP_GMF_VIDEO")
+TEST_CASE("Overlay Test", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, false);
-    const char *name[] = { "vid_overlay", NULL };
+    prepare_pool(&res);
+    const char *name[] = {"vid_overlay", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, name));
 
     allocate_src_pattern(ESP_FOURCC_RGB16, false);
@@ -985,33 +891,33 @@ TEST_CASE("Overlay Test", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }
 
-TEST_CASE("Encoder to Decode", "ESP_GMF_VIDEO")
+TEST_CASE("Encoder to Decode", "[ESP_GMF_VIDEO]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     ESP_GMF_MEM_SHOW(TAG);
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_add_default_adapter();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     convert_res_t res;
     memset(&video_el_inst, 0, sizeof(video_el_test_t));
-    prepare_pool(&res, false);
-    const char *name[] = { "vid_enc", "vid_dec", NULL };
+    prepare_pool(&res);
+    const char *name[] = {"vid_enc", "vid_dec", NULL};
     TEST_ASSERT_EQUAL(0, prepare_convert_pipeline(&res, name));
 
     uint32_t convert_pair[][3] = {
 #if CONFIG_IDF_TARGET_ESP32P4
-        { ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_H264, ESP_FOURCC_YUV420P },
-        { ESP_FOURCC_RGB16, ESP_FOURCC_MJPG, ESP_FOURCC_RGB16 },
+        {ESP_FOURCC_OUYY_EVYY, ESP_FOURCC_H264, ESP_FOURCC_YUV420P},
+        {ESP_FOURCC_RGB16, ESP_FOURCC_MJPG, ESP_FOURCC_RGB16},
 #else
-        { ESP_FOURCC_RGB24, ESP_FOURCC_MJPG, ESP_FOURCC_RGB16 },
+        {ESP_FOURCC_RGB24, ESP_FOURCC_MJPG, ESP_FOURCC_RGB16},
 #if CONFIG_IDF_TARGET_ESP32S3
-        { ESP_FOURCC_YUV420P, ESP_FOURCC_H264, ESP_FOURCC_YUV420P },
-#endif
-#endif
+        {ESP_FOURCC_YUV420P, ESP_FOURCC_H264, ESP_FOURCC_YUV420P},
+#endif  /* CON FIG_IDF_TARGET_ESP32S3 */
+#endif  /* CONFIG_IDF_TARGET_ESP32P4 */
     };
     for (int i = 0; i < ELEMS(convert_pair); i++) {
         // Gen pattern
@@ -1044,6 +950,6 @@ TEST_CASE("Encoder to Decode", "ESP_GMF_VIDEO")
 
 #ifdef MEDIA_LIB_MEM_TEST
     media_lib_stop_mem_trace();
-#endif /* MEDIA_LIB_MEM_TEST */
+#endif  /* MEDIA_LIB_MEM_TEST */
     ESP_GMF_MEM_SHOW(TAG);
 }

@@ -19,11 +19,21 @@ esp_gmf_err_t esp_gmf_obj_dupl(esp_gmf_obj_handle_t old_obj, esp_gmf_obj_handle_
     ESP_GMF_NULL_CHECK(TAG, old_obj, return ESP_GMF_ERR_INVALID_ARG);
     ESP_GMF_NULL_CHECK(TAG, new_obj, return ESP_GMF_ERR_INVALID_ARG);
     esp_gmf_obj_t *tmp = (esp_gmf_obj_t *)old_obj;
+    esp_gmf_err_t ret = ESP_GMF_ERR_FAIL;
     if (tmp->new_obj) {
-        return tmp->new_obj(tmp->cfg, new_obj);
+        ret = tmp->new_obj(tmp->cfg, new_obj);
+        if (ret == ESP_GMF_ERR_OK) {
+            // Duplicate TAG also
+            ret = esp_gmf_obj_set_tag(*new_obj, OBJ_GET_TAG(old_obj));
+            if (ret != ESP_GMF_ERR_OK) {
+                esp_gmf_obj_delete(*new_obj);
+                *new_obj = NULL;
+            }
+        }
+    } else {
+        ESP_LOGE(TAG, "%s is no new function [%p-%s], ", __func__, old_obj, OBJ_GET_TAG(old_obj));
     }
-    ESP_LOGE(TAG, "%s is no new function [%p-%s], ", __func__, old_obj, OBJ_GET_TAG(old_obj));
-    return ESP_GMF_ERR_FAIL;
+    return ret;
 }
 
 esp_gmf_err_t esp_gmf_obj_new(esp_gmf_obj_handle_t old_obj, void *cfg, esp_gmf_obj_handle_t *new_obj)

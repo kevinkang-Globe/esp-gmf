@@ -9,7 +9,7 @@
 
 #include "esp_gmf_err.h"
 #include "esp_ae_rate_cvt.h"
-#include "esp_gmf_audio_element.h"
+#include "esp_gmf_element.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,12 +35,10 @@ extern "C" {
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid configuration provided
  *       - ESP_GMF_ERR_MEMORY_LACK  Failed to allocate memory
  */
-esp_gmf_err_t esp_gmf_rate_cvt_init(esp_ae_rate_cvt_cfg_t *config, esp_gmf_obj_handle_t *handle);
+esp_gmf_err_t esp_gmf_rate_cvt_init(esp_ae_rate_cvt_cfg_t *config, esp_gmf_element_handle_t *handle);
 
 /**
  * @brief  Set dest rate in the rate conversion handle
- *         Note: If the state of rate conversion is not in 'ESP_GMF_EVENT_STATE_NONE' or 'ESP_GMF_EVENT_STATE_INITIALIZED',
- *         the setting will return fail.
  *
  * @param[in]  handle   The rate conversion handle
  * @param[in]  dest_ch  The dest rate
@@ -50,7 +48,7 @@ esp_gmf_err_t esp_gmf_rate_cvt_init(esp_ae_rate_cvt_cfg_t *config, esp_gmf_obj_h
  *       - ESP_GMF_ERR_INVALID_ARG  Invalid input parameter
  *       - ESP_GMF_ERR_FAIL         Failed to set configuration
  */
-esp_gmf_err_t esp_gmf_rate_cvt_set_dest_rate(esp_gmf_audio_element_handle_t handle, uint32_t dest_rate);
+esp_gmf_err_t esp_gmf_rate_cvt_set_dest_rate(esp_gmf_element_handle_t handle, uint32_t dest_rate);
 
 #ifdef __cplusplus
 }

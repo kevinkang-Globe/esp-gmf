@@ -83,7 +83,7 @@ static esp_gmf_err_io_t _embed_flash_acquire_read(esp_gmf_io_handle_t io, void *
     }
     memcpy(pload->buf, embed_flash->items[embed_flash->cur].address + info.pos, wanted_size);
     pload->valid_size = wanted_size;
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
 static esp_gmf_err_io_t _embed_flash_release_read(esp_gmf_io_handle_t io, void *payload, int block_ticks)
@@ -147,6 +147,7 @@ esp_gmf_err_t esp_gmf_io_embed_flash_init(embed_flash_io_cfg_t *config, esp_gmf_
     embed_flash->base.open = _embed_flash_open;
     embed_flash->base.close = _embed_flash_close;
     embed_flash->base.seek = NULL;
+    embed_flash->base.reset = NULL;
     esp_gmf_io_init(obj, NULL);
     if (embed_flash->base.dir == ESP_GMF_IO_DIR_READER) {
         embed_flash->base.acquire_read = _embed_flash_acquire_read;

@@ -11,7 +11,7 @@
 
 static const char *TAG = "TEST_GMF_FAKE_IO";
 
-TEST_CASE("GMF IO read and write", "ESP_GMF_IO")
+TEST_CASE("GMF IO read and write", "[ESP_GMF_IO]")
 {
     esp_log_level_set("*", ESP_LOG_DEBUG);
 

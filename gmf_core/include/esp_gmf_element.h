@@ -97,26 +97,26 @@ typedef struct {
  * @brief  Structure representing a GMF element
  */
 typedef struct esp_gmf_element {
-    esp_gmf_obj_t                   base;           /*!< Base object */
-    esp_gmf_element_ops_t           ops;            /*!< Operations */
-    uint8_t                         job_mask;       /*!< Job mask */
+    esp_gmf_obj_t                base;           /*!< Base object */
+    esp_gmf_element_ops_t        ops;            /*!< Operations */
+    uint8_t                      job_mask;       /*!< Job mask */
 
-    esp_gmf_port_t                 *in;             /*!< Input port */
-    esp_gmf_element_port_attr_t     in_attr;        /*!< Input port attributes */
+    esp_gmf_port_t              *in;             /*!< Input port */
+    esp_gmf_element_port_attr_t  in_attr;        /*!< Input port attributes */
 
-    esp_gmf_port_t                 *out;            /*!< Output port */
-    esp_gmf_element_port_attr_t     out_attr;       /*!< Output port attributes */
+    esp_gmf_port_t              *out;            /*!< Output port */
+    esp_gmf_element_port_attr_t  out_attr;       /*!< Output port attributes */
 
     /* Properties */
-    esp_gmf_event_state_t           init_state;     /*!< Initial state */
-    esp_gmf_event_state_t           cur_state;      /*!< Current state */
-    esp_gmf_event_cb                event_func;     /*!< Event function */
-    esp_gmf_method_t               *method;         /*!< It can access the data members and member functions of the objects */
-    esp_gmf_cap_t                  *caps;           /*!< Element capabilities */
+    esp_gmf_event_state_t        init_state;     /*!< Initial state */
+    esp_gmf_event_state_t        cur_state;      /*!< Current state */
+    esp_gmf_event_cb             event_func;     /*!< Event function */
+    esp_gmf_method_t            *method;         /*!< It can access the data members and member functions of the objects */
+    esp_gmf_cap_t               *caps;           /*!< Element capabilities */
 
     /* Protect */
-    void                           *ctx;            /*!< User Context */
-    uint8_t                         dependency : 1; /*!< Indicates if the element depends on other information to open */
+    void                        *ctx;            /*!< User Context */
+    uint8_t                      dependency : 1; /*!< Indicates if the element depends on other information to open */
 } esp_gmf_element_t;
 
 /**

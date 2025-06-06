@@ -18,15 +18,6 @@
 
 本例程需要准备一张 microSD 卡。录音编码后的音频会自动存入 microSD 卡，用户可通过 `esp_gmf_audio_helper_reconfig_enc_by_type ` 函数修改编码格式及音频参数配置。
 
-本例程支持 ESP32s3_Korvo_2, ESP32p4_Function_EV_Board 板子。其他板子支持需要修改[ system_common ](../../system_common) 文件夹中的以下内容：
-
-| 配置内容 | 相关文件 |  相关函数   |
-|:----:| :-----: | :---- |
-|I2S 端口和 I2S 格式| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `setup_periph_create_i2s` |
-|I2C 端口| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `esp_gmf_setup_periph_i2c` |
-|Codec 类型和格式|`esp_gmf_setup_peripheral.c` |`setup_periph_new_record_codec`  |
-|Sdmmc 端口| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `esp_gmf_setup_periph_sdmmc` |
-
 ### 编译和下载
 
 编译本例程前需要先确保已配置 ESP-IDF 的环境，如果已配置可跳到下一项配置，如果未配置需要先在 ESP-IDF 根目录运行下面脚本设置编译环境，有关配置和使用 ESP-IDF 完整步骤，请参阅 [《ESP-IDF 编程指南》](https://docs.espressif.com/projects/esp-idf/zh_CN/latest/esp32s3/index.html)：
@@ -48,6 +39,12 @@ cd $YOUR_GMF_PATH/gmf_examples/basic_examples/pipeline_record_sdcard
 
 ```
 idf.py set-target esp32s3
+```
+- 选择编译板子，以 esp32 s3 Korvo V2 为例：
+
+```
+idf.py menuconfig
+在 `menuconfig` 中选择 `GMF APP Configuration` -> `Audio Board` -> `ESP32-S3-Korvo V2`，然后保存退出
 ```
 
 - 编译例子程序

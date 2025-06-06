@@ -26,6 +26,10 @@ config GMF_AUDIO_CODEC_INIT_ENCODER
             bool "PCM Encoder"
         config GMF_AUDIO_CODEC_ENCODER_TYPE_ALAC
             bool "ALAC Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_SBC
+            bool "SBC Encoder"
+        config GMF_AUDIO_CODEC_ENCODER_TYPE_LC3
+            bool "LC3 Encoder"
     endchoice
 
     menu "AMR-NB Encoder Configuration"
@@ -341,6 +345,296 @@ config GMF_AUDIO_CODEC_INIT_ENCODER
             default n
             help
                 Configures to enable or disable variable bitrate mode.
+    endmenu
+
+    menu "SBC Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_SBC
+
+        choice
+            prompt "SBC Encoder Mode"
+            default GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the mode for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+                bool "Standard SBC Mode"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_MODE_MSBC
+                bool "mSBC Mode"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_MODE
+            int
+            default 0 if GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 1 if GMF_AUDIO_CODEC_ENC_SBC_MODE_MSBC
+
+        choice
+            prompt "SBC Encoder Channel Mode"
+            default GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_DUAL
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the channel mode for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_MONO
+                bool "Mono"
+                help
+                    Single audio channel.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_DUAL
+                bool "Dual"
+                help
+                    Two audio channels, independent encoding for left and right channels.
+                    Each channel is processed as a separate mono channel:
+                        - Complete separation of left and right channels.
+                        - No shared encoding parameters or joint encoding.
+                        - Each channel has its own framing, quantization, and bit allocation.
+                        - Best for channels with different content (e.g., bilingual broadcasts,
+                          different character audio tracks in games).
+
+            config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_STEREO
+                bool "Stereo"
+                help
+                    Two audio channels, separate encoding for left and right channels.
+                    In stereo mode:
+                        - Left and right channels are encoded independently.
+                        - Encoder can share parameters (e.g., subband allocation, bit allocation).
+                        - No inter-channel redundancy is utilized.
+                        - Best for regular stereo audio where channels differ but not significantly.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_JOINT_STEREO
+                bool "Joint Stereo"
+                help
+                    Two audio channels, use Mid/Side (MS) coding to improve compression efficiency.
+                    In joint stereo mode:
+                        - Uses correlation between channels for compression.
+                        - Mid = (L + R) / 2, Side = (L - R) / 2.
+                        - Better compression than stereo mode by utilizing channel redundancy.
+                        - Preserves original stereo image after decoding.
+                        - Best for stereo music and highly correlated channels at high compression.
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_CH_MODE
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 0 if GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_MONO
+            default 1 if GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_DUAL
+            default 2 if GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_STEREO
+            default 3 if GMF_AUDIO_CODEC_ENC_SBC_CH_MODE_JOINT_STEREO
+
+        choice
+            prompt "SBC Encoder Sample Rate"
+            default GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_48K
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the sample rate for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_16K
+                bool "16 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_32K
+                bool "32 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_44_1K
+                bool "44.1 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_48K
+                bool "48 kHz"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 16000 if GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_16K
+            default 32000 if GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_32K
+            default 44100 if GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_44_1K
+            default 48000 if GMF_AUDIO_CODEC_ENC_SBC_SAMPLE_RATE_48K
+
+        choice
+            prompt "SBC Encoder Block Length"
+            default GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_16
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the block length for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_4
+                bool "4 blocks"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_8
+                bool "8 blocks"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_12
+                bool "12 blocks"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_16
+                bool "16 blocks"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 4 if GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_4
+            default 8 if GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_8
+            default 12 if GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_12
+            default 16 if GMF_AUDIO_CODEC_ENC_SBC_BLOCK_LENGTH_16
+
+        choice
+            prompt "SBC Encoder Subbands"
+            default GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_8
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the number of subbands for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_4
+                bool "4 subbands"
+
+            config GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_8
+                bool "8 subbands"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 4 if GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_4
+            default 8 if GMF_AUDIO_CODEC_ENC_SBC_SUBBANDS_8
+
+        choice
+            prompt "SBC Encoder Allocation Method"
+            default GMF_AUDIO_CODEC_ENC_SBC_ALLOC_LOUDNESS
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the bit allocation method for the SBC encoder.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_ALLOC_LOUDNESS
+                bool "Loudness"
+                help
+                    Prioritizes human-audible frequency ranges for better perceived quality.
+
+            config GMF_AUDIO_CODEC_ENC_SBC_ALLOC_SNR
+                bool "SNR"
+                help
+                    Maximizes SNR for each frequency band, improving technical accuracy.
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_SBC_ALLOC_METHOD
+            int
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            default 0 if GMF_AUDIO_CODEC_ENC_SBC_ALLOC_LOUDNESS
+            default 1 if GMF_AUDIO_CODEC_ENC_SBC_ALLOC_SNR
+
+        config GMF_AUDIO_CODEC_ENC_SBC_BITPOOL
+            int "SBC Encoder Bitpool"
+            default 64
+            range 2 250
+            depends on GMF_AUDIO_CODEC_ENC_SBC_MODE_STD
+            help
+                Configure the bitpool value for the SBC encoder.
+                Higher values result in lower compression rates.
+    endmenu
+
+    menu "LC3 Encoder Configuration"
+        depends on GMF_AUDIO_CODEC_ENCODER_TYPE_LC3
+
+        choice
+            prompt "LC3 Encoder Sample Rate"
+            default GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_48K
+            help
+                Configure the sample rate for the LC3 encoder.
+                This must be one of 8000, 16000, 24000, 32000, 44100 or 48000.
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_8K
+                bool "8 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_16K
+                bool "16 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_24K
+                bool "24 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_32K
+                bool "32 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_44_1K
+                bool "44.1 kHz"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_48K
+                bool "48 kHz"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE
+            int
+            default 8000  if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_8K
+            default 16000 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_16K
+            default 24000 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_24K
+            default 32000 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_32K
+            default 44100 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_44_1K
+            default 48000 if GMF_AUDIO_CODEC_ENC_LC3_SAMPLE_RATE_48K
+
+        config GMF_AUDIO_CODEC_ENC_LC3_CHANNEL
+            int "LC3 Encoder Channel"
+            default 1
+            range 1 2
+            help
+                Configure the number of audio channels for the LC3 encoder.
+
+        choice
+            prompt "LC3 Encoder Bits Per Sample"
+            default GMF_AUDIO_CODEC_ENC_LC3_BITS_16
+            help
+                Configure the bits per sample for the LC3 encoder.
+
+            config GMF_AUDIO_CODEC_ENC_LC3_BITS_16
+                bool "16 bits"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_BITS_24
+                bool "24 bits"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_BITS_32
+                bool "32 bits"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_LC3_BITS_PER_SAMPLE
+            int
+            default 16 if GMF_AUDIO_CODEC_ENC_LC3_BITS_16
+            default 24 if GMF_AUDIO_CODEC_ENC_LC3_BITS_24
+            default 32 if GMF_AUDIO_CODEC_ENC_LC3_BITS_32
+
+        choice
+            prompt "LC3 Encoder Frame Duration"
+            default GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_100
+            help
+                Configure the frame duration for the LC3 encoder (in decimilliseconds).
+
+            config GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_75
+                bool "7.5 ms"
+
+            config GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_100
+                bool "10 ms"
+        endchoice
+
+        config GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION
+            int
+            default 75 if GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_75
+            default 100 if GMF_AUDIO_CODEC_ENC_LC3_FRAME_DURATION_100
+
+        config GMF_AUDIO_CODEC_ENC_LC3_BYTES_PER_FRAME
+            int "LC3 Bytes Per Frame"
+            default 120
+            range 20 400
+            help
+                Configure the number of bytes per channel in a frame for the LC3 encoder.
+                The conversion relationship between bitrate and nbyte is as follows:
+                1) Sample rate is 44100 Hz
+                   nbyte = bitrate * frame_dms / 73500
+                2) Sample rate is 8000, 16000, 24000, 32000 or 48000 Hz
+                   nbyte = bitrate * frame_dms / 80000
+
+        config GMF_AUDIO_CODEC_ENC_LC3_LEN_PREFIXED
+            bool "LC3 Length Prefixed"
+            default n
+            help
+                Enable this option if the LC3 encoded data is prefixed with a 2-byte frame length.
+                If set to true, a frame size of two bytes (not including this two bytes) will be added
+                at the beginning of each frame with using big end storage.
     endmenu
 
 

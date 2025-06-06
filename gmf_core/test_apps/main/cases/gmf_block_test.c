@@ -167,7 +167,7 @@ static void acquire_read_task(void *param)
     vTaskDelete(NULL);
 }
 
-TEST_CASE("Read and write with RANDOM SIZE + NO DELAY on different task", "ESP_GMF_BLOCK")
+TEST_CASE("Read and write with RANDOM SIZE + NO DELAY on different task", "[ESP_GMF_BLOCK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_BLOCK", ESP_LOG_DEBUG);
@@ -217,7 +217,7 @@ TEST_CASE("Read and write with RANDOM SIZE + NO DELAY on different task", "ESP_G
     esp_gmf_ut_teardown_sdmmc(card);
 }
 
-TEST_CASE("Read and write with FIXED SIZE + NO DELAY on different task", "ESP_GMF_BLOCK")
+TEST_CASE("Read and write with FIXED SIZE + NO DELAY on different task", "[ESP_GMF_BLOCK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_BLOCK", ESP_LOG_DEBUG);
@@ -265,7 +265,7 @@ TEST_CASE("Read and write with FIXED SIZE + NO DELAY on different task", "ESP_GM
     esp_gmf_ut_teardown_sdmmc(card);
 }
 
-TEST_CASE("Read and write with RANDOM SIZE + RANDOM DELAY on different task", "ESP_GMF_BLOCK")
+TEST_CASE("Read and write with RANDOM SIZE + RANDOM DELAY on different task", "[ESP_GMF_BLOCK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_BLOCK", ESP_LOG_DEBUG);
@@ -315,7 +315,7 @@ TEST_CASE("Read and write with RANDOM SIZE + RANDOM DELAY on different task", "E
     esp_gmf_ut_teardown_sdmmc(card);
 }
 
-TEST_CASE("Read and write with FIXED SIZE + RANDOM DELAY", "ESP_GMF_BLOCK")
+TEST_CASE("Read and write with FIXED SIZE + RANDOM DELAY", "[ESP_GMF_BLOCK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_BLOCK", ESP_LOG_DEBUG);
@@ -364,7 +364,7 @@ TEST_CASE("Read and write with FIXED SIZE + RANDOM DELAY", "ESP_GMF_BLOCK")
     esp_gmf_ut_teardown_sdmmc(card);
 }
 
-TEST_CASE("Read and write with SPECIFIC SIZE + NO DELAY", "ESP_GMF_BLOCK")
+TEST_CASE("Read and write with SPECIFIC SIZE + NO DELAY", "[ESP_GMF_BLOCK]")
 {
     esp_log_level_set("*", ESP_LOG_INFO);
     // esp_log_level_set("ESP_GMF_BLOCK", ESP_LOG_DEBUG);

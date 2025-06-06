@@ -13,4 +13,4 @@ dependencies:
     override_path: ../../../../elements/gmf_video
   espressif/gmf_loader:
     override_path: ../../../gmf_loader
-  espressif/esp-dsp: <=1.5.0
+  espressif/esp-dsp: <=1.6.0

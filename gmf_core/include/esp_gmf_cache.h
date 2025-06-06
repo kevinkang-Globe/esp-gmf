@@ -154,6 +154,7 @@ static inline esp_gmf_err_t esp_gmf_cache_load(esp_gmf_cache_t *handle, const es
  *       - ESP_GMF_ERR_OK           Data successfully acquired
  *       - ESP_GMF_ERR_INVALID_ARG  If `handle` or `load_out` is NULL
  *       - ESP_GMF_ERR_MEMORY_LACK  Insufficient memory to allocate a new buffer
+ *       - ESP_GMF_ERR_NOT_ENOUGH   Cached data size less than expected size
  */
 static inline esp_gmf_err_t esp_gmf_cache_acquire(esp_gmf_cache_t *handle, uint32_t expected_size, esp_gmf_payload_t **load_out)
 {
@@ -176,7 +177,7 @@ static inline esp_gmf_err_t esp_gmf_cache_acquire(esp_gmf_cache_t *handle, uint3
      *  2. Copy the remaining data from the original buffer to the cache buffer
      *  3. If the original buffer does not have enough data for the user, provide the cached buffer address instead
      */
-
+    bool cache_enough = false;
     if (handle->buf_filled == 0) {
         if (handle->origin_load.valid_size >= expected_size) {
             (*load_out)->buf = handle->origin_load.buf;
@@ -186,6 +187,7 @@ static inline esp_gmf_err_t esp_gmf_cache_acquire(esp_gmf_cache_t *handle, uint3
             (*load_out)->pts = handle->origin_load.pts;
             handle->origin_load.valid_size -= expected_size;
             handle->origin_load.buf += expected_size;
+            cache_enough = true;
         }
     }
     if (handle->buf_filled || (handle->origin_load.valid_size < expected_size)) {
@@ -196,7 +198,13 @@ static inline esp_gmf_err_t esp_gmf_cache_acquire(esp_gmf_cache_t *handle, uint3
         handle->origin_load.buf += n;
         handle->origin_load.valid_size -= n;
         handle->buf_filled += n;
+        if (handle->buf_filled >= expected_size) {
+            cache_enough = true;
+        }
         ESP_LOGD("GMF_CACHE", "ACQ, filled: %ld, used size: %d, origin_left_size: %d", handle->buf_filled, n, handle->origin_load.valid_size);
+    }
+    if ((cache_enough == false) && (handle->origin_load.is_done == false)) {
+        return ESP_GMF_ERR_NOT_ENOUGH;
     }
     if ((*load_out)->valid_size == 0) {
         (*load_out)->buf = handle->buf;
@@ -204,9 +212,8 @@ static inline esp_gmf_err_t esp_gmf_cache_acquire(esp_gmf_cache_t *handle, uint3
         (*load_out)->valid_size = handle->buf_filled;
         // FIXME If the data is split into several pieces, the pts remains the same.
         (*load_out)->pts = handle->origin_load.pts;
-        (*load_out)->is_done = (handle->origin_load.valid_size == 0) ? handle->origin_load.is_done : false;
+        (*load_out)->is_done = ((handle->origin_load.valid_size == 0) && handle->origin_load.is_done);
     }
-
     return ESP_GMF_ERR_OK;
 }
 

@@ -19,15 +19,6 @@ This example supports IDF release/v5.3 and later branches.
 
 This example requires a microSD card. The recorded and encoded audio will be automatically stored on the microSD card. Users can modify the encoding format and audio parameter configuration using the `esp_gmf_audio_helper_reconfig_enc_by_type` function.
 
-This example supports the ESP32s3_Korvo_2, ESP32p4_Function_EV_Board boards. Other boards support need to modify the following content in the [ system_common ](../../system_common):
-
-| Configuration | Related Files |  Related Functions   |
-|:----:| :-----: | :---- |
-|I2S Port and I2S Format| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `pool_i2s_channel_init` |
-|I2C Port| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `esp_gmf_setup_periph_i2c` |
-|Codec Type and Format |`esp_gmf_setup_peripheral.c` |`setup_periph_new_record_codec`  |
-|Sdmmc Port| `esp_gmf_gpio_config.h`<br>`esp_gmf_setup_peripheral.c` | `esp_gmf_setup_periph_sdmmc` |
-
 ### Build and Flash
 
 Before compiling this example, ensure that the ESP-IDF environment is properly configured. If it is already set up, you can proceed to the next configuration step. If not, run the following script in the root directory of ESP-IDF to set up the build environment. For detailed steps on configuring and using ESP-IDF, please refer to the [ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/index.html)
@@ -49,6 +40,12 @@ cd $YOUR_GMF_PATH/gmf_examples/basic_examples/pipeline_record_sdcard
 
 ```
 idf.py set-target esp32s3
+```
+- Select the compilation board, taking esp32 s3 Korvo V2 as an example:
+
+```
+idf.py menuconfig
+In 'menuconfig', select 'GMF APP Configuration' -> 'Audio Board' -> 'ESP32-S3-Korvo V2', and then save and exit
 ```
 
 - Build the Example

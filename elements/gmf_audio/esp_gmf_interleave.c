@@ -16,6 +16,7 @@
 #include "gmf_audio_common.h"
 #include "esp_gmf_cap.h"
 #include "esp_gmf_caps_def.h"
+#include "esp_gmf_audio_element.h"
 
 #define ESP_GMF_PROCESS_SAMPLE (256)
 
@@ -54,10 +55,10 @@ static inline void free_esp_ae_interleave_cfg(esp_gmf_interleave_cfg *config)
 
 static esp_gmf_err_t esp_gmf_interleave_new(void *cfg, esp_gmf_obj_handle_t *handle)
 {
-    return esp_gmf_interleave_init(cfg, handle);
+    return esp_gmf_interleave_init(cfg, (esp_gmf_element_handle_t *)handle);
 }
 
-static esp_gmf_job_err_t esp_gmf_interleave_open(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_interleave_open(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_interleave_t *interleave = (esp_gmf_interleave_t *)self;
     esp_gmf_interleave_cfg *interleave_info = (esp_gmf_interleave_cfg *)OBJ_GET_CFG(self);
@@ -77,7 +78,7 @@ static esp_gmf_job_err_t esp_gmf_interleave_open(esp_gmf_audio_element_handle_t 
     return ESP_GMF_JOB_ERR_OK;
 }
 
-static esp_gmf_job_err_t esp_gmf_interleave_close(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_interleave_close(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_interleave_t *interleave = (esp_gmf_interleave_t *)self;
     ESP_LOGD(TAG, "Closed, %p", self);
@@ -92,7 +93,7 @@ static esp_gmf_job_err_t esp_gmf_interleave_close(esp_gmf_audio_element_handle_t
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_job_err_t esp_gmf_interleave_process(esp_gmf_audio_element_handle_t self, void *para)
+static esp_gmf_job_err_t esp_gmf_interleave_process(esp_gmf_element_handle_t self, void *para)
 {
     esp_gmf_interleave_t *interleave = (esp_gmf_interleave_t *)self;
     esp_gmf_job_err_t out_len = ESP_GMF_JOB_ERR_OK;
@@ -201,7 +202,7 @@ static esp_gmf_err_t interleave_received_event_handler(esp_gmf_event_pkt_t *evt,
     return ESP_GMF_ERR_OK;
 }
 
-static esp_gmf_err_t esp_gmf_interleave_destroy(esp_gmf_audio_element_handle_t self)
+static esp_gmf_err_t esp_gmf_interleave_destroy(esp_gmf_element_handle_t self)
 {
     esp_gmf_interleave_t *interleave = (esp_gmf_interleave_t *)self;
     ESP_LOGD(TAG, "Destroyed, %p", self);
@@ -225,7 +226,7 @@ static esp_gmf_err_t _load_interleave_caps_func(esp_gmf_element_handle_t handle)
     return ESP_GMF_ERR_OK;
 }
 
-esp_gmf_err_t esp_gmf_interleave_init(esp_gmf_interleave_cfg *config, esp_gmf_obj_handle_t *handle)
+esp_gmf_err_t esp_gmf_interleave_init(esp_gmf_interleave_cfg *config, esp_gmf_element_handle_t *handle)
 {
     ESP_GMF_NULL_CHECK(TAG, handle, {return ESP_GMF_ERR_INVALID_ARG;});
     *handle = NULL;

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.1
+
+### Bug Fixes
+
+- Fixed a bug where the required read size was incorrectly altered by the payload's valid size
+
 ## v0.6.0
 
 ### Features

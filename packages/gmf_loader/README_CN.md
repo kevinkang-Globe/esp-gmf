@@ -47,6 +47,13 @@ GMF Loader 是一个帮助组件，允许用户通过 menuconfig 轻松自定义
   - 视频像素加速器 (PPA)
   - 帧率转换
   - 视频叠加
+  - 视频裁剪
+  - 视频缩放
+  - 视频旋转
+  - 视频颜色转换
+
+- 其他元素配置：
+  - 复制器：在元素之间复制数据
 
 ## 配置
 
@@ -55,6 +62,7 @@ GMF Loader 是一个帮助组件，允许用户通过 menuconfig 轻松自定义
 - GMF IO 配置：配置 IO 读取器和写入器
 - GMF 音频配置：配置音频编解码器、效果和 AI 功能
 - GMF 视频配置：配置视频编解码器和效果
+- GMF 其他配置：配置其他元素，如复制器
 
 以下为配置菜单明细
 
@@ -115,24 +123,31 @@ ESP GMF Loader
 │       ├── Audio Echo Cancellation (AEC) [Y]
 │       └── Audio Front End (AFE) [N]
 │
-└── GMF Video Configurations
-    ├── GMF Video Codec
-    │   ├── Decoders [N]
-    │   │   ├── Auto [Y]
-    │   │   ├── Software H264
-    │   │   ├── Software MJPEG
-    │   │   └── Hardware MJPEG
-    │   └── Encoders [N]
-    │       ├── Auto [Y]
-    │       ├── Software H264
-    │       ├── Hardware H264
-    │       ├── Software MJPEG
-    │       └── Hardware MJPEG
-    │
-    └── GMF Video Effects
-        ├── Video PPA [N]
-        ├── Video FPS Convert [N]
-        └── Video Overlay [N]
+│── GMF Video Configurations     
+│   ├── GMF Video Codec
+│   │   ├── Decoders [N]
+│   │   │   ├── Auto [Y]
+│   │   │   ├── Software H264
+│   │   │   ├── Software MJPEG
+│   │   │   └── Hardware MJPEG
+│   │   └── Encoders [N]
+│   │       ├── Auto [Y]
+│   │       ├── Software H264
+│   │       ├── Hardware H264
+│   │       ├── Software MJPEG
+│   │       └── Hardware MJPEG
+│   │
+│   └── GMF Video Effects
+│       ├── Video PPA [N]
+│       ├── Video FPS Convert [N]
+│       ├── Video Overlay [N]
+│       ├── Video Crop [N]
+│       ├── Video Scale [N]
+│       ├── Video Rotate [N]
+│       └── Video Color Convert [N]
+│
+└── GMF Miscellaneous Configurations
+    └── Copier [N]
 ```
 
 ## 使用方法

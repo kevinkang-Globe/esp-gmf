@@ -20,12 +20,12 @@
 #include "esp_gmf_element.h"
 #include "esp_gmf_pipeline.h"
 #include "esp_gmf_pool.h"
-#include "esp_gmf_setup_peripheral.h"
 #include "esp_gmf_rate_cvt.h"
 #include "esp_gmf_bit_cvt.h"
 #include "esp_gmf_ch_cvt.h"
-#include "esp_gmf_audio_helper.h"
-#include "cli.h"
+#include "esp_gmf_audio_dec.h"
+#include "esp_gmf_app_setup_peripheral.h"
+#include "esp_gmf_app_cli.h"
 #include "gmf_loader_setup_defaults.h"
 
 #define BOARD_LYRAT_MINI (0)
@@ -76,12 +76,12 @@ static esp_err_t _pipeline_event(esp_gmf_event_pkt_t *event, void *ctx)
     return ESP_OK;
 }
 
-static int pcm_buf_acq_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
+static esp_gmf_err_io_t pcm_buf_acq_write(void *handle, esp_gmf_payload_t *load, int wanted_size, int block_ticks)
 {
-    return wanted_size;
+    return ESP_GMF_IO_OK;
 }
 
-static int pcm_buf_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
+static esp_gmf_err_io_t pcm_buf_release_write(void *handle, esp_gmf_payload_t *load, int block_ticks)
 {
     if (load == NULL) {
         return ESP_GMF_IO_FAIL;
@@ -106,25 +106,17 @@ void app_main(void)
     }
     pcm_received = 0;
 
-    void *card = NULL;
-    esp_gmf_setup_periph_sdmmc(&card);
-    esp_gmf_setup_periph_i2c(0);
-    esp_gmf_setup_periph_aud_info player_info = {
-        .sample_rate = 48000,
-        .channel = DAC_I2S_CH,
-        .bits_per_sample = DAC_I2S_BITS,
-        .port_num = DAC_I2S_PORT,
-    };
-    esp_gmf_setup_periph_aud_info recorder_info = {
-        .sample_rate = 48000,
-        .channel = ADC_I2S_CH,
-        .bits_per_sample = ADC_I2S_BITS,
-        .port_num = ADC_I2S_PORT,
-    };
-    void *play_dev = NULL;
-    void *record_dev = NULL;
-    ret = esp_gmf_setup_periph_codec(&player_info, &recorder_info, &play_dev, &record_dev);
-    ESP_GMF_RET_ON_NOT_OK(TAG, ret, { return;}, "Failed to setup audio codec");
+    esp_gmf_app_codec_info_t codec_info = ESP_GMF_APP_CODEC_INFO_DEFAULT();
+    codec_info.play_info.sample_rate = 48000;
+    codec_info.play_info.channel = DAC_I2S_CH;
+    codec_info.play_info.bits_per_sample = DAC_I2S_BITS;
+    codec_info.record_info.sample_rate = codec_info.play_info.sample_rate;
+    codec_info.record_info.channel = ADC_I2S_CH;
+    codec_info.record_info.bits_per_sample = ADC_I2S_BITS;
+    esp_gmf_app_setup_codec_dev(&codec_info);
+
+    void *sdcard_handle = NULL;
+    esp_gmf_app_setup_sdcard(&sdcard_handle);
 
     esp_gmf_pool_handle_t pool = NULL;
     esp_gmf_pool_init(&pool);
@@ -143,7 +135,7 @@ void app_main(void)
         ESP_LOGE(TAG, "There is no pipeline");
         return;
     }
-    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_IN_INSTANCE(read_pipe), record_dev);
+    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_IN_INSTANCE(read_pipe), esp_gmf_app_get_record_handle());
 
     esp_gmf_port_handle_t out_port = NEW_ESP_GMF_PORT_OUT_BYTE(pcm_buf_acq_write, pcm_buf_release_write, NULL, NULL, 1024, portMAX_DELAY);
     esp_gmf_element_register_out_port(read_pipe->last_el, out_port);
@@ -152,6 +144,7 @@ void app_main(void)
     esp_gmf_rate_cvt_set_dest_rate(rate_cvt, 16000);
 
     esp_gmf_info_sound_t info = {
+        .format_id = ESP_AUDIO_SIMPLE_DEC_TYPE_MP3,
         .sample_rates = 48000,
         .channels = INPUT_CH_NUM,
         .bits = INPUT_CH_BITS,
@@ -168,7 +161,7 @@ void app_main(void)
     esp_gmf_pipeline_set_event(read_pipe, _pipeline_event, NULL);
     esp_gmf_pipeline_run(read_pipe);
 
-    cli_init("Audio >");
+    esp_gmf_app_cli_init("Audio >", NULL);
 
     // New pipeline to play 'test.mp3'
     esp_gmf_pipeline_handle_t play_pipe = NULL;
@@ -178,7 +171,7 @@ void app_main(void)
         ESP_LOGE(TAG, "There is no play pipeline");
         return;
     }
-    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_OUT_INSTANCE(play_pipe), play_dev);
+    esp_gmf_io_codec_dev_set_dev(ESP_GMF_PIPELINE_GET_OUT_INSTANCE(play_pipe), esp_gmf_app_get_playback_handle());
 
     esp_gmf_obj_handle_t bit_cvt = NULL;
     esp_gmf_pipeline_get_el_by_name(play_pipe, "bit_cvt", &bit_cvt);
@@ -188,7 +181,7 @@ void app_main(void)
     esp_gmf_ch_cvt_set_dest_channel(ch_cvt, DAC_I2S_CH);
     esp_gmf_obj_handle_t dec_el = NULL;
     esp_gmf_pipeline_get_el_by_name(play_pipe, "aud_simp_dec", &dec_el);
-    esp_gmf_audio_helper_reconfig_dec_by_uri("/sdcard/test.mp3", &info, OBJ_GET_CFG(dec_el));
+    esp_gmf_audio_dec_reconfig_by_sound_info(dec_el, &info);
 
     esp_gmf_pipeline_set_in_uri(play_pipe, "/sdcard/test.mp3");
 
@@ -224,7 +217,6 @@ void app_main(void)
     esp_gmf_pipeline_destroy(play_pipe);
     gmf_loader_teardown_all_defaults(pool);
     esp_gmf_pool_deinit(pool);
-    esp_gmf_teardown_periph_codec(play_dev, record_dev);
-    esp_gmf_teardown_periph_i2c(0);
-    esp_gmf_teardown_periph_sdmmc(card);
+    esp_gmf_app_teardown_codec_dev();
+    esp_gmf_app_teardown_sdcard(sdcard_handle);
 }
